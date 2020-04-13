@@ -1,0 +1,56 @@
+<%args>
+$dbh
+$uid
+$ben_anrede => undef
+$ben_titel => undef
+$ben_vorname => undef
+$ben_nachname => undef
+$ben_funktion => undef
+$ben_bereich => undef
+$ben_strasse => undef
+$ben_land => undef
+$ben_plz => undef
+$ben_ort => undef
+$ben_gebdat => undef
+$ben_telefon => undef
+$ben_telefax => undef
+$ben_handy => undef
+$ben_email => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(quote);
+  use Contavia qw(fehler);
+
+  fehler ("<i18n>Bitte geben Sie Ihre Anrede an</i18n>")       unless $ben_anrede;
+  fehler ("<i18n>Bitte geben Sie Ihren Vornamen an</i18n>")    unless $ben_vorname;
+  fehler ("<i18n>Bitte geben Sie Ihren Nachname an</i18n>")    unless $ben_nachname;
+  fehler ("<i18n>Bitte geben Sie Ihre Strasse an</i18n>")      unless $ben_strasse;
+  fehler ("<i18n>Bitte geben Sie Ihre Postzeitzahl an</i18n>") unless $ben_plz;
+  fehler ("<i18n>Bitte geben Sie Ihren Wohnort an</i18n>")     unless $ben_ort;
+
+  #$ben_gebdat->[2] += 1900 unless $ben_gebdat->[2] > 1900;
+
+  Contavia::Db::replace(
+    $dbh, 'benutzer',
+    { ben_uid           => quote($uid) },
+    { ben_anrede        => quote($ben_anrede),
+      ben_titel         => quote($ben_titel),
+      ben_vorname       => quote($ben_vorname),
+      ben_nachname      => quote($ben_nachname),
+      ben_funktion      => quote($ben_funktion),
+      ben_bereich       => quote($ben_bereich),
+      ben_strasse       => quote($ben_strasse),
+      ben_land          => quote($ben_land),
+      ben_plz           => quote($ben_plz),
+      ben_ort           => quote($ben_ort),
+      ben_gebdat        => new Contavia::Date($ben_gebdat)->qpgdate,
+      ben_telefon       => quote($ben_telefon),
+      ben_telefax       => quote($ben_telefax),
+      ben_handy         => quote($ben_handy),
+      ben_email         => quote($ben_email) } );
+
+  $dbh->commit;
+
+</%perl>

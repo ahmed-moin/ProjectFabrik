@@ -1,0 +1,36 @@
+SetEnv FONTFILE /usr/share/fonts/truetype/geo415l.ttf
+SetEnv FONTSIZE 12
+<Files dlabel>
+    SetEnv FONTSIZE 10
+</Files>
+<Files dateline>
+    SetEnv FONTSIZE 9
+</Files>
+<Files ttt>
+    SetEnv FONTSIZE 9
+</Files>
+<Files scale>
+    SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE 9
+</Files>
+<Files rscale>
+    SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE 9
+</Files>
+<Files bluelabel>
+    SetEnv FONTFILE /usr/share/fonts/truetype/arialbd.ttf
+    SetEnv FONTSIZE 14
+</Files>
+<Files asschart>
+    SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE 9
+    SetEnv BGCOLOR ffffff
+    SetEnv COLOR1 f00
+    SetEnv COLOR2 8cf
+</Files>
+<Files titel>
+    SetEnv FONTFILE1 /usr/share/fonts/truetype/arialbd.ttf
+    SetEnv FONTSIZE1 22
+    SetEnv FONTFILE2 /usr/share/fonts/truetype/arialbd.ttf
+    SetEnv FONTSIZE2 10
+</Files>

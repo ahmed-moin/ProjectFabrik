@@ -1,0 +1,67 @@
+<%args>
+$dbh
+$projektid
+$speichern => undef
+$sel_datum => undef
+$zid => undef
+@tpr_tid => ()
+@tpe_realisierung => ()
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(replace);
+
+  if ($speichern)
+  {
+    for (my $i = 0; $i <= $#tpr_tid; ++$i)
+    {
+      my $tpr_tid          = $tpr_tid[$i];
+      my $tpe_realisierung = $tpe_realisierung[$i];
+      my $datum = new Contavia::Date($sel_datum)->qpgdate;
+
+      if ($tpe_realisierung)
+      {
+        replace ($dbh, 'teilprojektrealisierung',
+          { tpe_pid   => $projektid,
+            tpe_tid   => $tpr_tid,
+            tpe_zid   => $zid,
+            tpe_datum => $datum },
+          { tpe_realisierung => $tpe_realisierung } );
+
+        if ($zid == 0 && $tpe_realisierung >= 100)
+        {
+          $dbh->update ('teilprojekt',
+            { tpr_pid => $projektid,
+              tpr_tid => $tpr_tid },
+            { tpr_status => 3 } );
+
+          my $realisierung = $dbh->selectrow_array( "
+            select min(tpe_realisierung)
+              from teilprojektrealisierung
+             where tpe_pid = $projektid
+               and tpe_zid = 0" );
+          if ($realisierung >= 100)
+          {
+            $dbh->update ('projekt',
+              { prj_id => $projektid },
+              { prj_status => 6 } );
+          }
+        }
+      }
+      else
+      {
+        $dbh->do( <<"EOF" );
+         delete from teilprojektrealisierung
+          where tpe_pid = $projektid
+            and tpe_tid = $tpr_tid
+            and tpe_zid = $zid
+            and tpe_datum = $datum
+EOF
+      }
+
+    }
+
+    $dbh->commit;
+  }
+</%perl>

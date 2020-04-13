@@ -1,0 +1,5 @@
+<%perl>
+  $ARGS{menu} = 'taetigkeit';
+  $ARGS{folgemaske} = 'taetigkeituebersicht';
+  return \%ARGS;
+</%perl>

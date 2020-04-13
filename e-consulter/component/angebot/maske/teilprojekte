@@ -1,0 +1,28 @@
+<%args>
+$dbh
+$projektid
+$angebot => undef
+$bearbeiten => undef
+$neu => undef
+$tid => undef
+</%args>
+<%perl>
+
+  die "<fehler>kein Angebot ausgew&auml;hlt</fehler>" unless $angebot;
+  die "<fehler>kein Teilprojekt ausgew&auml;hlt</fehler>" if $bearbeiten && !$tid;
+
+  $ARGS{prj_waehrung} = $dbh->selectrow_array( <<"EOF" );
+   select prj_waehrung
+     from projekt
+    where prj_id = $projektid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Teilprojekte' &>
+
+% if ($bearbeiten || $neu) {
+ <& 'teilprojekt_bearbeiten', %ARGS &>
+% } else {
+ <& 'teilprojekte_anzeigen', %ARGS &>
+% }

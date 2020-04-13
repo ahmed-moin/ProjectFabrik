@@ -1,0 +1,126 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Management Information Tool
+  Programmiert          Tommi Mäkitalo, Kommunikationsmanagement Schwägerl
+  Datum                 Dezember 2000
+
+  Beschreibung
+    Management Information Tool
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Dezember 2000 initiales Release
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%attr>
+
+  tool       => 'mis'
+  titel      => "Management\nInformation\nTool"
+  barcolor   => [255, 0, 0]
+  titel_img  => '/images/titel/mis.gif'
+  icon       => '/images/icon/mis.gif'
+  foto       => '/images/720-17.jpg'
+  defmaske   => 'login'
+  #startmaske => 'projekte'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$projektid => undef
+$dbh
+</%args>
+<%perl>
+  my @menu;
+
+  return if ($ARGS{uid} eq 'HP001');
+
+  if ( $projektid )
+  {
+    my $ziel = $dbh->selectall_arrayref( <<"EOF" );
+      select prz_titel, prz_kostenvergleich
+        from projektziel
+       where prz_pid = $projektid
+         and prz_zid <> 0
+EOF
+
+    my @menu_head =
+    (
+      { maske  => 'zeitplan',
+        label  => 'Projekt',
+        menu   => 'projekt' },
+      { maske  => 'budget_gesamt',
+        label  => 'Gesamtkosten',
+        menu   => 'budget' },
+      { maske  => 'personalkosten_gesamt',
+        label  => 'Personalkosten',
+        menu   => 'personalkosten' },
+      { maske  => 'personentage_gesamt',
+        label  => 'Personentage',
+        menu   => 'personentage' },
+      { maske  => 'sachkosten_gesamt',
+        label  => 'Sachkosten',
+        menu   => 'sachkosten' },
+      { maske  => 'investition_gesamt',
+        label  => 'Investition',
+        menu   => 'investition' },
+    );
+
+    my $n = 0;
+    foreach (@$ziel)
+    {
+      my ($prz_titel, $prz_kostenvergleich) = @$_;
+      ++$n;
+      push @menu_head, { maske  => "statusziel${n}",
+                         label  => $prz_titel,
+                         menu   => "statusziel" };
+    }
+    push @menu_head, { maske  => 'team',
+                       label  => 'Projektteam' },
+                     { maske  => 'bericht',
+                       label  => 'Bericht' },
+                     { maske  => 'dokumentation',
+                       label  => 'Dokumentation' };
+
+    my @menu_footer =
+    (
+      { space  => 80 },
+      { aktion => 'projektschliessen',
+        label  => 'Projekt wechseln' },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+    my $ret = $m->comp('/getmenu', %ARGS,
+                       menu_head => \@menu_head,
+                       menu_footer => \@menu_footer );
+    @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                 : ( @menu_head, @menu_footer );
+  }
+  elsif ($ARGS{sessid} )
+  {
+    @menu = ( { maske  => 'projekte',
+                label  => 'Projekte' },
+              { space  => 80 },
+              { aktion => 'abmelden',
+                label  => 'Abmelden' },
+            );
+  }
+  else
+  {
+    @menu = ( { maske => 'login',
+                label => 'Login' }
+            );
+  }
+
+  return @menu;
+
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+<%perl>
+  return [ ['stand',       $ARGS{stand}],
+           ['projektplan', $ARGS{projektplan}] ];
+</%perl>
+</%method>

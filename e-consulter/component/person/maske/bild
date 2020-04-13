@@ -1,0 +1,8 @@
+<%args>
+$sessid
+$user
+</%args>
+
+<h1>Bild</h1>
+
+<img src='/cgi-bin/bild?uid=<%$user%>'>

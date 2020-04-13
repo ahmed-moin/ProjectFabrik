@@ -1,0 +1,55 @@
+<%args>
+$dbh
+$ben_uid => undef
+</%args>
+<%perl>
+
+  my $ben = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer where ben_status = 0
+     order by ben_nachname, ben_vorname, ben_uid" );
+
+</%perl>
+
+<h1> Benutzer prüfen </h1>
+
+<p> alle Benutzer ohne Status: </p>
+
+<table width='100%' border='1'>
+ <tr>
+  <th>
+  </th>
+  <th>
+   Uid
+  </th>
+  <th>
+   Vorname
+  </th>
+  <th>
+   Nachname
+  </th>
+ </tr>
+
+% foreach (@$ben) {
+%   my ($uid, $ben_vorname, $ben_nachname) = @$_;
+ <tr>
+  <td>
+   <input type='radio' name='ben_uid' value='<%$uid%>'<%$ben_uid eq $uid && ' checked'%>>
+  </td>
+  <td>
+   <%$uid%>
+  </td>
+  <td>
+   <%$ben_vorname%>
+  </td>
+  <td>
+   <%$ben_nachname%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='anzeigen' value='Profil anzeigen'>
+</p>

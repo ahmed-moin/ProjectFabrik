@@ -1,0 +1,70 @@
+<%args>
+@menu
+$dbh
+$uid
+$projektid
+</%args>
+<%perl>
+
+  my ($prj_telefon, $prj_telefax, $prj_email, $prj_reaktionsart) =
+    $dbh->selectrow_array( <<"EOF");
+    select prj_telefon, prj_telefax, prj_email, prj_reaktionsart
+      from projekt
+     where prj_id = $projektid
+EOF
+
+  unless ($prj_telefon && $prj_telefax && $prj_email)
+  {
+    my ($ben_telefon, $ben_telefax, $ben_email) =
+      $dbh->selectrow_array( <<"EOF" );
+      select ben_telefon, ben_telefax, ben_email
+        from benutzer
+       where ben_uid = '$uid'
+EOF
+    $prj_telefon = $ben_telefon unless $prj_telefon;
+    $prj_telefax = $ben_telefax unless $prj_telefax;
+    $prj_email   = $ben_email   unless $prj_email;
+  }
+
+</%perl>
+
+ <& '/masketitel', titel => 'Kontaktaufnahme',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p class='label'><i18n>Gew&uuml;nschte Kontaktaufnahme</i18n></p>
+
+ <table>
+  <tr>
+   <td>
+    <input type='radio' name='prj_reaktionsart'
+           value='1'<% $prj_reaktionsart == 1 ? ' checked' : ''%>><i18n>Telefon</i18n>
+   </td>
+   <td>
+    <input type='text' name='prj_telefon' size='50' value='<%$prj_telefon%>'>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+    <input type='radio' name='prj_reaktionsart'
+           value='2'<% $prj_reaktionsart == 2 ? ' checked' : ''%>><i18n>E-Mail</i18n>
+   </td>
+   <td>
+    <input type='text' name='prj_email' size='50' value='<%$prj_email%>'>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+    <input type='radio' name='prj_reaktionsart'
+           value='3'<% $prj_reaktionsart == 3 ? ' checked' : ''%>><i18n>Telefax</i18n>
+   </td>
+   <td>
+    <input type='text' name='prj_telefax' size='50' value='<%$prj_telefax%>'>
+   </td>
+  </tr>
+
+ </table>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

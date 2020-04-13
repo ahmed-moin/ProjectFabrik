@@ -1,0 +1,12 @@
+<%args>
+$bearbeiten => undef
+</%args>
+<%perl>
+
+  if ($bearbeiten)
+  {
+    $ARGS{folgemaske} = 'verantwortlich_uebersicht';
+    return \%ARGS;
+  }
+
+</%perl>

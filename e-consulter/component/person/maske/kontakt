@@ -1,0 +1,64 @@
+<%args>
+$dbh
+$user => undef
+</%args>
+<%init>
+  my ($ben_vorname, $ben_nachname, $ben_titel, $ben_anrede,
+      $ben_telefon, $ben_telefax, $ben_handy, $ben_email) =
+      $dbh->selectrow_array( <<"EOF" );
+    select ben_vorname, ben_nachname, ben_titel, ben_anrede,
+           ben_telefon, ben_telefax, ben_handy, ben_email
+      from benutzer
+     where ben_uid = '$user'
+EOF
+
+</%init>
+
+<& '/masketitel', titel => 'Portrait' &>
+
+<table>
+ <tr>
+  <th class='label'>
+   Name
+  </th>
+  <td>
+   <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Telefon
+  </th>
+  <td>
+   <%$ben_telefon%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Telefax
+  </th>
+  <td>
+   <%$ben_telefax%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Handy
+  </th>
+  <td>
+   <%$ben_handy%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   E-Mail
+  </th>
+  <td>
+   <a href='mailto:<%$ben_email%>'><%$ben_email%></a>
+  </td>
+ </tr>
+</table>

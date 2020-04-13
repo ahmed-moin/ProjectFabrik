@@ -1,0 +1,108 @@
+<%args>
+$dbh
+$projektid
+$sel_zid => undef
+</%args>
+<%perl>
+
+  my $prz = $dbh->selectall_arrayref( <<"EOF" );
+   select prz_zid, prz_titel, prz_einheit,
+          prz_kostenvergleich, prz_personentagevergleich,
+          prz_sachkostenvergleich, prz_investitionsvergleich
+     from projektziel
+    where prz_pid = $projektid
+      and prz_zid <> 0
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Projektziel' &>
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+   Titel
+  </th>
+  <th bgcolor='#ccccff'>
+   Einheit
+  </th>
+  <th bgcolor='#ccccff'>
+   Kostenvergleich
+  </th>
+ </tr>
+
+ <%perl>
+
+  foreach (@$prz)
+  {
+    my ($prz_zid, $prz_titel, $prz_einheit,
+        $prz_kostenvergleich, $prz_personentagevergleich,
+        $prz_sachkostenvergleich, $prz_investitionsvergleich) = @$_;
+
+    if ($prz_zid == $sel_zid)
+    {
+      $m->comp( '.edit', values => $_ );
+      next;
+    }
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_zid' value='<%$prz_zid%>'>
+  </td>
+  <td>
+   <%$prz_titel%>
+  </td>
+  <td>
+   <%$prz_einheit%>
+  </td>
+  <td align='center'>
+   <%$prz_kostenvergleich ? 'X' : ''%>
+  </td>
+ </tr>
+
+% }
+
+% unless ($sel_zid) {
+ <& '.edit' &>
+% }
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+
+<%def .edit>
+<%args>
+@values => ()
+</%args>
+<%perl>
+
+  my ($prz_zid, $prz_titel, $prz_einheit, $prz_kostenvergleich) = @values;
+
+</%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+% if ($prz_zid) {
+   <input type='hidden' name='prz_zid' value='<%$prz_zid%>'>
+% }
+  </td>
+  <td>
+   <input type='text' name='prz_titel' size='20' maxlength='80'
+     value='<%$prz_titel%>'>
+   <& '/setfocus', name => 'prz_titel' &>
+  </td>
+  <td>
+   <input type='text' name='prz_einheit' size='5' maxlength='12'
+     value='<%$prz_einheit%>'>
+  </td>
+  <td align='center'>
+   <input type='checkbox' name='prz_kostenvergleich'
+     <%$prz_kostenvergleich && ' checked'%>>
+  </td>
+ </tr>
+</%def>

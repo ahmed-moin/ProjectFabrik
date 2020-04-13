@@ -1,0 +1,33 @@
+--
+-- PostgreSQL database dump
+--
+
+SET client_encoding = 'SQL_ASCII';
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+SET search_path = public, pg_catalog;
+
+--
+-- Data for Name: aufkat; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (1, 'Aus- und Weiterbildung');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (2, 'Consulting');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (3, 'Design/Gestaltung');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (4, 'Einkauf/Logistik/Materialwirtschaft');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (5, 'IT/Telekommunikation');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (6, 'Marketing/PR');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (7, 'Medizinische Berufe');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (8, 'Naturwissenschaftliche Berufe');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (9, 'Organisation/Verwaltung/Recht');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (10, 'Personalwesen');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (12, 'Redaktion/Dokumentation');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (999, 'sonstige');
+INSERT INTO aufkat (auf_id, auf_bezeichnung) VALUES (11, 'Rechnungswesen/Finanzen/Controlling/Banking');
+
+
+--
+-- PostgreSQL database dump complete
+--
+

@@ -1,0 +1,126 @@
+<%args>
+$dbh
+$uid
+@menu => undef
+$lang => 'de'
+</%args>
+<%perl>
+
+  my (%auswert, %stdauswert);
+
+  # gibt es noch offene Fragen?
+  my $noant = $dbh->selectrow_array( <<"EOF" );
+    select count(*)
+      from assfrage
+     where fra_fid not in (
+       select ant_fid
+         from assantwort
+        where ant_uid = '$uid'
+          and ant_antwort is not null)
+       and fra_lang = '$lang'
+EOF
+
+  my $antwort_hidden = $dbh->selectrow_array(<<"EOF") if ($noant != 0);
+    select ben_assdel
+      from benutzer
+     where ben_uid='$uid'
+EOF
+
+  if ($noant == 0)
+  {
+    my $auswert = $dbh->selectall_arrayref( <<"EOF" );
+    select akt_kid, akt_name, fra_positiv, ant_antwort
+      from assantwort, assfrage, asskategorie
+     where akt_kid  = fra_kid
+       and fra_fid  = ant_fid
+       and fra_lang = '$lang'
+       and ant_uid  = '$uid'
+EOF
+
+    foreach (@$auswert)
+    {
+      my ($akt_kid, $akt_name, $fra_positiv, $ant_antwort) = @$_;
+      $auswert{$akt_kid} = { name  => $akt_name,
+                             sum   => 0,
+                             count => 0 } unless $auswert{$akt_kid};
+      $auswert{$akt_kid}->{sum} += $fra_positiv ? $ant_antwort : 10-$ant_antwort;
+      $auswert{$akt_kid}->{count}++;
+    }
+
+    my $anrede = $dbh->selectrow_array( <<"EOF");
+     select ben_anrede
+       from benutzer
+      where ben_uid = '$uid'
+EOF
+
+    %stdauswert = $anrede =~ /frau/i ?
+      ( s => 49.75,
+        r => 58.4,
+        v => 63.25,
+        b => 68.4,
+        g => 68.96552 )
+      :
+      ( s => 41.5,
+        r => 59.7,
+        v => 64,
+        b => 71.4,
+        g => 66.25 );
+  }
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Ergebnis</i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+% if ($noant == 0) {
+
+<%perl>
+  my (@werte1, @werte2);
+  foreach (qw(s r v b g))
+  {
+    push @werte1, $auswert{$_}->{sum} / $auswert{$_}->{count} * 10;
+    push @werte2, $stdauswert{$_};
+  }
+</%perl>
+
+<& '/asschart', werte1 => \@werte1, werte2 => \@werte2 &>
+
+<br>
+<br>
+<br>
+
+<table>
+ <tr>
+  <td>
+   <img src='/images/asslegende1.png'>
+  </td>
+  <td>
+   <i18n>Ihr Ergebnis</i18n>
+  </td>
+ </tr>
+ <tr>
+  <td>
+   <img src='/images/asslegende2.png'>
+  </td>
+  <td>
+   <i18n>Referenz</i18n>
+  </td>
+ </tr>
+</table>
+<br><br>
+<i18n>Das Ergebnis ist nun gespeichert. Wenn Sie es uns nicht zur Verf&uuml;gung stellen wollen, klicken Sie bitte auf 'Nein'.</i18n>
+<p class="button">
+<input type="submit" name="safeno" value="<i18n>Nein</i18n>">
+</p>
+% } elsif ($antwort_hidden == 1) {
+
+<p><i18n>Sie haben sich entschieden, Ihr Ergebnis f&uuml;r sich zubehalten.</i18n></p>
+
+% } else {   # $noant != 0
+
+<p><i18n>Bitte beantworten Sie auch noch die folgenden <%$noant%> Fragen.</i18n></p>
+
+% }
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,19 @@
+<%args>
+$dbh
+$uid
+$safeno  => undef
+</%args>
+<%perl>
+    if (defined $safeno) {
+      $dbh->do(<<"EOF");
+      delete from assantwort
+       where ant_uid='$uid'
+EOF
+
+      $dbh->do(<<"EOF");
+      update benutzer
+         set ben_assdel='t'
+       where ben_uid='$uid'
+EOF
+    }
+</%perl>

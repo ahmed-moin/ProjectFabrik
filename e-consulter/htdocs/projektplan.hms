@@ -1,0 +1,148 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Projektplan
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Januar 2001
+
+  Beschreibung
+    Verwaltung von Projekten
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Januar 2001   initiales Release
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%args>
+$projektid => undef
+$projektplan => undef
+</%args>
+<%attr>
+
+  tool       => 'projektplan'
+  titel      => 'Projektplan'
+  barcolor   => [255, 255, 0]
+  titel_img  => '/cgi-bin/titel?PROJEKTPLAN&amp;TOOL'
+  logo       => undef
+  defmaske   => 'login'
+  startmaske => 'projekte'
+  startmenu  => 'projekte'
+
+</%attr>
+%  #icon      => '/images/icon/umsetz.gif'
+%  #foto      => '/images/134-31.jpg'
+
+<%method getmenu>
+<%perl>
+  my @menu;
+
+  if ( $ARGS{projektid} )
+  {
+    my @menu_head =
+    (
+      { maske  => 'projekte',
+        label  => 'Projekt',
+        menu   => 'projekt' },
+    );
+
+    # Projekt geöffnet
+    if ($ARGS{projektplan})
+    {
+      # Projekt und Projektplan geöffnet
+      push @menu_head,
+      (
+        { maske  => 'todo',
+          label  => 'TODO',
+          menu   => 'todo' },
+        { maske  => 'teilprojekte',
+          label  => 'Teilprojekte',
+          menu   => 'teilprojekte' },
+        { maske  => 'aufgabenplanung',
+          label  => 'Aufgaben',
+          menu   => 'aufgaben' },
+        { maske  => 'verantwortlich_gesamt',
+          label  => 'interne Aufträge',
+          menu   => 'intauftrag' },
+        { maske  => 'budgetuebersicht',
+          label  => 'Budget',
+          menu   => 'budget' },
+        { maske  => 'angebot',
+          label  => 'Kundenangebot',
+          menu   => 'angebot' },
+        { maske  => 'aufwand_uebersicht',
+          label  => 'Aufwandsübersicht',
+          menu   => 'aufwand' },
+        { maske  => 'bomben',
+          label  => 'Bomben',
+          menu   => 'bomben' },
+        { maske  => 'projektsummary',
+          label  => 'Bericht',
+          menu   => 'bericht' },
+      );
+    }
+
+    push @menu_head,
+      (
+        { maske  => 'dokumentation',
+          label  => 'Dokumentation',
+          menu   => 'dokumentation' },
+        { maske  => 'projektteam',
+          label  => 'Projektteam',
+          menu   => 'projektteam' },
+      );
+
+    my @menu_footer =
+    (
+      { space  => 60 },
+      { aktion => 'projektschliessen',
+        label  => 'Projekt wechseln' },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+    my $ret = $m->comp('/getmenu', %ARGS,
+                       menu_head   => \@menu_head,
+                       menu_footer => \@menu_footer );
+    @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                 : ( @menu_head, @menu_footer );
+  }
+  elsif ($ARGS{sessid} )
+  {
+    # Projekt geöffnet, Projektplan noch nicht
+    @menu =
+    (
+      { maske  => 'projekte',
+        label  => 'Projekte' },
+      { maske  => 'projektuebersicht',
+        label  => 'Projektübersicht' },
+      { space  => 80 },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+  }
+  else
+  {
+    @menu = ( { maske => 'login',
+                label => 'Login' }
+            );
+  }
+
+  return @menu;
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+<%perl>
+  return [ ['projektplan', $ARGS{projektplan}],
+           ['tid',         $ARGS{tid}],
+           ['aid',         $ARGS{aid}] ];
+</%perl>
+</%method>
+
+<p align='right'>
+% if ($projektid) {
+pid=<%$projektid%>
+% }
+% if ($projektplan) {
+ppl=<%$projektplan%>
+% }
+</p>

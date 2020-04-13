@@ -1,0 +1,17 @@
+<%args>
+$width
+$start => 0
+$end
+$step_n
+$step_l => undef
+$unit => undef
+$arrow => 1
+</%args>
+<%perl>
+
+  use URI::Escape;
+  $unit   = uri_escape($unit)  if $unit;
+  $step_l = $step_n            unless $step_l;
+
+</%perl>
+<img src='/cgi-bin/scale?<% "$width&$start&$end&$step_n&$step_l" %><% $unit ? "&$unit" : '' %><% $arrow ? '' : '&arrow=0' %>'<% $unit ? " alt='$unit'" : '' %>\

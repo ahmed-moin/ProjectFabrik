@@ -1,0 +1,11 @@
+<%args>
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n> Soziale Kompetenz </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> In vielen wissenschaftlichen Definitionen ist die Dimension "soziale Kompetenz" sehr weit gefasst. Im Rahmen dieses Fragebogens bezieht sich diese Dimension jedoch hauptsächlich auf den Aspekt der Teamfähigkeit. Menschen mit hoher sozialer Kompetenz sind in der Lage, andere Teammitglieder leicht zu verstehen und so die Vielfalt der verschiedenen Charaktere als Chance zur Erreichung der Teamziele zu nutzen. Hinzu kommt meist eine sehr ausgeprägte Fähigkeit zur Konfliktbewältigung, wie z.B. unvoreingenommen über Meinungsverschiedenheiten diskutieren zu können und im Team zu einer Lösung zu finden. Menschen mit hohen Punktwerten im Bereich "soziale Kompetenz" sind daher meist ausgesprochen gute Teamplayer.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

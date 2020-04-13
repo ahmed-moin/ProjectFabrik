@@ -1,0 +1,235 @@
+<%args>
+$dbh
+$projektid => undef
+$projektplan => undef
+$oeffnen => undef
+$loeschen => undef
+$loeschen_ok => undef
+$ppl_loeschen => undef
+$oeffnen_akt => undef
+$oeffnen_neu => undef
+$neu => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(insert quote);
+  use Contavia qw(fehler);
+
+  if ($oeffnen_akt)
+  {
+    $ARGS{projektplan} = $m->comp('/get_projektplan',
+                                  dbh       => $dbh,
+                                  projektid => $projektid);
+
+    $ARGS{folgemaske} = 'projektplan';
+  }
+  elsif ($oeffnen_neu)
+  {
+    $ARGS{projektplan} = $m->comp('/get_projektplan',
+                                  dbh       => $dbh,
+                                  projektid => $projektid,
+                                  neu       => 1);
+
+    $ARGS{folgemaske} = 'projektplan';
+  }
+  elsif ($neu)
+  {
+    $ARGS{projektplan} = $dbh->selectrow_array( <<"EOF" ) || 1;
+      select max(ppl_nummer) + 1
+        from projektplan
+       where ppl_pid = $projektid
+EOF
+
+    insert ($dbh, 'projektplan',
+      { ppl_pid     => $projektid,
+        ppl_nummer  => $ARGS{projektplan},
+        ppl_datum   => Contavia::Date::current->qpgdate,
+        ppl_text    => quote('') } );
+
+    if ($ARGS{projektplan} > 1)
+    {
+      my $projektplan = $ARGS{projektplan};
+      my $projektplan_vor = $projektplan - 1;
+
+      # Teilprojekte übernehmen
+      $dbh->do( <<"EOF" );
+        select tpl_tid, tpl_taid, tpl_beschreibung,
+               tpl_start, tpl_ende
+          into temp table teilprojektplan_temp
+          from teilprojektplan
+         where tpl_pid     = $projektid
+           and tpl_ppl     = $projektplan_vor
+EOF
+
+      $dbh->do( <<"EOF" );
+        insert into teilprojektplan (tpl_pid, tpl_ppl,
+               tpl_tid, tpl_taid, tpl_beschreibung,
+               tpl_start, tpl_ende)
+         select $projektid, $projektplan, t.*
+           from teilprojektplan_temp t
+EOF
+
+      $dbh->do("drop table teilprojektplan_temp");
+
+      # Aufgaben übernehmen
+      $dbh->do( <<"EOF" );
+        select apl_tid, apl_aid, apl_startdatum, apl_endedatum,
+               apl_dauer, apl_beschreibung
+          into aufgabenplan_temp
+          from aufgabenplan
+         where apl_pid = $projektid
+           and apl_ppl = $projektplan_vor
+EOF
+
+      $dbh->do( <<"EOF" );
+        insert into aufgabenplan (apl_pid, apl_ppl,
+               apl_tid, apl_aid, apl_startdatum, apl_endedatum,
+               apl_dauer, apl_beschreibung)
+         select $projektid, $projektplan, a.*
+           from aufgabenplan_temp a
+EOF
+
+      $dbh->do("drop table aufgabenplan_temp");
+
+      # Budgetplan übernehmen
+      $dbh->do( <<"EOF" );
+        select bpl_tid, bpl_aid, bpl_datum,
+               bpl_betrag, bpl_personentage, bpl_sachkosten, bpl_investition
+          into budgetplan_temp
+          from budgetplan
+         where bpl_pid = $projektid
+           and bpl_ppl = $projektplan_vor
+EOF
+
+      $dbh->do( <<"EOF" );
+        insert into budgetplan (bpl_pid, bpl_ppl,
+               bpl_tid, bpl_aid, bpl_datum,
+               bpl_betrag, bpl_personentage, bpl_sachkosten, bpl_investition)
+         select $projektid, $projektplan, b.*
+           from budgetplan_temp b
+EOF
+
+      $dbh->do("drop table budgetplan_temp");
+
+      # Teilprojektziele übernehmen
+      $dbh->do( <<"EOF" );
+        select tpz_zid, tpz_tid, tpz_ziel
+          into teilprojektziel_temp
+          from teilprojektziel
+         where tpz_pid = $projektid
+           and tpz_ppl = $projektplan_vor
+EOF
+
+      $dbh->do( <<"EOF" );
+        insert into teilprojektziel (tpz_pid, tpz_ppl,
+               tpz_zid, tpz_tid, tpz_ziel)
+         select $projektid, $projektplan, b.*
+           from teilprojektziel_temp b
+EOF
+
+      $dbh->do("drop table teilprojektziel_temp");
+
+      # aggregierte Teilprojekte übernehmen
+      $dbh->do( <<"EOF" );
+        select tpa_taid, tpa_titel
+          into teilprojektagg_temp
+          from teilprojektagg
+         where tpa_pid = $projektid
+           and tpa_ppl = $projektplan_vor
+EOF
+
+      $dbh->do( <<"EOF" );
+        insert into teilprojektagg (tpa_pid, tpa_ppl,
+               tpa_taid, tpa_titel)
+         select $projektid, $projektplan, b.*
+           from teilprojektagg_temp b
+EOF
+
+      $dbh->do("drop table teilprojektagg_temp");
+    }
+
+    # Wir legen hier den Realisierungsgrad an, wenn er noch nicht existiert
+    my $realisierungsgrad = $dbh->selectrow_array( "
+      select prz_zid
+        from projektziel
+       where prz_pid = $projektid and prz_zid = 0" );
+
+    unless ( defined($realisierungsgrad) )
+    {
+      $dbh->insert('projektziel',
+        { prz_pid => $projektid,
+          prz_zid => 0,
+          prz_titel => '\'Realisierungsgrad\'',
+          prz_einheit => '\'%\'',
+          prz_kostenvergleich => '\'f\'',
+          prz_personentagevergleich => '\'f\'',
+          prz_sachkostenvergleich => '\'f\'',
+          prz_investitionsvergleich => '\'f\'' } );
+    }
+
+    $ARGS{folgemaske} = 'projektbeschreibung';
+  }
+  elsif ($oeffnen)
+  {
+    $ARGS{folgemaske}  = 'projektplan';
+  }
+  elsif ($loeschen)
+  {
+    fehler('kein Projektplan ausgewählt') unless $projektplan;
+
+    my $ppl_auftrag = $dbh->selectrow_array( "
+      select ppl_auftrag
+        from projektplan
+       where ppl_pid    = $projektid
+         and ppl_nummer = $projektplan" );
+
+    fehler('ein beauftragter Projektplan kann nicht gelöscht werden') if ($ppl_auftrag);
+  }
+  elsif ($loeschen_ok)
+  {
+    $projektplan = $ppl_loeschen;
+
+    $dbh->do( "
+      delete from teilprojektagg
+       where tpa_pid = $projektid
+         and tpa_ppl = $projektplan" );
+
+    $dbh->do( "
+      delete from teilprojektziel
+       where tpz_pid = $projektid
+         and tpz_ppl = $projektplan" );
+
+    $dbh->do( "
+      delete from bombe
+       where bmb_pid = $projektid
+         and bmb_ppl = $projektplan");
+
+    $dbh->do( "
+      delete from budgetplan
+       where bpl_pid = $projektid
+         and bpl_ppl = $projektplan" );
+
+    $dbh->do( "
+      delete from aufgabenplan
+       where apl_pid = $projektid
+         and apl_ppl = $projektplan" );
+
+    $dbh->do( "
+      delete from teilprojektplan
+       where tpl_pid = $projektid
+         and tpl_ppl = $projektplan" );
+
+    $dbh->do( "
+      delete from projektplan
+       where ppl_pid = $projektid
+         and ppl_nummer = $projektplan");
+
+    $ARGS{projektplan} = undef;
+  }
+
+  $dbh->commit;
+
+  return \%ARGS;
+
+</%perl>

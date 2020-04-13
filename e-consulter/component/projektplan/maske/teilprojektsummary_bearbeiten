@@ -1,0 +1,71 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid
+$sel_datum
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # lese Teilprojekttitel
+  my $tpr_titel = $dbh->selectrow_array( "
+    select tpr_titel
+      from teilprojekt
+     where tpr_pid = $projektid
+       and tpr_tid = $tid" );
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # lese ausgewählten Bericht
+  my $pg_datum = ($sel_datum ? new Contavia::Date($sel_datum)
+                             : $current)->qpgdate;
+  my $brt_text = $dbh->selectrow_array( "
+    select brt_text
+      from tbericht
+     where brt_pid   = $projektid
+       and brt_tid   = $tid
+       and brt_datum = $pg_datum" );
+
+</%perl>
+
+<h1>Teilprojektsummary</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <input type='hidden' name='sel_datum'
+          value='<%new Contavia::Date($sel_datum)->cgiformat%>'>
+   <%new Contavia::Date($sel_datum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   <%$tpr_titel%>
+  </td>
+ </tr>
+</table>
+
+% $brt_text =~ s/\<br\>/\n/g;
+% $brt_text =~ s/\</&lt;/g;
+% $brt_text =~ s/\>/&gt;/g;
+
+<textarea name='brt_text' rows='15'><%$brt_text%></textarea>
+<& '/setfocus', name => 'brt_text' &>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='abbrechen' value='abbrechen'>
+</p>
+
+<& '/htmlhelp' &>

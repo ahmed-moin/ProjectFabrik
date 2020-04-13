@@ -1,0 +1,72 @@
+<%args>
+$dbh
+$projektid
+$atr_nummer => undef
+$sel_datum
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Date;
+
+  fehler('kein Auftrag ausgewählt') unless $atr_nummer;
+
+  $sel_datum = new Contavia::Date($sel_datum);
+  my $pgdate = $sel_datum->qpgdate;
+
+  my ($abr_realisierung, $abr_text, $abr_geprueft, $abr_fertigbis)
+         = $dbh->selectrow_array( "
+    select abr_realisierung, abr_text, abr_geprueft, abr_fertigbis
+      from auftragbericht
+     where abr_nummer = $atr_nummer
+       and abr_datum  = $pgdate" );
+
+</%perl>
+
+<h1>Mitarbeiterbericht zu Auftrag <%$atr_nummer%></h1>
+
+<table width='100%' border='1'>
+ <tr>
+  <th width='10%' class='label'>
+   Realisierungsgrad
+  </th>
+  <td>
+   <% defined($abr_realisierung) && "${abr_realisierung}%" %>
+  </td>
+ </tr>
+
+ <tr>
+  <th width='10%' class='label'>
+   Fertig bis
+  </th>
+  <td>
+   <% new Contavia::Date($abr_fertigbis)->preformat %>
+  </td>
+ </tr>
+
+ <tr>
+  <th width='10%' class='label'>
+   Text
+  </th>
+  <td><%$abr_text%></td>
+ </tr>
+
+ <tr>
+  <th width='10%' class='label'>
+   geprüft am
+  </th>
+  <td><%new Contavia::Date($abr_geprueft)->preformat%></td>
+ </tr>
+</table>
+
+<input type='hidden' name='atr_nummer' value='<%$atr_nummer%>'>
+<input type='hidden' name='sel_datum' value='<%$sel_datum->cgiformat%>'>
+
+<p class='button'>
+ <input type='submit' value='zurück zur Übersicht'>
+% if ($abr_geprueft) {
+ <input type='submit' name='ungeprueft' value='Prüfung zurücknehmen'>
+% } else {
+ <input type='submit' name='geprueft' value='geprüft ok'>
+% }
+</p>

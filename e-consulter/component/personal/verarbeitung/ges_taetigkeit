@@ -1,0 +1,147 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+
+$gta_lfdnr => undef
+$gta_art => undef
+$gbr_branche => undef
+$gpo_position => undef
+$gta_aufgabe => undef
+$gta_verguetungart => 0
+$gta_verguetung => undef
+$gta_ort => undef
+$gta_bemerkung => undef
+$gta => undef
+</%args>
+<%once>
+  my ($ins_gbr, $del_gbr, $ins_gpo, $del_gpo);
+</%once>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia::Date;
+use Contavia qw(fehler);
+
+$auswahl = $gta_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($gta_art)
+{
+  $ins_gbr = $dbh->prepare( <<"EOF" ) unless $ins_gbr;
+    insert into gesbra (gbr_benuid, gbr_gtalfdnr, gbr_branche)
+    values (?, ?, ?)
+EOF
+
+  $del_gbr = $dbh->prepare( <<"EOF" ) unless $del_gbr;
+    delete from gesbra
+     where gbr_benuid = ?
+       and gbr_gtalfdnr = ?
+EOF
+
+  $ins_gpo = $dbh->prepare( <<"EOF" ) unless $ins_gpo;
+    insert into gespos (gpo_benuid, gpo_gtalfdnr, gpo_position)
+    values (?, ?, ?)
+EOF
+
+  $del_gpo = $dbh->prepare( <<"EOF" ) unless $del_gpo;
+    delete from gespos
+     where gpo_benuid = ?
+       and gpo_gtalfdnr = ?
+EOF
+
+  $gbr_branche  = [$gbr_branche]  if $gbr_branche  && !ref($gbr_branche);
+  $gpo_position = [$gpo_position] if $gpo_position && !ref($gpo_position);
+
+  if ($gta_lfdnr)
+  {
+    $gta_verguetung =~ tr/\.,/,\./ if ($ARGS{lang} eq 'de');
+    $gta_verguetungart = undef if $gta_verguetungart eq '';
+    update( $dbh, 'gestaet',
+      { gta_benuid         => quote($uid),
+        gta_lfdnr          => $gta_lfdnr },
+      { gta_aufgabe        => $gta_aufgabe || 'null',
+        gta_verguetung     => quote($gta_verguetung),
+        gta_verguetungart  => $gta_verguetungart,
+        gta_ort            => quote($gta_ort),
+        gta_bemerkung      => quote($gta_bemerkung),
+        gta_art            => $gta_art } );
+
+    $del_gbr->execute($uid, $gta_lfdnr);
+    foreach (@$gbr_branche)
+    {
+      $ins_gbr->execute($uid, $gta_lfdnr, $_);
+    }
+
+    $del_gpo->execute($uid, $gta_lfdnr);
+    foreach (@$gpo_position)
+    {
+      $ins_gpo->execute($uid, $gta_lfdnr, $_);
+    }
+  }
+  else
+  {
+    $gta_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(gta_lfdnr) + 1
+       from gestaet
+      where gta_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'gestaet',
+      { gta_benuid         => quote($uid),
+        gta_lfdnr          => $gta_lfdnr,
+        gta_aufgabe        => $gta_aufgabe || 'null',
+        gta_verguetung     => quote($gta_verguetung),
+        gta_verguetungart  => $gta_verguetungart,
+        gta_ort            => quote($gta_ort),
+        gta_bemerkung      => quote($gta_bemerkung),
+        gta_art            => $gta_art } );
+
+    foreach (@$gbr_branche)
+    {
+      $ins_gbr->execute($uid, $gta_lfdnr, $_);
+    }
+
+    foreach (@$gpo_position)
+    {
+      $ins_gpo->execute($uid, $gta_lfdnr, $_);
+    }
+  }
+
+  $ARGS{sel_gta_lfdnr} = $gta ? undef : $gta_lfdnr;
+  $ARGS{gta_art} = undef if $gta;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from gespos
+    where gpo_benuid = '$uid'
+      and gpo_gtalfdnr = $auswahl
+EOF
+  $dbh->do( <<"EOF" );
+   delete from gesbra
+    where gbr_benuid = '$uid'
+      and gbr_gtalfdnr = $auswahl
+EOF
+  $dbh->do( <<"EOF" );
+   delete from gestaet
+    where gta_benuid = '$uid'
+      and gta_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_gta_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

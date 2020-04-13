@@ -1,0 +1,203 @@
+<%args>
+$dbh
+$projektid
+$sessid
+</%args>
+<%perl>
+
+  my @treffer;
+
+  my $sth = $dbh->prepare( <<"EOF" );
+    select ben_uid, ben_anrede, ben_titel, ben_vorname, ben_nachname
+      from benutzer
+     where ben_status = 1
+       and not ben_blacklisted
+EOF
+
+  my $sth_rol = $dbh->prepare( <<"EOF" );
+    select rol_mitarbeiter
+      from rolle
+     where rol_pid = ?
+       and rol_uid = ?
+EOF
+
+  $sth->execute;
+  my %args = %ARGS;
+  while (my @ben = $sth->fetchrow_array)
+  {
+    $args{uid} = $ben[0];
+
+    my $punkte = $m->comp('.punkte', %args);
+
+    if ($punkte)
+    {
+      my $rol = $dbh->selectrow_array($sth_rol, {}, $projektid, $ben[0]);
+      my @satz = ($punkte, @ben, $rol);
+      push @treffer, \@satz if ($punkte);
+    }
+  }
+
+</%perl>
+
+% if (@treffer) {
+   <table border='1' width='100%'>
+    <tr>
+     <th bgcolor='#ccccff'>
+     </th>
+     <th bgcolor='#ccccff'>
+      Punkte
+     </th>
+     <th bgcolor='#ccccff'>
+      Person
+     </th>
+     <th bgcolor='#ccccff'>
+      Mitarbeiter
+     </th>
+    </tr>
+
+%   foreach (sort { $b->[0] <=> $a->[0] } @treffer) {
+%     my ($punkte, $ben_uid, $ben_anrede, $ben_titel, $ben_vorname,
+%         $ben_nachname, $rol_mitarbeiter) = @$_;
+    <tr>
+     <td bgcolor='#cccccc'>
+% unless ($rol_mitarbeiter) {
+      <input type='checkbox' name='rol_uid' value='<%$ben_uid%>'>
+% }
+     </td>
+     <td>
+      <%$punkte%>
+     </td>
+     <td>
+      <a href='/person/<%$sessid%>/<%$ben_uid%>/kontakt.hms'
+       target=_blank><%$ben_uid%></a>
+       <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%>
+     </td>
+     <td align='center'>
+      <% $rol_mitarbeiter ? '<b>X</b>' : '&nbsp;' %>
+     </td>
+    </tr>
+%   }
+   </table>
+
+  <p class='button'>
+   <input type='submit' name='aufnehmen' value='in das Projekt aufnehmen'>
+   <input type='submit' name='neuesuche' value='neue Suche'>
+  </p>
+
+% } else {  # keine Treffer
+
+  <p>leider keine Treffer gefunden</p>
+
+  <p class='button'>
+   <input type='submit' name='neuesuche' value='neue Suche'>
+  </p>
+
+% }
+
+<%def .punkte>
+ <%args>
+  $dbh
+  $uid
+  @auskat     => ()
+  @qual       => ()
+  @branche    => ()
+  @art        => ()
+  @pos        => ()
+  $verguetung => ()
+ </%args>
+ <%perl>
+  my $punkte = 0;
+
+  if (@auskat)
+  {
+    # schaun mir mal, ob der die richtige Ausbildung hat
+    my $auskat = join(', ', @auskat);
+    my $count = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from ausbildung
+      where aus_benuid = '$uid'
+        and aus_katid in ($auskat)
+EOF
+    $punkte += 5 if $count > 0;
+  }
+
+  if (@qual)
+  {
+    my $qual = join(', ', @qual);
+
+    # zähle Qualifikationen, die nicht gewichtet werden
+    my $count = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from qualrank, qual
+      where qra_benuid = '$uid'
+        and qra_qualid in ($qual)
+        and qua_id = qra_qualid
+        and not qua_rank
+EOF
+    $punkte += $count * 5;
+
+    # bewerte Qualifikationen, die gewichtet werden
+    my $sum = $dbh->selectrow_array( <<"EOF" );
+     select sum(qra_rank)
+       from qualrank, qual
+      where qra_benuid = '$uid'
+        and qra_qualid in ($qual)
+        and qua_id = qra_qualid
+        and qua_rank
+EOF
+    $punkte += $sum;
+  }
+
+  if (@branche)
+  {
+    my $branche = join(', ', @branche);
+
+    # schaun mir mal nach Branchenerfahrung
+    my $count_erfahrung = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from bistaet
+      where bta_benuid = '$uid'
+        and bta_branche in ($branche)
+EOF
+    $punkte += 10 if $count_erfahrung > 0;
+
+    # schaun mir mal ob er nach dieser Branche sucht
+    my $count_ges = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from gestaet
+      where gta_benuid = '$uid'
+        and gta_branche in ($branche)
+EOF
+    $punkte += 5 if $count_ges > 0;
+  }
+
+  if (@art)
+  {
+    my $art = join(', ', @art);
+
+    my $count = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from gestaet
+      where gta_benuid = '$uid'
+        and gta_art in ($art)
+EOF
+    $punkte += 10 if $count > 0;
+  }
+
+  if (@pos)
+  {
+    my $pos = join(', ', @pos);
+
+    my $count = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from bistaet
+      where bta_benuid = '$uid'
+        and bta_position in ($pos)
+EOF
+    $punkte += 2 if $count > 0;
+  }
+
+  return $punkte;
+
+ </%perl>
+</%def>

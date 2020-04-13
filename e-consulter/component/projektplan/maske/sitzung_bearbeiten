@@ -1,0 +1,93 @@
+<%args>
+$dbh
+$projektid
+$sid => undef
+</%args>
+<%perl>
+
+  my $sit = $dbh->selectall_arrayref( "
+    select sit_sid, sit_titel, sit_datum
+      from sitzung
+     where sit_pid = $projektid" );
+
+  my ($sit_titel, $sit_datum, $sit_ort, $sit_text)
+    = $dbh->selectrow_array( "
+    select sit_titel, sit_datum, sit_ort, sit_text
+      from sitzung
+     where sit_pid = $projektid
+       and sit_sid = $sid" ) if $sid > 0;
+
+</%perl>
+
+<h1>Sitzung</h1>
+
+<table width='100%'>
+ <tr>
+  <th class='label' width='10%'>
+   Sitzung
+  </th>
+  <td>
+   <& '/select', name     => 'sid',
+                 values   => [ (map {
+
+                   my ($sit_sid, $sit_titel, $sit_datum) = @$_;
+
+                   $sit_datum = new Contavia::Date($sit_datum)->format;
+                   [ $sit_sid, "$sit_datum / $sit_titel" ];
+
+                 } @$sit),
+                 [ -1, 'neu' ] ],
+                 selected => $sid &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <& '/inputdatum', name  => 'sit_datum',
+                     value => $sit_datum &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Titel
+  </th>
+  <td>
+   <input type='text' name='sit_titel' value='<%$sit_titel%>'
+          size='30' maxlength='80'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Ort
+  </th>
+  <td>
+   <input type='text' name='sit_ort' value='<%$sit_ort%>'
+          size='30' maxlength='80'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Bericht
+  </th>
+  <td>
+%   $sit_text =~ s/\<br\>/\n/g;
+%   $sit_text =~ s/\</&lt;/g;
+%   $sit_text =~ s/\>/&gt;/g;
+   <textarea name='sit_text' rows='20' cols='60'><%$sit_text%></textarea>
+  </td>
+ </tr>
+
+</table>
+
+<p class='label'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='abbrechen' value='abbrechen'>
+</p>
+
+<& '/htmlhelp' &>

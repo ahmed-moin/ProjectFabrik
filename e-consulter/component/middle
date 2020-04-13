@@ -1,0 +1,58 @@
+<%args>
+$maske => undef
+$tool => undef
+$icon_file => 'images/iconptool.gif'
+$foto_file => 'images/foto.gif'
+$logo => 'images/logo.gif'
+$action => undef
+$actiontype => 'post'
+$foto_link => '/'
+%hidden => ()
+$nopics => undef
+</%args>
+<%perl>
+
+  my ($name, $value);
+
+</%perl>
+    </td>
+
+    <td valign='top'>
+      <table border='0' height='100%' width='100%'>
+% unless ($nopics) {
+       <tr>
+    <td width='800' height='0' class='bild'>
+     <img src='<% $icon_file %>'>
+    </td>
+
+    <td class=bild>
+     <img src='<% $foto_file %>'>
+    </td>
+
+    <td class=bild>
+     <a href="<%$foto_link%>"><img src='<%$logo%>' border='0'></a>
+    </td>
+   </tr>
+
+% }
+   <tr>
+    <td colspan='3' height='100%' class='maske'
+        style='font-family:arial,helvetica,sans-serif'>
+% if ($action) {
+     <form enctype='multipart/form-data' method=<% $actiontype %> action=<% $action %>>
+% } else {
+     <form enctype='multipart/form-data' method=<% $actiontype %>>
+% }
+
+      <input type='hidden' name='folgemaske'>
+      <input type='hidden' name='aktion'>
+% if ($tool) {
+      <input type='hidden' name='tool' value='<% $tool %>'>
+% }
+% while ( ($name, $value) = each(%hidden) ) {
+      <input type='hidden' name='<% $name %>' value='<% $value %>'>
+% }
+      &nbsp;
+
+<!-------------------------------- Maske -------------------------------->
+

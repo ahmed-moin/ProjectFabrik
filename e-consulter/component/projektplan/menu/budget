@@ -1,0 +1,26 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'budgetuebersicht',
+             dlabel   => "Personalkosten\nanzeigen",
+             menu     => 'budget' },
+           { maske    => 'budgetuebersicht_sk',
+             dlabel   => "Sachkosten\nanzeigen",
+             menu     => 'budget' },
+           { maske    => 'budgetuebersicht_iv',
+             dlabel   => "Investment\nanzeigen",
+             menu     => 'budget' },
+           { maske    => 'teilprojekt_budget',
+             dlabel   => "Budget\nbearbeiten",
+             menu     => 'budget' },
+           { maske    => 'budgetplan',
+             dlabel   => "Budgetplan\nbearbeiten",
+             menu     => 'budget' },
+           @$menu_footer
+         ];
+
+</%perl>

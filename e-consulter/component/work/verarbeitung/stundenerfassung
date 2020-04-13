@@ -1,0 +1,109 @@
+<%args>
+$dbh
+$projektid
+$uid
+$speichern => undef
+$freigeben => undef
+$allesfreigeben => undef
+
+$loeschen => undef
+$loeschen_ok => undef
+$loeschen_key => undef
+
+$tae_key => undef
+$tag => undef
+$stunden => undef
+$auftrag => undef
+$beschreibung => undef
+$datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(quote);
+  use Contavia qw(fehler);
+
+  if ($speichern || $freigeben)
+  {
+    fehler("<i18n>Monatstag fehlt</i18n>")           unless $tag;
+    fehler("<i18n>'Stunden' nicht angegeben</i18n>") unless $stunden;
+    fehler("<i18n>'Stunden' muß > 0 sein</i18n>")    unless $stunden > 0;
+    fehler("<i18n>Auftrag nicht angegeben</i18n>")   unless $auftrag;
+
+    $datum = new Contavia::Date($datum);
+    $datum->tag($tag);
+    my $current = Contavia::Date::current;
+
+    $stunden =~ s/,/\./ if ($ARGS{lang} eq 'de');
+
+    if ($tae_key =~ /(\d+)-(\d+)/ )
+    {
+      my ($auftrag, $lfdnr) = ($1, $2);
+
+      # Änderung
+      $dbh->update('taetigkeit',
+        { tae_auftrag       => $auftrag,
+          tae_lfdnr         => $lfdnr },
+        { tae_uid           => quote($uid),
+          tae_datum         => $datum->qpgdate,
+          tae_stunden       => $stunden,
+          tae_beschreibung  => quote($beschreibung),
+          tae_erfasst       => $current->qpgdate,
+          tae_freigabedatum => $freigeben && $current->qpgdate} );
+    }
+    else
+    {
+      # neuer Eintrag
+      my $lfdnr = $dbh->selectrow_array("
+       select max(tae_lfdnr) + 1
+         from taetigkeit
+        where tae_auftrag = $auftrag" ) || 1;
+
+      $dbh->insert('taetigkeit',
+        { tae_uid           => quote($uid),
+          tae_datum         => $datum->qpgdate,
+          tae_lfdnr         => $lfdnr,
+          tae_auftrag       => $auftrag,
+          tae_stunden       => $stunden,
+          tae_beschreibung  => quote($beschreibung),
+          tae_erfasst       => $current->qpgdate,
+          tae_freigabedatum => $freigeben && $current->qpgdate} );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($allesfreigeben)
+  {
+    my $current = Contavia::Date::current;
+    $datum = new Contavia::Date($datum);
+    $datum->tag(1);
+    my $datum_bis = $datum->naechster_monat->voriger_tag;
+
+    $dbh->do( <<"EOF", {}, $current->qpgdate, $datum->qpgdate, $datum_bis->qpgdate );
+     update taetigkeit
+        set tae_freigabedatum = ?
+      where tae_uid   = '$uid'
+        and tae_datum between ? and ?
+EOF
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    $ARGS{pos} = $tae_key;
+    return \%ARGS;
+  }
+  elsif ($loeschen_ok)
+  {
+    $loeschen_key =~ /(\d+)-(\d+)/;
+    my ($auftrag, $lfdnr) = ($1, $2);
+
+    $dbh->do( "
+      delete from taetigkeit
+       where tae_uid     = '$uid'
+         and tae_auftrag = $auftrag
+         and tae_lfdnr   = $lfdnr" );
+
+    $dbh->commit;
+  }
+
+</%perl>

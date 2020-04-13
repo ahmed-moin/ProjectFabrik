@@ -1,0 +1,22 @@
+<%args>
+$width => 50
+@start
+@end
+$lang => undef
+</%args>
+<%perl>
+
+  my ($start_mm, $start_jj) = @start;
+  my ($end_mm,   $end_jj)   = @end;
+
+  return unless ($end_jj > $start_jj || $end_mm > $start_mm);
+
+  my $start = sprintf("%02d%04d", $start_mm, $start_jj);
+  my $end   = sprintf("%02d%04d", $end_mm,   $end_jj);
+
+</%perl>
+% if ($lang) {
+<img src='/cgi-bin/dateline?<% "$start&$end&$width&lang=$lang" %>'>\
+% } else {
+<img src='/cgi-bin/dateline?<% "$start&$end&$width" %>'>\
+% }

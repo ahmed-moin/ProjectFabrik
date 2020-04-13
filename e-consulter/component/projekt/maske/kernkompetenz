@@ -1,0 +1,127 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+<%once>
+
+</%once>
+<%perl>
+
+</%perl>
+
+ <& '/masketitel', titel => 'fachliche Kernkompetenz',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p><i18n>Welche fachlichen Kernkompetenzen sollen im Team vorhanden sein?</i18n></p>
+
+ <table>
+ <& '.baum', projektid => $projektid,
+             dbh => $dbh &>
+ </table>
+
+ <input type='submit' name='loeschen' value='<i18n>Auswahl l&ouml;schen</i18n>'>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>
+
+
+
+%# Komponente Baum
+
+<%def .baum>
+
+ <%args>
+  $projektid
+  $dbh
+  $oberid => undef
+  $oberbezeichnung => undef
+  $level => 0
+ </%args>
+
+ <%perl>
+
+  # lese eingegebene Qualifikationen dieser Ebene
+
+  my $sql = "
+   select pqa_qualid, qua_bezeichnung, qua_rank
+     from prjqual, qual
+    where pqa_pid = $projektid
+      and pqa_qualid = qua_id";
+  $sql .= defined ($oberid) ? " and qua_oberid = $oberid"
+                            : " and qua_oberid is null";
+  $sql .= ' order by pqa_qualid';
+  my $pqa = $dbh->selectall_arrayref($sql);
+
+  # lese weitere Qualifikationen, die der Benutzer nicht ausgewählt hat
+
+  $sql = "select qua_id, qua_bezeichnung
+     from qual
+    where not exists (
+      select 1
+        from prjqual
+       where pqa_pid = $projektid
+         and pqa_qualid = qua_id)";
+  $sql .= defined ($oberid) ? " and qua_oberid = $oberid"
+                            : " and qua_oberid is null";
+  my $qua = $dbh->selectall_arrayref($sql);
+
+  # Wir geben jetzt zeilenweise die Qualifikationen mit Ranking aus, die der
+  # Benutzer bereits eingegeben hat
+
+  foreach (@$pqa)
+  {
+    my ($pqa_qualid, $qua_bezeichnung, $qua_rank) = @$_;
+    </%perl>
+
+    <tr>
+     <td>
+      <input type='radio' name='auswahl' value='<%$pqa_qualid%>'>
+      <input type='hidden' name='pqa_qualid' value='<%$pqa_qualid%>'>
+     </td>
+
+     <td>
+      <& '/bar', width => $level * 15,
+                 height => 5,
+                 color => [255, 255, 255]
+      &><img src='/images/20x20ar.gif'><%$qua_bezeichnung%>
+     </td>
+    </tr>
+
+%
+%   # das gleiche machen wir rekursiv für untergeordnete Kategorien
+%
+    <& '.baum', projektid => $projektid,
+                dbh => $dbh,
+                oberid => $pqa_qualid,
+                oberbezeichnung => $qua_bezeichnung,
+                level => $level + 1 &>
+    <%perl>
+
+  } # foreach (@$qra)
+
+  if (@$qua)
+  {
+ </%perl>
+ <tr>
+  <td> </td>
+  <td>
+   <& '/bar', width => $level * 15, height => 5,
+      color => [255, 255, 255] &><img src='/images/20x20ar.gif'><select
+      name='pqa_qualid_new'
+      size='1'
+      style='width:180px'
+      onChange='document.forms[0].submit()'>
+    <option value='0'>(<%$oberbezeichnung || '<i18n>Hauptkategorie</i18n>'%>)
+%   foreach (@$qua) {
+%     my ($qua_id, $qua_bezeichnung) = @$_;
+    <option value='<%$qua_id%>'><%$qua_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+ <%perl>
+  }
+ </%perl>
+
+</%def>

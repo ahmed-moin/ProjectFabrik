@@ -1,0 +1,85 @@
+<%args>
+$dbh
+$projektid
+$angebot_erstellen => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(insert quote select_hash);
+  use Contavia::Date;
+
+  if ($angebot_erstellen)
+  {
+    # ermittele aktuellen Projektplan
+    my $projektplan = $dbh->selectrow_array( <<"EOF" );
+      select max(ppl_version)
+        from projektplan
+       where ppl_pid = $projektid
+         and ppl_freigabedatum is not null
+EOF
+
+    # wenn es keinen freigegebenen Projektplan gibt, dann lese den neuesten
+    $projektplan = $dbh->selectrow_array( <<"EOF" ) unless $projektplan;
+      select max(ppl_version)
+        from projektplan
+       where ppl_pid = $projektid
+EOF
+
+    # Angebotsnummer generieren
+    my $angebot = $ARGS{sel_ang} = $ARGS{angebot} = $dbh->selectrow_array( <<"EOF" ) || 1;
+       select max(ang_nummer) + 1
+         from angebot
+        where ang_pid = $projektid
+EOF
+
+    # geplantes Budget lesen
+    my $sth_bpl = $dbh->prepare( <<"EOF" );
+     select bpl_tid, sum(bpl_betrag), sum(bpl_personentage)
+       from budgetplan
+      where bpl_pid = $projektid
+        and bpl_version = $projektplan
+      group by bpl_tid
+EOF
+
+    # bereits im Auftrag enthaltenes Budget lesen
+    my %bud = select_hash( $dbh, <<"EOF" );
+     select bud_tid, sum(bud_betrag), sum(bud_personentage)
+       from budget, angebot
+      where bud_pid = $projektid
+        and ang_pid = bud_pid
+        and ang_nummer = bud_angebot
+        and ang_auftragsdatum is not null
+      group by bud_tid
+EOF
+
+    insert($dbh, 'angebot',
+      { ang_pid    => $projektid,
+        ang_nummer => $angebot,
+        ang_datum  => Contavia::Date::current->qpgdate,
+        ang_text   => quote('') } );
+
+    $sth_bpl->execute;
+    while ( my $row = $sth_bpl->fetch)
+    {
+      my ($bpl_tid, $bpl_betrag, $bpl_personentage) = @$row;
+      my $bud = $bud{$bpl_tid};
+      my ($bud_betrag, $bud_personentage) = @$bud if $bud;
+      my $betrag       = $bpl_betrag       - $bud_betrag;
+      my $personentage = $bpl_personentage - $bud_personentage;
+      insert($dbh, 'budget',
+        { bud_pid          => $projektid,
+          bud_tid          => $bpl_tid,
+          bud_angebot      => $angebot,
+          bud_betrag       => $betrag,
+          bud_personentage => $personentage } );
+    }
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'angebot';
+    $ARGS{menu} = 'angebot';
+  }
+
+  return \%ARGS;
+
+</%perl>

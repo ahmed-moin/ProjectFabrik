@@ -1,0 +1,257 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+</%args>
+<%once>
+
+  use Contavia::Db qw(select_hash);
+  use Contavia qw(formatnumber);
+
+</%once>
+<%perl>
+
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+   select tpr_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpr_pid = $projektid
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+      and tpl_ppl = $projektplan
+EOF
+
+  my %atr = select_hash( $dbh, <<"EOF" );
+   select atr_tid, sum(atr_personentage * atr_tagessatz),
+                   sum(atr_personentage * atr_btagessatz),
+                   sum(atr_personentage),
+                   sum(atr_sachkosten), sum(atr_investition)
+     from auftrag
+    where atr_pid = $projektid
+    group by atr_tid
+EOF
+
+  my %bpl = select_hash( $dbh, <<"EOF" );
+   select bpl_tid,
+          sum(bpl_betrag), sum(bpl_personentage),
+          sum(bpl_sachkosten), sum(bpl_investition)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+    group by bpl_tid
+EOF
+
+</%perl>
+
+<h1>Aufträge - Gesamtübersicht</h1>
+
+<table>
+ <tr>
+  <th>
+   Währung
+  </th>
+  <td>
+   <%$waehrung%>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td rowspan='2' bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' rowspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th colspan='4' bgcolor='#ccccff'>
+   Budgetplan
+  </th>
+  <th colspan='5' bgcolor='#ccccff'>
+   Auftrag
+  </th>
+ </tr>
+ <tr>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Personal
+  </th>
+  <th bgcolor='#ccccff'>
+   Sach
+  </th>
+  <th bgcolor='#ccccff'>
+   Invest
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Kunde
+  </th>
+  <th bgcolor='#ccccff'>
+   Mitarbeiter
+  </th>
+  <th bgcolor='#ccccff'>
+   Sach
+  </th>
+  <th bgcolor='#ccccff'>
+   Invest
+  </th>
+ </tr>
+
+ <%perl>
+  my %sum;
+  foreach (@$tpr)
+  {
+    my ($tpr_tid, $tpr_titel) = @$_;
+    my ($auftragssumme, $budgetsumme, $personentage,
+        $sachkosten, $investition) = $atr{$tpr_tid} && @{$atr{$tpr_tid}};
+    my ($bpl_betrag, $bpl_personentage,
+        $bpl_sachkosten, $bpl_investition) = $bpl{$tpr_tid} && @{$bpl{$tpr_tid}};
+
+    $sum{auftrag}          += $auftragssumme;
+    $sum{auftragbudget}    += $budgetsumme;
+    $sum{personentage}     += $personentage;
+    $sum{sachkosten}       += $sachkosten;
+    $sum{investition}      += $investition;
+    $sum{bpl_betrag}       += $bpl_betrag;
+    $sum{bpl_personentage} += $bpl_personentage;
+    $sum{bpl_sachkosten}   += $bpl_sachkosten;
+    $sum{bpl_investition}  += $bpl_investition;
+    my $bgcolor = getbgcolor($bpl_betrag, $budgetsumme);
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='tid'<%$tid == $tpr_tid && ' checked'%>
+          value='<%$tpr_tid%>'>
+  </td>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_investition, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($budgetsumme, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($auftragssumme, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($investition, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+% }
+%
+% my $bgcolor = getbgcolor($sum{bpl_personentage}, $sum{personentage});
+
+ <tr>
+  <th colspan='3' class='label' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{bpl_personentage}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{bpl_betrag}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{bpl_sachkosten}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{bpl_investition}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%$sum{personentage}%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($sum{auftragbudget}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($sum{auftrag}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <pre><%formatnumber($sum{investition}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>
+
+<p class='label'>
+ <input type='submit' name='bearbeiten' value='Teilprojektsicht'>
+</p>
+
+<h2>Legende:</h2>
+
+<table>
+ <tr>
+  <td width='20' bgcolor='#aaffaa'>
+   &nbsp;
+  </td>
+  <td>
+   Budget ist nicht ausgeschöpft
+  </td>
+ </tr>
+
+ <tr>
+  <td bgcolor='#ffaaaa'>
+   &nbsp;
+  </td>
+  <td>
+   Budget ist überschritten
+  </td>
+ </tr>
+</table>
+
+<h2>Erläuterungen</h2>
+
+<h3>Budgetplan</h3>
+
+<p>
+Im Budgetplan wird das verplante Budget in diesem Projektplan dargestellt.
+Der Budgetplan ist für den Kunden nicht sichtbar. Dieser sieht das Budget,
+welches den Budgetplan decken muß.
+</p>
+
+<h3>Auftrag</h3>
+<p>
+Unter Auftrag ist die Summe aller Aufträge an Mitarbeiter zu sehen.
+Die Spalte "Kunde" enthält die vergebene Auftragssumme mit dem Tagessatz,
+welcher an den Kunden berechnet wird. Die Spalte "Mitarbeiter" enthält
+die Auftragssumme mit dem Tagessatz, welchen der Mitarbeiter erhält.
+</p>
+
+% $ARGS{tid} = undef;
+% return \%ARGS;
+
+<%once>
+  sub getbgcolor
+  {
+    my ($budget, $betrag) = @_;
+    return $budget - $betrag > 10  ? ' bgcolor=\'#aaffaa\'' :
+           $budget - $betrag < -10 ? ' bgcolor=\'#ffaaaa\'' : undef;
+  }
+</%once>

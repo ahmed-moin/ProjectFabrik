@@ -1,0 +1,52 @@
+<%args>
+$dbh
+$projektid
+$atr_uid => undef
+$atr_tid => undef
+$atr_aid => undef
+$atr_nummer => undef
+$kos_lfdnr => undef
+$kos_bbetrag => undef
+$speichern => undef
+$freigeben => undef
+$freigeben_alles => undef
+$sel_lfdnr => []
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    fehler('kein Auftrag ausgewählt') unless $atr_nummer;
+    fehler('keine Kosten zum bearbeiten geöffnet') unless $kos_lfdnr;
+
+    $dbh->update('kosten',
+      { kos_auftrag => $atr_nummer,
+        kos_lfdnr   => $kos_lfdnr },
+      { kos_bbetrag => $kos_bbetrag } );
+
+    $dbh->commit;
+  }
+  elsif ($freigeben)
+  {
+    $sel_lfdnr = [$sel_lfdnr] unless ref($sel_lfdnr);
+    foreach my $kos_lfdnr (@$sel_lfdnr)
+    {
+      $dbh->update( 'kosten',
+        { kos_auftrag => $atr_nummer,
+          kos_lfdnr => $kos_lfdnr },
+        { kos_geprueft => 'CURRENT_DATE' } );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($freigeben_alles)
+  {
+    $dbh->do( "
+     update kosten
+        set kos_geprueft = CURRENT_DATE
+      where kos_auftrag = $atr_nummer" );
+
+    $dbh->commit;
+  }
+
+</%perl>

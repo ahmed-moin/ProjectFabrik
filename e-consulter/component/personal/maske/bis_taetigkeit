@@ -1,0 +1,286 @@
+<%args>
+  @menu
+  $uid
+  $dbh
+  $sel_bta_lfdnr => undef
+</%args>
+<%once>
+  my ($bra, $pos, $auf);
+</%once>
+<%perl>
+  use Contavia::Date;
+
+  my $bta = $dbh->selectall_arrayref( <<"EOF" );
+    select bta_lfdnr, bta_branche, bta_position, bta_aufgabe,
+           bta_firma, bta_bemerkung, bta_datvon, bta_datbis,
+           bra_bezeichnung, pos_bezeichnung, auf_bezeichnung,
+           bta_nomonth
+      from bistaet
+       left outer join branche
+         on bta_branche  = bra_id
+       left outer join pos
+         on bta_position = pos_id
+       left outer join aufkat
+         on bta_aufgabe  = auf_id
+     where bta_benuid   = '$uid'
+     order by bta_datvon desc
+EOF
+
+  $bra = $dbh->selectall_arrayref( <<"EOF" ) unless $bra;
+    select bra_id, bra_bezeichnung
+      from branche
+     order by bra_id
+EOF
+
+  $pos = $dbh->selectall_arrayref( <<"EOF" ) unless $pos;
+    select pos_id, pos_bezeichnung
+      from pos
+     order by pos_id
+EOF
+
+  $auf = $dbh->selectall_arrayref( <<"EOF" ) unless $auf;
+    select auf_id, auf_bezeichnung
+      from aufkat
+     order by auf_id
+EOF
+
+  my @sel;
+</%perl>
+  <& '/masketitel', titel => 'bisheriger T&auml;tigkeitsbereich',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+  <table width="100%">
+   <%perl>
+     foreach (@$bta) {
+       my ($bta_lfdnr, $bta_branche, $bta_position, $bta_aufgabe,
+           $bta_firma, $bta_bemerkung, $bta_datvon, $bta_datbis,
+           $bra_bezeichnung, $pos_bezeichnung, $auf_bezeichnung, $bta_nomonth) = @$_;
+
+       if ($bta_lfdnr == $sel_bta_lfdnr) {
+         @sel = @$_;
+         next;
+       }
+
+       $bta_datvon = new Contavia::Date($bta_datvon);
+       $bta_datbis = new Contavia::Date($bta_datbis);
+   </%perl>
+   <tr>
+    <td>&nbsp;&nbsp;</td>
+    <th class='label'>
+     <i18n>Branche</i18n>
+    </th>
+    <td>
+     <%$bra_bezeichnung%>
+    </td>
+    <td width="180">
+      <input type="button" value='<i18n>l&ouml;schen</i18n>' onclick="javascript:del(<% $bta_lfdnr %>)">&nbsp;
+      <input type="button" value='<i18n>bearbeiten</i18n>' onclick="javascript:edit(<% $bta_lfdnr %>)">
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	   <i18n>Position</i18n>
+    </th>
+    <td colspan="2">
+     <%$pos_bezeichnung%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Aufgabe </i18n>
+    </th>
+    <td colspan="2">
+     <%$auf_bezeichnung%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Firma </i18n>
+    </th>
+    <td colspan="2">
+     <%$bta_firma%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Bemerkung </i18n>
+    </th>
+%   $bta_bemerkung =~ s/\n/<br \/>/g;
+    <td colspan="2"><%$bta_bemerkung%></td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Datum </i18n>
+    </th>
+    <td colspan="2">
+     <% $bta_nomonth ? '' : $bta_datvon->monat() .'/' %><% $bta_datvon->jahr() %>
+     &ndash;
+%    if ($bta_datbis->is_null) {
+       heute
+%    } else {
+       <% $bta_nomonth ? '' : $bta_datbis->monat() .'/' %><% $bta_datbis->jahr() %>
+%    }
+    </td>
+   </tr>
+
+   <tr>
+    <td colspan="4">
+     <hr>
+    </td>
+   </tr>
+
+   <%perl>
+     }
+
+     my ($bta_lfdnr, $bta_branche, $bta_position, $bta_aufgabe,
+         $bta_firma, $bta_bemerkung, $bta_datvon, $bta_datbis,
+         $bra_bezeichnung, $pos_bezeichnung, $auf_bezeichnung, $bta_nomonth) = @sel;
+     $bta_datvon = new Contavia::Date($bta_datvon);
+     $bta_datbis = new Contavia::Date($bta_datbis);
+   </%perl>
+
+   <tr>
+    <td>
+     <a name="editmark"></a>
+%    if ($bta_lfdnr) {
+     <input type='hidden' name='bta_lfdnr' value='<%$bta_lfdnr%>'>
+%    }
+    </td>
+    <th class='label'>
+	<i18n> Branche </i18n>
+    </th>
+    <td>
+     <select name='bta_branche'>
+      <option>
+%     foreach (@$bra) {
+%       my ($bra_id, $bra_bezeichnung) = @$_;
+      <option value='<%$bra_id%>'<%$bta_branche == $bra_id ? ' selected' : ''%>><%$bra_bezeichnung%>
+%     }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Position </i18n>
+    </th>
+    <td>
+     <select name='bta_position'>
+      <option>
+%     foreach (@$pos) {
+%       my ($pos_id, $pos_bezeichnung) = @$_;
+      <option value='<%$pos_id%>'<%$bta_position == $pos_id ? ' selected' : ''%>><%$pos_bezeichnung%>
+%     }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Aufgabe </i18n>
+    </th>
+    <td>
+     <select name='bta_aufgabe'>
+      <option>
+%     foreach (@$auf) {
+%       my ($auf_id, $auf_bezeichnung) = @$_;
+      <option value='<%$auf_id%>'<%$bta_aufgabe == $auf_id ? ' selected' : ''%>><%$auf_bezeichnung%>
+%     }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Firma </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='40'
+            maxlength='80'
+            name='bta_firma'
+            value='<%$bta_firma%>'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Bemerkung </i18n>
+    </th>
+    <td>
+     <textarea name="bta_bemerkung" rows="15" cols="75"><%$bta_bemerkung%></textarea>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Datum </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='2'
+            maxlength='2'
+            name='bta_datvon_monat'
+            value='<% $bta_nomonth ? '' : $bta_datvon->monat() %>'>/
+     <input type='text'
+            size='4'
+            maxlength='4'
+            name='bta_datvon_jahr'
+            value='<%$bta_datvon->jahr()%>'>
+     -
+     <input type='text'
+            size='2'
+            maxlength='2'
+            name='bta_datbis_monat'
+            value='<% $bta_nomonth ? '' : $bta_datbis->monat() %>'>/
+     <input type='text'
+            size='4'
+            maxlength='4'
+            name='bta_datbis_jahr'
+            value='<%$bta_datbis->jahr()%>'>
+    </td>
+   </tr>
+
+  </table>
+
+  
+%#  <input type='submit' name='loeschen'   value='<i18n>Auswahl l&ouml;schen</i18n>'>
+  <input type='submit' name='speichern'  value='<i18n>Speichern</i18n>'>
+  <input type="hidden" name="auswahl">
+  <input type="hidden" name="bearbeiten">
+  <input type="hidden" name="loeschen">
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>
+
+  <script type="text/javascript">
+    function edit(id) {
+      document.forms[0].auswahl.value = id;
+      document.forms[0].bearbeiten.value = 'bearbeiten';
+      document.forms[0].action = '#editmark';
+      document.forms[0].submit();
+    }
+
+    function del(id) {
+      if (confirm('<i18n>Wirklich loeschen?</i18n>')) {
+        document.forms[0].auswahl.value = id;
+        document.forms[0].loeschen.value = 'l';
+        document.forms[0].submit();
+      }
+    }
+  </script>

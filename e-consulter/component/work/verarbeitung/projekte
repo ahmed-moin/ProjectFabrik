@@ -1,0 +1,19 @@
+<%args>
+$projektid => undef
+$oeffnen => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($oeffnen)
+  {
+    fehler ('<i18n>kein Projekt ausgewählt</i18n>') unless $projektid;
+
+    $ARGS{folgemaske} = 'auftraguebersicht';
+    $ARGS{menu} = 'auftrag';
+  }
+
+  return \%ARGS;
+
+</%perl>

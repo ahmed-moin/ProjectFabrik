@@ -1,0 +1,16 @@
+<%args>
+$width
+$height
+@color => (0, 0, 0)
+$alt => undef
+</%args><%perl>
+
+  my ($red, $green, $blue) = @color;
+
+  if ($width > 0 && $height > 0)
+  {
+    $width = int($width);
+    $height = int($height);
+
+</%perl><img src='/cgi-bin/bar?<% "$width&amp;$height&amp;$red&amp;$green&amp;$blue" %>'<%" alt='$alt' title='$alt'"%>>
+% }

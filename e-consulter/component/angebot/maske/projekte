@@ -1,0 +1,134 @@
+<%args>
+$dbh
+@menu
+$uid
+$projektid => undef
+$sel_status => 2
+</%args>
+<%once>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my $sth_ben;
+
+</%once>
+<%perl>
+
+  $sth_ben = $dbh->prepare ( <<"EOF" ) unless $sth_ben;
+   select ben_titel, ben_anrede, ben_vorname, ben_nachname, ben_email
+     from benutzer, rolle
+    where ben_uid = rol_uid
+      and rol_kunde
+      and rol_pid = ?
+EOF
+
+  my $prj;
+  if ($sel_status > 0)
+  {
+    if ($uid eq 'ADMIN')
+    {
+      $prj = $dbh->selectall_arrayref ( <<"EOF" );
+       select prj_id, prj_titel, prj_status
+         from projekt
+        where prj_status = $sel_status
+EOF
+    }
+    else
+    {
+      $prj = $dbh->selectall_arrayref ( <<"EOF" );
+       select prj_id, prj_titel, prj_status
+         from projekt, rolle
+        where prj_status = $sel_status
+          and prj_id = rol_pid
+          and rol_uid = '$uid'
+          and rol_admin
+EOF
+    }
+  }
+  else
+  {
+    if ($uid eq 'ADMIN')
+    {
+      $prj = $dbh->selectall_arrayref ( <<"EOF" );
+       select prj_id, prj_titel, prj_status
+         from projekt
+        where prj_status >= 0
+EOF
+    }
+    else
+    {
+      $prj = $dbh->selectall_arrayref ( <<"EOF" );
+       select prj_id, prj_titel, prj_status
+         from projekt, rolle
+        where prj_status >= 0
+          and prj_id = rol_pid
+          and rol_uid = '$uid'
+          and rol_admin
+EOF
+    }
+  }
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projekte',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+  Status:
+  <select name='sel_status' onChange='document.forms[0].submit()'>
+   <option value='0'<%$sel_status > 0 ? '' : ' checked'%>>alle
+%  foreach (keys (%prj_status)) {
+   <option value='<%$_%>'<%$sel_status == $_ ? ' selected' : ''%>><%$prj_status{$_}%>
+% }
+  </select>
+
+  <table border='1'>
+   <tr>
+    <th>
+    </th>
+    <th>
+     Projekt
+    </th>
+    <th>
+     Status
+    </th>
+    <th>
+     Kunde
+    </th>
+   </tr>
+%   foreach (@$prj) {
+%     my ($prj_id, $prj_titel, $prj_status) = @$_;
+   <tr>
+    <td valign='top'>
+     <input type='radio' name='projekt' value='<%$prj_id%>'<%$prj_id == $projektid ? ' checked' : ''%>>
+    </td>
+    <td valign='top'>
+     <%$prj_titel%>
+    </td>
+    <td valign='top'>
+     <%$prj_status{$prj_status}%>
+    </td>
+    <td>
+%   my $kunde = $dbh->selectall_arrayref($sth_ben, {}, $prj_id);
+%   foreach (@$kunde) {
+%     my ($ben_titel, $ben_anrede, $ben_vorname, $ben_nachname,
+%         $ben_email) = @$_;
+%     if ($ben_email) {
+      <a href='mailto:<%$ben_email%>'>
+%     }
+      <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%> <br>
+%     if ($ben_email) {
+      </a>
+%     }
+%   }
+    </td>
+   </tr>
+%   }
+  </table>
+
+  <p class='button'>
+    <input type='submit' name='oeffnen' value='&Ouml;ffnen' style='width:3cm'>
+    <input type='submit' name='loeschen' value='L&ouml;schen' style='width:3cm'>
+  </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,233 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$sel_uid => undef
+$gesamtansicht => undef
+</%args>
+<%once>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+</%once>
+<%perl>
+
+  my $uid = $dbh->selectcol_arrayref( <<"EOF" );
+   select distinct atr_uid
+     from auftrag, aufgabenplan
+    where atr_pid = $projektid
+      and apl_pid = atr_pid
+      and apl_tid = atr_tid
+      and apl_aid = atr_aid
+EOF
+
+  $sel_uid = $uid->[0] if !$sel_uid && scalar(@$uid) >= 1;
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" ) if $sel_uid;
+   select atr_nummer, tpr_tid, tpr_titel, auf_aid, auf_name,
+          atr_tagessatz, atr_btagessatz, atr_personentage,
+          atr_sachkosten, atr_investition,
+          apl_startdatum, apl_endedatum, atr_freigabe
+     from auftrag, teilprojekt, aufgabe, aufgabenplan
+    where atr_pid = $projektid
+      and atr_uid = '$sel_uid'
+      and tpr_pid = atr_pid
+      and tpr_tid = atr_tid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+      and apl_pid = atr_pid
+      and apl_tid = atr_tid
+      and apl_aid = atr_aid
+      and apl_ppl = $projektplan
+    order by atr_nummer
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Auftragfreigabe' &>
+
+% if ($gesamtansicht) {
+<input type='hidden' name='gesamtansicht' value='1'>
+% }
+
+<table>
+ <tr>
+  <th class='label'>
+   Verantwortlicher
+  </th>
+  <td>
+   <& '/select', name => 'sel_uid',
+                 values => $uid,
+                 selected => $sel_uid &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   W&auml;hrung
+  </th>
+  <td>
+   <%$waehrung%>
+  </td>
+ </tr>
+</table>
+
+% if ($gesamtansicht) {
+ <input type='submit' name='teilansicht' value='nur nicht Freigegebene'>
+% } else {
+ <input type='submit' name='gesamtansicht' value='Gesamtansicht'>
+% }
+
+<table width='100%' border='1'>
+ <tr>
+  <td rowspan='2' bgcolor='#ccccff'>
+  </td>
+  <th rowspan='2' bgcolor='#ccccff'>
+   Nr
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   Startdatum
+  </th>
+  <th bgcolor='#ccccff'>
+   interner<br>Tagessatz
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Summe<br>Auftrag
+  </th>
+  <th bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+ </tr>
+
+ <tr>
+  <th colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th bgcolor='#ccccff'>
+   Endedatum
+  </th>
+  <th bgcolor='#ccccff'>
+   externer<br>Tagessatz
+  </th>
+  <th bgcolor='#ccccff'>
+   Summe<br>Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Investition
+  </th>
+ </tr>
+
+ <%perl>
+
+  my %sum;
+
+  foreach (@$atr)
+  {
+    my ($atr_nummer, $tpr_tid, $tpr_titel, $auf_aid, $auf_name,
+        $atr_tagessatz, $atr_btagessatz, $atr_personentage,
+        $atr_sachkosten, $atr_investition,
+        $apl_startdatum, $apl_endedatum, $atr_freigabe) = @$_;
+
+    next if (!$gesamtansicht && $atr_freigabe);
+
+    $sum{auftrag}      += $atr_personentage * $atr_tagessatz;
+    $sum{budget}       += $atr_personentage * $atr_btagessatz;
+    $sum{personentage} += $atr_personentage;
+    $sum{sachkosten}   += $atr_sachkosten;
+    $sum{investition}  += $atr_investition;
+
+ </%perl>
+
+ <tr>
+  <td rowspan="2" bgcolor="#cccccc">
+% unless ($atr_freigabe) {
+   <input type="checkbox" name="atr_nummer" value="<%$atr_nummer%>">
+% }
+  </td>
+  <td rowspan="2">
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align="right">
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_tagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right" rowspan="2">
+   <pre><%formatnumber($atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_tagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <%$auf_aid%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td align="right">
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_btagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_btagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right">
+   <pre><%formatnumber($atr_investition, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+% }
+
+ <tr>
+  <th class="label" colspan="6" rowspan="2" bgcolor="#cccccc">
+   Summe
+  </th>
+  <td rowspan="2" bgcolor="#cccccc">
+   <pre><%formatnumber($sum{personentage}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <pre><%formatnumber($sum{auftrag}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <pre><%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+ <tr>
+  <td align="right" bgcolor="#cccccc">
+   <pre><%formatnumber($sum{budget}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <pre><%formatnumber($sum{investition}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>
+
+<p class="button">
+ <input type="submit" name="freigeben" value="ausgew&auml;hlte freigeben">
+ <input type="submit" name="allefreigeben" value="alle freigeben">
+</p>

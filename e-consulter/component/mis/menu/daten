@@ -1,0 +1,19 @@
+<%perl>
+  return  [ { aktion => 'bericht',
+              label  => 'Bericht' },
+            { aktion => 'status',
+              label  => 'Status' },
+            { selected => 'daten',
+              label  => 'Daten' },
+            { aktion => 'team',
+              label  => 'Team' },
+            { aktion => 'projektplan',
+              label  => 'Projektplan' },
+            { space  => 80 },
+            { aktion => 'projektschliessen',
+              label  => 'Projekt wechseln' },
+            { aktion => 'abmelden',
+              label  => 'Abmelden' }
+          ];
+
+</%perl>

@@ -1,0 +1,83 @@
+<%args>
+$dbh
+$uid
+$ben_anrede => undef
+$ben_titel => undef
+$ben_vorname => undef
+$ben_nachname => undef
+$ben_strasse => undef
+$ben_land => undef
+$ben_plz => undef
+$ben_ort => undef
+$ben_gebdat => undef
+$ben_nationalitaet => undef
+$ben_telefon => undef
+$ben_telefax => undef
+$ben_handy => undef
+$ben_email => undef
+$bld_bild => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(replace quote);
+  use Contavia qw(fehler);
+  use MIME::Base64;
+
+  fehler ("<i18n>Bitte geben Sie Ihre Anrede an</i18n>")       unless $ben_anrede;
+  fehler ("<i18n>Bitte geben Sie Ihren Vornamen an</i18n>")    unless $ben_vorname;
+  fehler ("<i18n>Bitte geben Sie Ihren Nachname an</i18n>")    unless $ben_nachname;
+  fehler ("<i18n>Bitte geben Sie Ihre Strasse an</i18n>")      unless $ben_strasse;
+  fehler ("<i18n>Bitte geben Sie Ihre Postleitzahl an</i18n>") unless $ben_plz;
+  fehler ("<i18n>Bitte geben Sie Ihren Wohnort an</i18n>")     unless $ben_ort;
+
+  $ben_gebdat->[2] += 1900 unless $ben_gebdat->[2] > 1900;
+
+  replace( $dbh, 'benutzer',
+    { ben_uid           => quote($uid) },
+    { ben_anrede        => quote($ben_anrede),
+      ben_titel         => quote($ben_titel),
+      ben_vorname       => quote($ben_vorname),
+      ben_nachname      => quote($ben_nachname),
+      ben_strasse       => quote($ben_strasse),
+      ben_land          => quote($ben_land),
+      ben_plz           => quote($ben_plz),
+      ben_ort           => quote($ben_ort),
+      ben_gebdat        => new Contavia::Date($ben_gebdat)->qpgdate,
+      ben_nationalitaet => quote($ben_nationalitaet),
+      ben_telefon       => quote($ben_telefon),
+      ben_telefax       => quote($ben_telefax),
+      ben_handy         => quote($ben_handy),
+      ben_email         => quote($ben_email) } );
+
+  my $q = $m->cgi_object;
+  my $uploadInfo = $q->uploadInfo($bld_bild);
+  if ($uploadInfo)
+  {
+    my $bld_mime = $uploadInfo->{'Content-Type'};
+    fehler ("</18n>das Bild hat keinen g&uuml;ltigen Dateityp</i18n>")
+      unless $bld_mime =~ m{^image/};
+
+    my $fh = $q->upload('bld_bild');
+    my $data;
+
+    local $/ = undef;
+    my $i = 0;
+    while (read $fh, $data, 570)
+    {
+      replace( $dbh, 'bild',
+        { bld_uid   => quote($uid),
+          bld_lfdnr => $i++ },
+        { bld_mime  => quote($bld_mime),
+          bld_bild  => quote(MIME::Base64::encode($data)) } );
+    }
+    $dbh->do( <<"EOF" );
+      delete from bild
+       where bld_uid = '$uid'
+         and bld_lfdnr >= $i
+EOF
+  }
+
+  $dbh->commit;
+
+</%perl>

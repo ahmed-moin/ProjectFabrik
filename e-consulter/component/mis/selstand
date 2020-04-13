@@ -1,0 +1,42 @@
+<%args>
+$dbh
+$projektid
+$stand => undef
+$lang => ''
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my ($projektstart, $projektende) = $dbh->selectrow_array( <<"EOF" );
+    select min(apl_startdatum), max(apl_endedatum)
+      from aufgabenplan
+     where apl_pid = $projektid
+EOF
+
+  return unless $projektstart;
+
+  $projektstart = new Contavia::Date($projektstart);
+  $projektstart->tag(1);
+  $projektende = new Contavia::Date($projektende);
+  my $ende = Contavia::Date::current;
+  $ende = $projektende if $ende->cmp($projektende) < 0;
+
+</%perl>
+
+<td>
+ <%$lang eq 'en' ? 'Date of report:' : 'Berichtszeitpunkt:'%>
+</td>
+<td>
+ <select name='selstand' onChange='document.forms[0].submit()'>
+  <%perl>
+   for (my $dd = $projektstart;
+        $dd->cmp($ende) <= 0;
+        $dd = $dd->naechster_monat) {
+     my $datum = $dd->naechster_monat->voriger_tag->format;
+  </%perl>
+  <option value='<%$datum%>'<%$stand eq $datum ? ' selected' : ''%>>
+    <%$dd->monat%>/<%$dd->jahr%>
+% }
+ </select>
+</td>

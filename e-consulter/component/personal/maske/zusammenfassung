@@ -1,0 +1,6 @@
+<%args>
+$dbh
+$uid
+$sessid
+</%args>
+<& '/personal/zusammenfassung', dbh => $dbh, uid => $uid, rol_uid => $uid, sessid => $sessid &>

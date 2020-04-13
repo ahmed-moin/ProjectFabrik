@@ -1,0 +1,25 @@
+<%args>
+$titel => undef
+@menu => ()
+$maske
+</%args>
+
+     <table class="menu" cellpadding="0" cellspacing="0">
+      <tr>
+       <td class="menutitel">
+% if ($titel) {
+        <p class="menutitel"><% $titel %></p>
+% }
+       </td>
+      </tr>
+
+% foreach (@menu)
+% {
+      <tr>
+       <td class="menu">
+        <& /menuentry, entry => $_,
+                       maske => $maske &></td>
+      </tr>
+% }
+     </table>
+

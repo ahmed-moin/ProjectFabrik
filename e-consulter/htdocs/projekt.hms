@@ -1,0 +1,142 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Projekttool
+  Programmiert          Tommi Mäkitalo, Kommunikationsmanagement Schwägerl
+  Datum                 Januar 2001
+
+  Beschreibung
+    Verwaltung von Projekten
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Juli 2000     Erstimplementierung in PHP
+  0.2     TM    Januar 2001   Neuimplementierung mit HTML::Mason
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%attr>
+
+  tool       => 'projekt'
+  titel      => 'Projekttool'
+  barcolor   => [255, 0, 0]
+  titel_img  => '/images/titel/projekt.gif'
+  icon       => '/images/icon/projekt.gif'
+  foto       => '/images/131-2.png'
+  defmaske   => 'anleitung'
+  startmaske => 'anleitung'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$projektid => undef
+</%args>
+<%perl>
+  my @menu;
+
+  if ( $projektid )
+  {
+    my @menu_head =
+    $ARGS{prj_status} == 1 ?
+      (
+        { maske  => 'titel',
+          label  => 'Projekttitel' },
+        { maske  => 'ziel',
+          label  => 'Ziel' },
+        { maske  => 'projektbeschreibung',
+          label  => 'Projektbeschreibung' },
+        { maske  => 'rolle',
+          label  => 'Rolle' },
+        { maske  => 'team',
+          label  => 'Team' },
+        { maske  => 'kernkompetenz',
+          label  => 'Kernkompetenz' },
+        { maske  => 'kontakt',
+          label  => 'Kontaktaufnahme' },
+        { maske  => 'bemerkung',
+          label  => 'Bemerkung' },
+        { maske  => 'feedback',
+          label  => 'Feedback' },
+        { maske  => 'abschluss',
+          label  => 'Abschluß' },
+      )
+      : $ARGS{prj_status} >= 3 ?
+      (
+        { maske  => 'zusammenfassung',
+          label  => 'Zusammenfassung' },
+        { maske  => 'angebot',
+          label  => 'Angebot' },
+        { maske  => 'auftrag',
+          label  => 'Auftrag' },
+      )
+      : defined $ARGS{prj_status} ?
+      (
+        { maske  => 'zusammenfassung',
+          label  => 'Zusammenfassung' },
+      )
+      :
+      (
+        { maske  => 'titel',
+          label  => 'Projekttitel' },
+      );
+
+    my @menu_footer =
+    (
+      { space  => 80 },
+      { aktion => 'projektschliessen',
+        label  => 'Projekt wechseln' },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+    my $ret = $m->comp('/getmenu', %ARGS,
+                       menu_head => \@menu_head,
+                       menu_footer => \@menu_footer );
+    @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                 : ( @menu_head, @menu_footer );
+  }
+  elsif ($ARGS{sessid} )
+  {
+    @menu = (
+      { maske  => 'anleitung',
+        label  => 'Anleitung' },
+      { maske  => 'nutzungsbedingungen',
+        label  => 'Nutzungsbedingungen' },
+      { maske  => 'agb',
+        label  => "Allgemeine\nGeschäftsbedingungen" },
+      { maske  => 'stammdaten',
+        label  => 'Stammdaten' },
+      { maske  => 'firmenstammdaten',
+        label  => 'Firmenstammdaten' },
+      { maske  => 'projekte',
+        label  => 'Projekte' },
+      { space  => 80 },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+  }
+  else
+  {
+    @menu =
+    (
+      { maske  => 'anleitung',
+        label  => 'Anleitung' },
+      { maske  => 'nutzungsbedingungen',
+        label  => 'Nutzungsbedingungen' },
+      { maske  => 'agb',
+        label  => "Allgemeine\nGeschäftsbedingungen" },
+      { maske  => 'erstkontakt',
+        label  => 'Erstkontakt' },
+      { maske  => 'login',
+        label  => 'Login' });
+  }
+
+  return @menu;
+
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+<%perl>
+  return [ ['nb', $ARGS{nb}] ];
+</%perl>
+</%method>

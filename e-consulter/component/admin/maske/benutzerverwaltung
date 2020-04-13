@@ -1,0 +1,130 @@
+<%args>
+$dbh
+$ldapuid => undef
+</%args>
+<%perl>
+
+  use Net::LDAP;
+  use EConsulter;
+  use Contavia qw(fehler);
+
+  my $ldap = EConsulter::ldapinit;
+  my $basedn = EConsulter::basedn;
+
+  my ($entry, @groups, $ldapmsg);
+
+  if ($ldapuid)
+  {
+    $ldapmsg = $ldap->search( base => $basedn,
+                              filter => "(uid=$ldapuid)" );
+    $ldapmsg->code && fehler($ldapmsg->error);
+    $entry = $ldapmsg->shift_entry;
+
+    $ldapmsg = $ldap->search( base => $basedn,
+      filter => "(&(objectClass=posixGroup)(memberUid=$ldapuid))" );
+    $ldapmsg->code && fehler($ldapmsg->error);
+    @groups = $ldapmsg->entries;
+  }
+
+  my $ben = $dbh->selectcol_arrayref( "
+    select ben_uid
+      from benutzer
+     order by ben_uid" );
+
+</%perl>
+
+<h1> Benutzerverwaltung </h1>
+
+<table border='1'>
+ <tr>
+  <th class='label'>
+   Benutzerkennung
+  </th>
+  <td>
+   <& '/select', name     => 'ldapuid',
+                 values   => $ben,
+                 selected => $ldapuid &>
+  </td>
+ </tr>
+
+% if ($entry) {
+
+ <tr>
+  <th class='label'>
+   dn
+  </th>
+  <td>
+   <%$entry->dn%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   cn
+  </th>
+  <td>
+% foreach my $cn ($entry->get_value('cn')) {
+   <%$cn%> <br>
+% }
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   loginShell
+  </th>
+  <td>
+   <%$entry->get_value('loginShell')%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   uid
+  </th>
+  <td>
+   <%$entry->get_value('uidNumber')%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   group
+  </th>
+  <td>
+%  my $gidNumber = $entry->get_value('gidNumber');
+   <%$gidNumber%>:
+   <%scalar(getgrgid($gidNumber))%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   gecos
+  </th>
+  <td>
+   <%$entry->get_value('gecos')%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Gruppen
+  </th>
+  <td>
+%   foreach my $g (@groups) {
+   <%$g->get_value('cn')%> <br>
+%   }
+  </td>
+ </tr>
+
+% } elsif ($ldapuid) {  # if ($entry)
+ <tr>
+  <td>
+   kein Systembenutzer vorhanden
+  </td>
+ </tr>
+
+% } # if ($entry)
+
+</table>

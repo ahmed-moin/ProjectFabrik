@@ -1,0 +1,280 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+$loeschen => undef
+</%args>
+<%once>
+my $sth_auf_name;
+</%once>
+<%perl>
+
+use Contavia::Date;
+use Contavia qw(fehler);
+
+my $tpr = $dbh->selectall_arrayref( "
+  select tpl_tid, tpr_titel
+    from teilprojektplan
+     join teilprojekt
+       on tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+   where tpl_pid = $projektid
+     and tpl_ppl = $projektplan" );
+
+my $tpr_titel = $dbh->selectrow_array( "
+  select tpr_titel
+    from teilprojekt
+   where tpr_pid = $projektid
+     and tpr_tid = $tid" ) if $tid;
+
+my $auf = $dbh->selectall_arrayref( "
+  select auf_aid, auf_name
+    from aufgabe
+   where auf_pid = $projektid
+     and auf_tid = $tid
+     and not exists
+       (select 1
+          from aufgabenplan
+         where apl_pid = auf_pid
+           and apl_tid = auf_tid
+           and apl_aid = auf_aid
+           and apl_ppl = $projektplan)" ) if $tid;
+
+my $apl = $dbh->selectall_arrayref( "
+  select apl_aid, auf_name, apl_startdatum, apl_endedatum, apl_dauer,
+         apl_beschreibung, apl_abhaengig, apl_aufwand, apl_milestone
+    from aufgabenplan, aufgabe
+   where auf_pid = $projektid
+     and auf_tid = $tid
+     and auf_pid = apl_pid
+     and auf_tid = apl_tid
+     and auf_aid = apl_aid
+     and apl_ppl = $projektplan" ) if $tid;
+
+$sth_auf_name = $dbh->prepare( "
+  select auf_name
+    from aufgabe
+   where auf_pid = ?
+     and auf_tid = ?
+     and auf_aid = ?" ) unless $sth_auf_name;
+
+</%perl>
+<%cleanup>
+$ARGS{tid} = undef;
+return \%ARGS;
+</%cleanup>
+
+<h1> Aufgabenbeschreibung </h1>
+
+Teilprojekt: <& '/select', name => 'tid',
+                           values =>
+                           [
+                             map
+                             {
+                               my ($tid, $titel) = @$_;
+                               [ $tid, "$tid: $titel" ]
+                             } @$tpr
+                           ],
+                           selected => $tid &>
+
+% return unless $tid;
+
+<table border='1'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th class='label' colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th class='label' bgcolor='#ccccff'>
+   Startdatum
+  </th>
+  <th class='label' bgcolor='#ccccff'>
+   Endedatum
+  </th>
+  <th class='label' bgcolor='#ccccff'>
+   Aufwand
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$apl) {
+    my ($apl_aid, $auf_name, $apl_startdatum, $apl_endedatum, $apl_dauer,
+        $apl_beschreibung, $apl_abhaengig, $apl_aufwand, $apl_milestone) = @$_;
+    my $abhaengig = $dbh->selectrow_array($sth_auf_name, {}, $projektid,
+        $tid, $apl_abhaengig) if $apl_abhaengig;
+
+    if ($aid == $apl_aid)
+    {
+      $m->comp('.edit', value => $_, abhaengig => $abhaengig, dbh => $dbh,
+               apl => $apl);
+    }
+    else
+    {
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_aid' value='<%$apl_aid%>'>
+  </td>
+  <td>
+   <%$apl_aid%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td<%$apl_milestone ? ' style=\'color:red\'' : ''%> align='right'>
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+  <td>
+   <%$apl_aufwand%>
+  </td>
+ </tr>
+%   } # if
+% }  # foreach
+
+% unless ($aid) {
+   <& '.edit', dbh => $dbh, apl => $apl &>   
+% }
+
+</table>
+
+% if (@$auf) {
+  <hr>
+
+  <& '/select', name => 'auf',
+                values => [
+                  map {
+                    my ($auf_aid, $auf_name) = @$_;
+                    [ $auf_aid, "$auf_aid $auf_name" ];
+                  } @$auf ],
+                submit => undef &>
+
+  <input type='submit' name='hinzufuegen' value='Hinzuf&uuml;gen'>
+% }
+
+<p class='button'>
+% if ($loeschen) {
+ <input type='submit' name='loeschen_ok' value='wirklich löschen'>
+ <input type='submit' name='loeschen_nok' value='nicht löschen'>
+% } elsif ($aid) {
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='neu' value='nicht speichern'>
+ <input type='submit' name='loeschen' value='löschen'>
+% } else {
+ <input type='submit' name='speichern' value='neue Aufgabe speichern'>
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='loeschen' value='löschen'>
+% }
+</p>
+
+<%def .edit>
+ <%args>
+ $dbh
+ @value => ()
+ $abhaengig => undef
+ $apl
+ </%args>
+ <%perl>
+   my ($apl_aid, $auf_name, $apl_startdatum, $apl_endedatum, $apl_dauer,
+       $apl_beschreibung, $apl_abhaengig, $apl_aufwand,
+       $apl_milestone) = @value;
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td colspan='5' bgcolor='#ffffcc'>
+
+   <table>
+     <tr>
+      <th class='label'>
+       Aufgabe
+      </th>
+      <td>
+       <%$apl_aid%>
+      </td>
+     </tr>
+
+     <tr>
+      <th class='label'>
+       Name
+      </th>
+      <td colspan='3'>
+       <input type='text' name='auf_name' value='<%$auf_name%>' size='60' maxlength='80'>
+       <& '/setfocus', name => 'auf_name' &>
+      </td>
+     </tr>
+
+     <tr>
+      <th class='label'>
+       Startdatum
+      </th>
+      <td>
+       <& '/inputdatum', name => 'apl_startdatum', value => $apl_startdatum &>
+      </td>
+      <th class='label'<%$apl_milestone ? ' style=\'color:red\'' : ''%>>
+       Endedatum
+      </th>
+      <td>
+       <& '/inputdatum', name => 'apl_endedatum', value => $apl_endedatum &>
+      </td>
+     </tr>
+
+     <tr>
+      <th class='label'>
+       Dauer
+      </th>
+      <td>
+       <input type='text' name='apl_dauer' value='<%$apl_dauer%>' size='5'>&nbsp;Tage
+      </td>
+      <th class='label'>
+       Aufwand
+      </th>
+      <td>
+       <input type='text' name='apl_aufwand' value='<%$apl_aufwand%>' size='5'>&nbsp;PT
+      </td>
+     </tr>
+
+     <tr>
+      <th class='label'>
+       Abh&auml;ngig von
+      </th>
+      <td colspan='3'>
+       <& '/select', name     => 'apl_abhaengig',
+                     values   => $apl,
+                     selected => $apl_abhaengig,
+                     submit   => 0 &>
+      </td>
+     </tr>
+
+     <tr>
+      <th class='label'>
+       Milestone
+      </th>
+      <td>
+       <input type='checkbox' name='apl_milestone'<%$apl_milestone ? ' checked' : ''%>>
+      </td>
+     </tr>
+
+     <tr>
+      <td>
+      </td>
+      <th class='label'>
+       Beschreibung
+      </th>
+      <td colspan='3'>
+       <textarea name='apl_beschreibung' rows='10' cols='60'><%$apl_beschreibung%></textarea>
+      </td>
+     </tr>
+   </table>
+
+  </td>
+ </tr>
+
+</%def>

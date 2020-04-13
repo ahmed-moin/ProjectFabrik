@@ -1,0 +1,63 @@
+<%attr>
+  titel_img => '/cgi-bin/titel?e-consulter&amp;Hauptmen%FC'
+  barcolor  => [255, 255, 0]
+</%attr>
+
+ <img src='/images/fotohome.gif' alt="e-consulter">
+
+%#######################################################################
+
+<%def .label>
+<%args>
+  $link
+  $text
+</%args>
+<%perl>
+
+ $text =~ s/\s/%20/g;
+ my $img = "/cgi-bin/bluelabel?$text&amp;fc=000080";
+
+</%perl>
+  <a href='<%$link%>'><img src='<%$img%>' border='0'
+       onMouseover = "this.src='<%$img%>&amp;bg=EEE'"
+       onMouseout  = "this.src='<%$img%>'"
+       onMousedown = "this.src='<%$img%>&amp;bg=EEE&amp;s=1'"
+       onMouseup   = "this.src='<%$img%>'"></a><br>
+</%def>
+
+<%method getmenu>
+<%perl>
+  return ( { label  => 'Kunde' },
+           { href   => 'projekt.hms',
+             dlabel => 'Projekttool' },
+           { href   => 'mis.hms',
+             dlabel => "Management\nInformation\nSystem" },
+           { href   => 'profiles.hms',
+             dlabel => 'Profile' },
+           { href   => 'doku.hms',
+             dlabel => 'Dokumentation' },
+           { space  => 5 },
+
+           { label  => 'Consulter' },
+           { href   => 'personal.hms',
+             dlabel => 'Personaltool' },
+           { href   => 'assessment.hms',
+             dlabel => 'Assessment center' },
+           { href   => 'work.hms',
+             dlabel => 'Activitytool' },
+           { space  => 5 },
+
+           { label  => 'Projektleiter' },
+           { href   => 'vertragspruefung.hms',
+             dlabel => 'Vertragsprüfung' },
+           { href   => 'projektplan.hms',
+             dlabel => 'Projektplantool' },
+           { href   => 'admin.hms',
+             dlabel => 'Administrator' },
+           { space  => 80 },
+           { href   => 'impressum.hms',
+             dlabel => 'Impressum' },
+         );
+</%perl>
+</%method>
+

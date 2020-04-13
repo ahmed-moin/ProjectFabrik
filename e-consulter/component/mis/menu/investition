@@ -1,0 +1,23 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'investition_gesamt',
+             dlabel   => 'Gesamt',
+             menu     => 'investition' },
+           { maske    => 'investition_kumuliert',
+             dlabel   => 'Kumuliert',
+             menu     => 'investition' },
+           { maske    => 'investition_monat',
+             dlabel   => 'Monat',
+             menu     => 'investition' },
+           { maske    => 'investition_tabelle',
+             dlabel   => 'Tabelle',
+             menu     => 'investition' },
+           @$menu_footer
+         ];
+
+</%perl>

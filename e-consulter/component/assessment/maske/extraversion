@@ -1,0 +1,19 @@
+<%args>
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n> Extraversion </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> Extrovertierte Menschen sind beruflich häufig in leitenden Positionen oder im Vertrieb tätig. Neue Herausforderungen und Aufgaben begeistern sie; mit ganzer Kraft setzen sie sich für Innovationen ein. Eigenschaften wie Dominanz, Selbstbejahung, Geselligkeit, soziales Auftreten und Fähigkeit zum Erfolg sind bei ihnen besonders häufig zu finden.</i18n> </p>
+
+<p> <i18n> Menschen mit höheren Extraversionswerten beschreiben sich häufig als aktiv und energievoll. Sie neigen zu einem eher heiteren Naturell. Extrovertierte fühlen sich in Gruppen und auf gesellschaftlichen Versammlungen besonders wohl. Es fällt ihnen auch leicht, sich in sozialen Situationen durchzusetzen.</i18n> </p>
+
+<p> <i18n> Introversion wird in der psychologischen Fachliteratur dagegen eher als ein Fehlen der Extraversion gesehen, nicht als ein Gegensatz zu ihr. Introvertierte sind demnach eher zurückhaltend als ängstlich, eher unabhängig als folgsam. </i18n> </p>
+
+<p> <i18n> Introvertierte Menschen verspüren keine soziale Ängstlichkeit, sondern eher den bewussten Wunsch, allein zu sein. Sie sind keinesfalls pessimistisch oder unglücklich, auch wenn die überschäumende Lebhaftigkeit und Begeisterungsfähigkeit extrovertierter Menschen ihnen fremd sind.</i18n> </p>
+
+<p> <i18n> Introvertierte Menschen wählen daher meist Tätigkeiten, die weniger mit anderen Menschen zu tun haben. Sie arbeiten gerne selbständig oder in kleinen Teams.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

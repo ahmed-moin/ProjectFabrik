@@ -1,0 +1,25 @@
+<%args>
+$dbh
+$uid
+$projektid
+$prj_bemerkung => undef
+$bem_bewertung => undef
+$bem_fehl => undef
+$bem_ausgepraegt => undef
+$bem_kurz => undef
+$bem_bemerkung => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(replace quote);
+
+  $bem_bewertung = -1 unless defined $bem_bewertung;
+
+  replace(
+    $dbh, 'projekt',
+    { prj_id        => $projektid },
+    { prj_bemerkung => quote($prj_bemerkung) } );
+
+  $dbh->commit;
+
+</%perl>

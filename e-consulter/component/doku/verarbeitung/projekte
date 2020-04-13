@@ -1,0 +1,18 @@
+<%args>
+$projekt => undef
+</%args>
+<%perl>
+  if ($projekt == -1)
+  {
+    $ARGS{projektid} = undef;
+    $ARGS{folgemaske} = 'projekte';
+  }
+  else
+  {
+    $ARGS{projektid} = $projekt;
+    $ARGS{folgemaske} = 'projekt';
+  }
+
+  return \%ARGS;
+
+</%perl>

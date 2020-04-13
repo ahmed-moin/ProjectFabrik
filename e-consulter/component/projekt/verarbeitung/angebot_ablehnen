@@ -1,0 +1,55 @@
+<%args>
+$dbh
+$projektid
+$ablehnen_definition => undef
+$ablehnen_anfrage => undef
+$begruendung => undef
+$grund => undef
+$vorgehen => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(quote);
+
+  if ($ablehnen_definition)
+  {
+    $dbh->do( <<"EOF" );
+      update projekt
+         set prj_status = 1
+       where prj_id = $projektid
+EOF
+  }
+  elsif ($ablehnen_anfrage)
+  {
+    $dbh->do( <<"EOF" );
+      update projekt
+         set prj_status = 2
+       where prj_id = $projektid
+EOF
+  }
+
+  if ($ablehnen_definition || $ablehnen_anfrage)
+  {
+    my $ang_nummer = $dbh->selectrow_array( <<"EOF" );
+      select max(ang_nummer)
+        from angebot
+       where ang_pid = $projektid
+EOF
+
+    $begruendung = quote($begruendung);
+
+    update ($dbh, 'angebot',
+      { ang_pid       => $projektid,
+        ang_nummer    => $ang_nummer },
+      { ang_ablehnung => $begruendung,
+        ang_grund     => $grund,
+        ang_vorgehen  => $vorgehen } );
+
+    $ARGS{projektid} = undef;
+    $ARGS{folgemaske} = 'projekte';
+  }
+
+  $dbh->commit;
+  return \%ARGS;
+
+</%perl>

@@ -1,0 +1,70 @@
+<%args>
+$dbh
+$projektid
+$angebot
+$prj_waehrung
+</%args>
+<%perl>
+
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+   select tpr_tid, tpr_titel
+     from teilprojekt
+    where tpr_pid = $projektid
+EOF
+
+  my $bud = $dbh->selectall_arrayref( <<"EOF" );
+   select bud_tid, bud_betrag, bud_personentage
+    from budget
+   where bud_pid     = $projektid
+     and bud_angebot = $angebot
+EOF
+
+  my %bud;
+  foreach (@$bud) {
+    my ($bud_tid, $bud_betrag, $bud_personentage) = @$_;
+    $bud{$bud_tid} = [$bud_betrag, $bud_personentage];
+  }
+
+</%perl>
+
+<table>
+ <tr>
+  <th>
+  </th>
+  <th>
+   Teilprojekt
+  </th>
+  <th>
+   Budget (<%$prj_waehrung%>)
+  </th>
+  <th>
+   Budget (PT)
+  </th>
+ </tr>
+
+% foreach (@$tpr) {
+%   my ($tpr_tid, $tpr_titel) = @$_;
+%   my ($bud_betrag, $bud_personentage) = $bud{$tpr_tid} ? @{$bud{$tpr_tid}} : (0, 0);
+ <tr>
+  <td>
+   <input type='radio' name='tid' value='<%$tpr_tid%>'>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$bud_betrag%>
+  </td>
+  <td>
+   <%$bud_personentage%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+ <input type='submit' name='neu' value='Neu'>
+ <input type='submit' name='loeschen' value='L&ouml;schen'>
+</p>

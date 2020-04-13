@@ -1,0 +1,91 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Mitarbeitertool
+  Programmiert          Tommi Mäkitalo, Kommunikationsmanagement Schwägerl
+  Datum                 Dezember 2000
+
+  Beschreibung
+    Mitarbeitertool
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Dezember 2000 initiales Release
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%attr>
+
+  tool      => 'work'
+  titel     => 'Activitytool'
+  barcolor  => [255, 170, 0]
+  titel_img => '/images/titel/activity.gif'
+  icon      => '/images/icon/activity.gif'
+  foto      => '/images/128-34.png'
+  defmaske  => 'login'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$projektid => undef
+</%args>
+<%perl>
+  my @menu;
+
+  if ( $projektid )
+  {
+    my @menu_head =
+    (
+      { maske  => 'auftraguebersicht',
+        menu   => 'auftrag',
+        label  => 'Aufträge' },
+      { maske  => 'monatserfassung',
+        menu   => 'taetigkeit',
+        label  => 'Tätigkeit' },
+      { maske  => 'aufwandserfassung',
+        menu   => 'aufwand',
+        label  => 'Sach-/Investitionskosten' },
+      { maske  => 'bericht',
+        label  => 'Bericht' },
+    );
+
+    my @menu_footer =
+    (
+      { space  => 80 },
+      { aktion => 'projektschliessen',
+        label  => 'Projekt wechseln' },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+    my $ret = $m->comp('/getmenu', %ARGS,
+                       menu_head => \@menu_head,
+                       menu_footer => \@menu_footer );
+    @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                 : ( @menu_head, @menu_footer );
+  }
+  elsif ($ARGS{sessid} )
+  {
+    @menu = ( { maske  => 'projekte',
+                label  => 'Projekte' },
+              { space  => 80 },
+              { aktion => 'abmelden',
+                label  => 'Abmelden' },
+            );
+  }
+  else
+  {
+    @menu = ( { maske    => 'login',
+                label    => 'Login',
+                selected => 1 }
+            );
+  }
+
+  return @menu;
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+<%perl>
+  return [ ['atr_nummer', $ARGS{atr_nummer}] ];
+</%perl>
+</%method>

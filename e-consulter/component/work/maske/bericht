@@ -1,0 +1,233 @@
+<%args>
+$dbh
+$projektid
+$uid
+$atr_nummer => undef
+$bearbeiten => undef
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(fehler);
+
+  # lese Auftragsnummern des Benutzers
+  my $atr = $dbh->selectall_arrayref( "
+   select atr_nummer, atr_tid, tpr_titel, atr_aid, auf_name,
+          atr_tagessatz, atr_personentage, atr_status
+     from auftrag, teilprojekt, aufgabe
+    where atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+      and atr_status <= 5
+      and tpr_pid = atr_pid
+      and tpr_tid = atr_tid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+    order by atr_nummer" );
+
+  # lese Auftragssatz
+  my ($atr_tid, $atr_aid, $tpr_titel, $auf_name)
+      = $dbh->selectrow_array( "
+   select atr_tid, atr_aid, tpr_titel, auf_name
+     from auftrag
+      join teilprojekt
+        on tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+      join aufgabe
+        on auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+    where atr_nummer = $atr_nummer" ) if $atr_nummer;
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # ermittele Anfangsdatum der Aufgabe
+  my $anf_datum;
+  if ($atr_nummer)
+  {
+    $anf_datum = new Contavia::Date($dbh->selectrow_array( "
+     select min(apl_startdatum)
+       from aufgabenplan, projektplan
+      where apl_pid = $projektid
+        and apl_tid = $atr_tid
+        and apl_aid = $atr_aid
+        and ppl_pid = $projektid
+        and ppl_nummer = apl_ppl
+        and ppl_auftrag is not null" ) );
+    $anf_datum->tag(1);
+
+    $anf_datum = $current if $anf_datum->cmp($current) > 0;
+  }
+
+  # lese ausgewählten Bericht
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  my $pgdatum = $sel_datum->qpgdate;
+  my ($abr_text, $abr_fertigbis, $abr_realisierung, $abr_geprueft)
+     = $dbh->selectrow_array( "
+    select abr_text, abr_fertigbis, abr_realisierung, abr_geprueft
+      from auftragbericht
+     where abr_nummer = $atr_nummer
+       and abr_datum = $pgdatum" ) if $atr_nummer;
+
+</%perl>
+<%cleanup>
+
+  $ARGS{atr_nummer} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<& '/masketitel', titel => 'Bericht' &>
+
+<table border='1' width='100%'>
+ <tr>
+  <th class='label' width='10%'>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <td colspan='2'>
+   <& '/select', name     => 'atr_nummer',
+                 values   => [
+                               map
+                               {
+                                 my ($atr_nummer, undef,
+                                     $tpr_titel, undef, $auf_name) = @$_;
+                                 [ $atr_nummer,
+                                   "$atr_nummer $tpr_titel - $auf_name"]
+                               } @$atr
+                             ],
+                 selected => $atr_nummer &>
+  </td>
+ </tr>
+
+% if ($atr_nummer) {
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Datum
+	</i18n>
+  </th>
+  <td colspan='2'>
+   <select name='sel_datum' onChange='document.forms[0].submit()'>
+%    for (my $d = $anf_datum;
+%         $d->cmp($current) <= 0;
+%         $d = $d->naechster_monat) {
+    <option value='<%$d->format%>'<%$d->cmp($sel_datum) == 0 ? ' selected' : ''%>>
+     <%$d->monat%>/<%$d->jahr%>
+% }
+   </select>
+  </td>
+ </tr>
+
+%   if ($bearbeiten) {
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     Bericht
+	</i18n>
+    </th>
+    <td colspan='2'>
+     <textarea name='abr_text' rows='15' cols='60'><%$abr_text%></textarea>
+    </td>
+   </tr>
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     voraussichtlich fertig bis:
+	</i18n>
+    </th>
+    <td>
+     <& '/inputdatum', name  => 'abr_fertigbis',
+                       value => $abr_fertigbis &>
+    </td>
+    <td rowspan='2'>
+% $current = Contavia::Date::current;
+     <input type='button' value='Abgeschlossen'
+       onClick='document.forms[0].abr_realisierung.value = 100;
+                document.forms[0].abr_fertigbis[0].value = <%$current->tag%>;
+                document.forms[0].abr_fertigbis[1].value = <%$current->monat%>;
+                document.forms[0].abr_fertigbis[2].value = <%$current->jahr%>'>
+    </td>
+   </tr>
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     Realisierungsgrad:
+	</i18n>
+    </th>
+    <td>
+     <input type='text' name='abr_realisierung' value='<%$abr_realisierung || 0%>' size='10'> %
+    </td>
+   </tr>
+  </table>
+
+  <p class='button'>
+   <input type='submit' name='speichern' value='Speichern'>
+   <input type='submit' name='abbrechen' value='Abbrechen'>
+  </p>
+
+%   } else { # if ($bearbeiten)
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     Bericht
+	</i18n>
+    </th>
+    <td colspan='2'>
+     <%$abr_text%>
+    </td>
+   </tr>
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     voraussichtlich fertig bis:
+	</i18n>
+    </th>
+    <td colspan='2'>
+     <%new Contavia::Date($abr_fertigbis)->format%>
+    </td>
+   </tr>
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     Realisierungsgrad:
+	</i18n>
+    </th>
+    <td colspan='2'>
+     <%$abr_realisierung%> %
+    </td>
+   </tr>
+
+   <tr>
+    <th class='label'>
+	<i18n>
+     Gepr&uuml;ft
+	</i18n>
+    </th>
+    <td colspan='2'>
+     <%new Contavia::Date($abr_geprueft)->format%>
+    </td>
+   </tr>
+  </table>
+
+%     unless ($abr_geprueft) {
+    <p class='button'>
+     <input type='submit' name='bearbeiten' value='<i18n>Bearbeiten</i18n>'>
+    </p>
+%     }
+
+%   } # if ($bearbeiten)
+
+% } # if ($atr_nummer)

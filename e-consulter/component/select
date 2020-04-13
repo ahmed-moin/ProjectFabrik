@@ -1,0 +1,35 @@
+<%args>
+$name
+@values
+$selected => undef
+$getvalue => undef
+$submit => 1
+$width => undef
+$onChange => undef
+$showkey => 0
+</%args>\
+<%perl>
+
+  $onChange = 'document.forms[0].submit()' if !$onChange && $submit;
+
+</%perl>
+  <select name="<%$name%>" <%$width && " style=\"width:$width\""%><%$onChange && " onChange=\"$onChange\""%>>
+   <option></option>
+<%perl>
+
+   foreach (@values)
+   {
+     # extrahiere key-value
+     my ($key, $value) =
+         $getvalue          ? $getvalue->($_) # Funktionsreferenz mitgegeben
+       : !ref($_)           ? ($_, $_)        # Value als Skalar
+       : @$_ > 1            ? @$_             # Value als key-value-Paar
+       : ($_->[0], $_->[0]);                  # Value als Ref auf Array mit einem Element
+
+     my $sel = ($key eq $selected && 'selected');
+     my $showvalue = $showkey ? "$key $value" : $value;
+</%perl>
+    <option value='<% $key %>' <% $sel %>><% $showvalue |h%>
+%  }
+
+  </select>

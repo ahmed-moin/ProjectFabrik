@@ -1,0 +1,50 @@
+<%args>
+$dbh
+$uid
+$frm_id => undef
+$frm_firma => undef
+$frm_strasse => undef
+$frm_land => undef
+$frm_plz => undef
+$frm_ort => undef
+$frm_telefon => undef
+$frm_telefax => undef
+$frm_ustid => undef
+$frm_homepage => undef
+$frm_braid => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(replace quote update);
+
+  $frm_id = $dbh->selectrow_array(<<"EOF") unless $frm_id;
+    select max(frm_id) + 1
+      from firma
+EOF
+
+  $frm_braid = -1 unless $frm_braid;
+
+  replace(
+    $dbh, 'firma',
+    { frm_id       => $frm_id },
+    { frm_firma    => quote($frm_firma),
+      frm_strasse  => quote($frm_strasse),
+      frm_land     => quote($frm_land),
+      frm_plz      => quote($frm_plz),
+      frm_ort      => quote($frm_ort),
+      frm_telefon  => quote($frm_telefon),
+      frm_telefax  => quote($frm_telefax),
+      frm_ustid    => quote($frm_ustid),
+      frm_homepage => quote($frm_homepage),
+	    frm_braid    => quote($frm_braid) } );
+
+  update(
+    $dbh, 'benutzer',
+    { ben_uid      => quote($uid) },
+    { ben_frmid    => quote($frm_id) }
+  );
+
+  $dbh->commit;
+
+</%perl>

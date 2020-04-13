@@ -1,0 +1,163 @@
+<%args>
+%entry
+$maske => undef
+</%args>
+<%shared>
+
+  my $name = 'img1';
+
+</%shared>
+<%cleanup>
+
+  ++$name;
+
+</%cleanup>
+<%init>
+
+sub check {
+  my ($maske, $name) = @_;
+
+  # wenn ich keine Maske ausgewählt habe, dann ist der Eintrag nie aktiv
+  return undef unless $maske;
+
+  # ist $maske skalar oder ist es eine Array-Referenz
+  if (ref($maske))
+  {
+    return grep ($name eq $_, @$maske);
+  }
+  else
+  {
+    return $maske eq $name;
+  }
+};
+
+</%init>
+<%perl>
+
+  use URI::Escape;
+  my $label       = uri_escape($entry{label} || $entry{dlabel});
+  my $href        = $entry{href};
+  my $folgemaske  = $entry{maske};
+  my $aktion      = $entry{aktion};
+  my $space       = $entry{space};
+  my $selected    = $entry{selected};
+  my $cgiprog     = $entry{dlabel} ? 'dlabel' : 'label';
+  my $menu        = $entry{menu};
+  my $notselected = $entry{notselected};
+  my $tool        = $entry{tool};
+  my $name        = $entry{name} || $folgemaske || $aktion;
+
+  my $cgilabel = "/cgi-bin/$cgiprog?$label";
+
+  my $mousehandler = <<"EOF";
+    onMouseover = "this.src = '$cgilabel&amp;bg=ccc&amp;f=1'"
+    onMouseout  = "this.src = '$cgilabel&amp;bg=ccc'"
+    onMousedown = "this.src = '$cgilabel&amp;bg=ccc&amp;f=1&amp;s=1'"
+    onMouseup   = "this.src = '$cgilabel&amp;bg=ccc&amp;f=1'"
+EOF
+
+  my @mouseimg = ( "$cgilabel&amp;bg=ccc",
+                   "$cgilabel&amp;bg=ccc&amp;f=1",
+                   "$cgilabel&amp;bg=ccc&amp;f=1&amp;s=1" );
+
+  my $ret;
+
+</%perl>
+<%perl>
+
+  if ($selected || check($maske, $name))
+  {
+    my $img = "$cgilabel&amp;bg=ffffff";
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><img src="<%$img%>" border="0" alt=""></p><%perl>
+ 
+    $ret = $img;
+ 
+  }
+  elsif ($notselected)
+  {
+    my $img = "$cgilabel&amp;bg=ccc";
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><img src="<%$img%>" border=0 alt=""></p><%perl>
+ 
+     $ret = $img;
+ 
+  }
+  elsif ($folgemaske && $menu)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:MaskeMenuwechsel('<%$folgemaske%>', '<%$menu%>')"
+       ><img src="<%$mouseimg[0]%>" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif($tool && $folgemaske)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:ToolMaske('<%$tool%>', '<%$folgemaske%>')"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif ($folgemaske)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:Maskenwechsel('<%$folgemaske%>')"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif($menu)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:Menuwechsel('<%$menu%>')"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif($tool)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:Tool('<%$tool%>')"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif($aktion)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="javascript:Aktion('<%$aktion%>')"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  elsif($space)
+  {
+ 
+    </%perl><p style="height:<%$space%>px"></p><%perl>
+ 
+  }
+  elsif($href)
+  {
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><a href="<%$href%>"
+       ><img src="<%$cgilabel%>&amp;bg=ccc" border=0 alt="<%$name%>" <%$mousehandler%>></a></p><%perl>
+ 
+    $ret = \@mouseimg;
+ 
+  }
+  else
+  {
+    my $img = "$cgilabel&amp;bg=ffffff";
+ 
+    </%perl><p style="margin-left:5; margin-top:0; margin-bottom:5"><img src="<%$img%>" border=0 alt="<%$name%>"></p><%perl>
+  };
+ 
+  return $ret;
+</%perl>

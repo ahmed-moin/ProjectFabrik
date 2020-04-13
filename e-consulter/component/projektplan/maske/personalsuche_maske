@@ -1,0 +1,159 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%once>
+
+  my ($auskat, $qual, $branche, $pos, $aufkat);
+
+  my %art = (
+    1 => 'freiberuflich',
+    2 => 'fest Vollzeit',
+    3 => 'fest Teilzeit',
+    4 => 'Praktikum',
+    5 => 'Diplomarbeit',
+    6 => 'sonstiges'
+  );
+
+  my %verguetungsart = (
+    1 => 'Tagessatz (Netto)',
+    2 => 'Jahresgehalt (Brutto)',
+    3 => 'Stundensatz (Brutto)'
+  );
+
+</%once>
+<%init>
+
+  # Initialisierung
+  $auskat = $dbh->selectall_arrayref(<<"EOF") unless $auskat;
+    select akt_id, akt_bezeichnung
+      from auskat
+     order by akt_id
+EOF
+
+  $qual = $dbh->selectall_arrayref(<<"EOF") unless $qual;
+    select qua_id, qua_bezeichnung
+      from qual
+     order by qua_bezeichnung
+EOF
+
+  $branche = $dbh->selectall_arrayref(<<"EOF") unless $branche;
+    select bra_id, bra_bezeichnung
+      from branche
+EOF
+
+  $pos = $dbh->selectall_arrayref(<<"EOF") unless $pos;
+    select pos_id, pos_bezeichnung
+      from pos
+     order by pos_bezeichnung
+EOF
+
+  $aufkat = $dbh->selectall_arrayref(<<"EOF") unless $aufkat;
+    select auf_id, auf_bezeichnung
+      from aufkat
+     order by auf_bezeichnung
+EOF
+
+</%init>
+
+Bitte geben Sie die Suchkriterien an
+
+<table width='100%' border='1'>
+ <tr>
+  <th class='label'>
+   Ausbildungsart
+  </th>
+  <td>
+   <select multiple name='auskat' size='6' style='width:350px'>
+%   foreach (@$auskat) {
+%     my ($akt_id, $akt_bezeichnung) = @$_;
+    <option value='<%$akt_id%>'> <%$akt_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Qualifikation
+  </th>
+  <td>
+   <select multiple name='qual' size='10' style='width:350px'>
+%   foreach (@$qual) {
+%     my ($qua_id, $qua_bezeichnung) = @$_;
+    <option value='<%$qua_id%>'> <%$qua_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Branche
+  </th>
+  <td>
+   <select multiple name='branche' size='6' style='width:350px'>
+%   foreach (@$branche) {
+%     my ($bra_id, $bra_bezeichnung) = @$_;
+    <option value='<%$bra_id%>'> <%$bra_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Art der Anstellung
+  </th>
+  <td>
+   <select multiple name='art' size='6' style='width:350px'>
+%   while ( my ($id, $art) = each %art ) {
+    <option value='<%$id%>'> <%$art%>
+%   }
+   </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   gesuchte Position
+  </th>
+  <td>
+   <select multiple name='pos' size='6' style='width:350px'>
+%   foreach (@$pos) {
+%     my ($pos_id, $pos_bezeichnung) = @$_;
+    <option value='<%$pos_id%>'> <%$pos_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Verg&uuml;tung (Tagessatz netto, EUR)
+  </th>
+  <td>
+   <input type='text' name='verguetung' size='10'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Zeitraum
+  </th>
+  <td>
+   <& '/inputdatum', name => 'datvon' &> -
+   <& '/inputdatum', name => 'datbis' &>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='suchen' value='Suchen'>
+</p>
+
+<h2> Erläuterung </h2>
+
+<p>
+Mehrfachauswahl in den Listen möglich über die Kombination der Strg- oder Shift-Tasten mit der Maustaste.
+</p>

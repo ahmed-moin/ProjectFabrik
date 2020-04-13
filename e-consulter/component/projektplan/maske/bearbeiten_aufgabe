@@ -1,0 +1,85 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+</%args>
+<%perl>
+  die "<fehler>keine Aufgabe ausgew&auml;hlt</fehler>" unless $aid;
+
+  my ($auf_name, $apl_startdatum, $apl_endedatum, $apl_dauer, $apl_beschreibung)
+    = $dbh->selectrow_array( <<"EOF" );
+    select auf_name, apl_startdatum, apl_endedatum, apl_dauer, apl_beschreibung
+      from aufgabe, aufgabenplan
+     where auf_pid = $projektid
+       and auf_tid = $tid
+       and auf_aid = $aid
+       and apl_pid = auf_pid
+       and apl_tid = auf_tid
+       and apl_aid = auf_aid
+       and apl_ppl = $projektplan
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Aufgabe bearbeiten' &>
+
+<table>
+ <tr>
+  <th class='summe'>
+   Name der Aufgabe
+  </th>
+  <td>
+   <input type='text' name='name' value='<%$auf_name%>' size='60'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Startdatum
+  </th>
+  <td>
+   <& '/inputdatum', name => 'startdatum', value => $apl_startdatum &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Endedatum
+  </th>
+  <td>
+   <& '/inputdatum', name => 'endedatum', value => $apl_endedatum &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Dauer (Tage)
+  </th>
+  <td>
+   <input type='text' name='dauer' value='<%$apl_dauer%>'
+     size='3'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Beschreibung
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+  <textarea name='beschreibung' rows='10' cols='60'><%$apl_beschreibung%></textarea>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+
+<script language="JavaScript" type="text/javascript">
+   document.forms[0].name.focus()
+</script>

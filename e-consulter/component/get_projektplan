@@ -1,0 +1,80 @@
+<%doc>
+  Liefert aktuellen oder neuesten Projektplan.
+  aktuellen:
+   $p = $m->comp('/get_projektplan', dbh => $dbh, projektid => $projektid);
+
+  neuesten:
+   $p = $m->comp('/get_projektplan', dbh => $dbh, projektid => $projektid,
+           neu => 1);
+
+  aktuellen oder neuesten, wenn kein aktueller vorhanden ist
+   $p = $m->comp('/get_projektplan', dbh => $dbh, projektid => $projektid,
+           aktuellneu => 1);
+
+</%doc>
+<%args>
+$dbh
+$projektid
+$neu => undef
+$aktuellneu => undef
+$stand => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(fehler);
+
+  my $projektplan;
+
+  $stand = $stand ? new Contavia::Date($stand) : Contavia::Date::current;
+  #$stand->tag(1) unless $stand->is_null;
+  $stand = $stand->qpgdate;
+
+  if ($neu)
+  {
+    $projektplan = $dbh->selectrow_array( <<"EOF" );
+      select max(ppl_nummer)
+        from projektplan
+       where ppl_pid = $projektid
+EOF
+
+  }
+  elsif ($aktuellneu)
+  {
+    # suche freigegebenen Projektplan
+    $projektplan = $dbh->selectrow_array( <<"EOF" );
+      select max(ppl_nummer)
+        from projektplan
+       where ppl_pid = $projektid
+         and ppl_auftrag is not null
+         and ppl_auftrag <= $stand
+EOF
+
+    # suche nicht freigegebenen Projektplan, wenn kein freigegebener vorhanden
+    $projektplan = $dbh->selectrow_array( <<"EOF" ) unless $projektplan;
+      select max(ppl_nummer)
+        from projektplan
+       where ppl_pid = $projektid
+EOF
+
+    fehler ("kein Projektplan zum Projekt $projektid vorhanden")
+      unless $projektplan;
+  }
+  else
+  {
+    # suche letzten freigegebenen Projektplan
+    $projektplan = $dbh->selectrow_array( <<"EOF" );
+      select max(ppl_nummer)
+        from projektplan
+       where ppl_pid = $projektid
+         and ppl_auftrag is not null
+         and ppl_auftrag <= $stand
+EOF
+
+    fehler ("kein freigegebener Projektplan zum Projekt vorhanden")
+      unless $projektplan;
+  }
+
+  return $projektplan;
+
+</%perl>

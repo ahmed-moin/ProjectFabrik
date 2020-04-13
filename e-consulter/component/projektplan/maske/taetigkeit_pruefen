@@ -1,0 +1,274 @@
+<%args>
+$dbh
+$projektid
+$waehrung
+$atr_uid => undef
+$atr_tid => undef
+$atr_aid => undef
+$atr_nummer => undef
+$ansicht => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatpt);
+
+  my $uid = $dbh->selectall_arrayref( "
+    select distinct atr_uid
+      from auftrag
+     where atr_pid = $projektid
+       and exists (select 1
+                     from taetigkeit
+                    where tae_auftrag = atr_nummer
+                      and tae_freigabedatum is not null
+                      and tae_geprueft is null)" );
+
+  $atr_uid = $uid->[0]->[0] if ($uid && @$uid == 1);
+  $atr_tid = undef unless $atr_uid;
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select distinct atr_tid, tpr_titel
+      from auftrag
+       join teilprojekt
+         on tpr_pid = atr_pid
+        and tpr_tid = atr_tid
+     where atr_pid = $projektid
+       and atr_uid = '$atr_uid'
+       and exists(select 1
+                    from taetigkeit
+                   where tae_auftrag = atr_nummer
+                     and tae_freigabedatum is not null
+                     and tae_geprueft is null)") if $atr_uid;
+
+  $atr_tid = $tpr->[0]->[0] if ($tpr && @$tpr == 1);
+  $atr_aid = undef unless $atr_tid;
+
+  my $auf = $dbh->selectall_arrayref( "
+    select distinct atr_aid, auf_name
+      from auftrag
+       join aufgabe
+         on auf_pid = atr_pid
+        and auf_tid = atr_tid
+        and auf_aid = atr_aid
+     where atr_pid = $projektid
+       and atr_uid = '$atr_uid'
+       and atr_tid = $atr_tid
+       and exists(select 1
+                    from taetigkeit
+                   where tae_auftrag = atr_nummer
+                     and tae_freigabedatum is not null
+                     and tae_geprueft is null)") if $atr_uid && $atr_tid;
+
+  $atr_aid = $auf->[0]->[0] if ($auf && @$auf == 1);
+  $atr_nummer = undef unless $atr_aid;
+
+  my $atr = $dbh->selectall_arrayref( "
+    select atr_nummer
+      from auftrag
+     where atr_pid = $projektid
+       and atr_uid = '$atr_uid'
+       and atr_tid = $atr_tid
+       and atr_aid = $atr_aid
+       and exists(select 1
+                    from taetigkeit
+                   where tae_auftrag = atr_nummer
+                     and tae_freigabedatum is not null
+                     and tae_geprueft is null)" )
+      if $atr_uid && $atr_tid && $atr_aid;
+
+  $atr_nummer = $atr->[0]->[0] if ($atr && @$atr == 1);
+
+  my $atr_personentage = $dbh->selectrow_array( "
+    select sum(atr_personentage)
+      from auftrag
+     where atr_nummer = $atr_nummer" ) if $atr_nummer;
+
+  my $tae_pt = $dbh->selectrow_array( "
+    select sum(tae_stunden) / 8
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+       and tae_freigabedatum is not null" ) if $atr_nummer;
+
+  my $abr_realisierung = $dbh->selectrow_array( "
+    select abr_realisierung
+      from auftragbericht
+     where abr_nummer = $atr_nummer
+       and abr_datum = (
+         select max(abr_datum)
+           from auftragbericht
+          where abr_nummer = $atr_nummer)" ) if $atr_nummer;
+
+  my $tae = $dbh->selectall_arrayref( "
+    select tae_lfdnr, tae_datum, tae_datum_bis,
+           tae_stunden / 8, tae_beschreibung
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+       and tae_freigabedatum is not null
+       and tae_geprueft is null" ) if $atr_nummer;
+
+</%perl>
+
+<h1>Tätigkeit prüfen</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Mitarbeiter
+  </th>
+  <td colspan='2'>
+   <& '/select', name     => 'atr_uid',
+                 values   => $uid,
+                 selected => $atr_uid &> <br>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td colspan='2'>
+% if ($tpr) {
+   <& '/select', name     => 'atr_tid',
+                 width    => 350,
+                 values   => $tpr,
+                 showkey  => 1,
+                 selected => $atr_tid &> <br>
+% }
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Aufgabe
+  </th>
+  <td colspan='2'>
+% if ($auf) {
+   <& '/select', name     => 'atr_aid',
+                 width    => 350,
+                 values   => $auf,
+                 showkey  => 1,
+                 selected => $atr_aid &> <br>
+% }
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Auftrag Nr.
+  </th>
+  <td colspan='2'>
+% if ($atr) {
+   <& '/select', name     => 'atr_nummer',
+                 values   => $atr,
+                 selected => $atr_nummer &> <br>
+% }
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Auftragssumme
+  </th>
+  <td align='right'>
+   <%formatpt($atr_personentage)%> PT
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   bisheriger Aufwand
+  </th>
+  <td align='right'>
+   <%formatpt($tae_pt)%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Realisierungsgrad
+  </th>
+  <td align='right'>
+   <%$abr_realisierung%>%
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff' width='5%'>
+  </td>
+  <th bgcolor='#ccccff' width='10%'>
+   Datum
+  </th>
+  <th bgcolor='#ccccff' width='10%'>
+   PT
+  </th>
+  <th bgcolor='#ccccff' width='60%'>
+   Beschreibung
+  </th>
+ </tr>
+
+ <%perl>
+  my $sum;
+
+  foreach (@$tae)
+  {
+    my ($tae_lfdnr, $tae_datum, $tae_datum_bis,
+        $tae_pt, $tae_beschreibung) = @$_;
+
+    $tae_datum = new Contavia::Date($tae_datum);
+    $tae_datum_bis = new Contavia::Date($tae_datum_bis) if $tae_datum_bis;
+    $sum += $tae_pt;
+
+    my $datum = $tae_datum->fixedformat;
+    $datum .= '-' . $tae_datum_bis->fixedformat if $tae_datum_bis;
+
+ </%perl>
+
+ <tr>
+  <td>
+   <input type='checkbox' name='tae_lfdnr' value=<%$tae_lfdnr%>>
+  </td>
+  <td>
+   <pre><%$datum%></pre>
+  </td>
+  <td align='right'>
+   <%formatpt($tae_pt)%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <th class='label' bgcolor='#cccccc' colspan='2'>
+   Summe
+  </th>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatpt($sum)%>
+  </td>
+  <td bgcolor='#cccccc'>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='akzeptieren'
+        value='akzeptieren'
+        style='width:150'>
+ <input type='submit' name='akzeptieren_alle'
+        value='alle akzeptieren'
+        style='width:150'>
+ <input type='submit' name='ablehnen'
+        value='ablehnen'
+        style='width:150'>
+ <input type='submit' name='ablehnen_alle'
+        value='alle ablehnen'
+        style='width:150'>
+</p>
+
+<hr>
+
+Nur die Mitarbeiter, Teilprojekte, Aufgaben und Aufträge werden angeboten, bei denen ungeprüfte
+Tätigkeiten zu finden sind.

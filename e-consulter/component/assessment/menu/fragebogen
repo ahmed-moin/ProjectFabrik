@@ -1,0 +1,46 @@
+<%args>
+$dbh
+$menu_head
+$menu_footer
+$seite
+$lang => 'de'
+</%args>
+<%perl>
+
+  my $sth = $dbh->prepare(<<"EOF");
+   select distinct fra_seite
+     from assfrage
+    where fra_lang = '$lang'
+    order by 1
+EOF
+
+  my $fra_seite;
+  $sth->execute;
+  $sth->bind_col(1, \$fra_seite);
+
+  my @menu_center;
+  my $aktiv = 0;
+  while ($sth->fetch)
+  {
+    if ($seite == $fra_seite)
+    {
+      push @menu_center, { selected    => 1, label => "<i18n>Seite</i18n> $fra_seite" };
+      $aktiv = 1;
+    }
+    elsif ($aktiv)
+    {
+      push @menu_center, { aktion => 'fragebogen', label => "<i18n>Seite</i18n> $fra_seite" };
+      $aktiv = 0;
+    }
+    else
+    {
+      push @menu_center, { notselected => 1, label => "<i18n>Seite</i18n> $fra_seite" };
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 40 },
+           @menu_center,
+           @$menu_footer
+         ];
+</%perl>

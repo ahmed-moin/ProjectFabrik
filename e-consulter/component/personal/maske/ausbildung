@@ -1,0 +1,247 @@
+<%args>
+@menu
+$uid
+$dbh
+$sel_aus_lfdnr => undef
+</%args>
+<%once>
+  my $auskat;
+</%once>
+<%perl>
+  use Contavia::Date;
+
+  my $aus = $dbh->selectall_arrayref( <<"EOF" );
+    select aus_lfdnr, aus_katid, akt_bezeichnung,
+           aus_institut, aus_bezeichnung, aus_abschluss,
+           aus_datvon, aus_datbis, aus_nomonth
+      from ausbildung, auskat
+     where aus_benuid = '$uid'
+       and aus_katid = akt_id
+     order by aus_datvon desc
+EOF
+
+  $auskat = $dbh->selectall_arrayref( <<"EOF" ) unless $auskat;
+    select akt_id, akt_bezeichnung
+      from auskat
+     order by akt_id
+EOF
+
+  my @sel;
+
+</%perl>
+
+  <& '/masketitel', titel =>'Ausbildung',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+  <table width="100%">
+
+   <%perl>
+
+     foreach (@$aus) {
+       my ($aus_lfdnr, $aus_katid, $akt_bezeichnung,
+           $aus_institut, $aus_bezeichnung, $aus_abschluss,
+           $aus_datvon, $aus_datbis, $aus_nomonth) = @$_;
+       if ($aus_lfdnr == $sel_aus_lfdnr)
+       {
+         @sel = @$_;
+         next;
+       }
+       $aus_datvon = new Contavia::Date($aus_datvon);
+       $aus_datbis = new Contavia::Date($aus_datbis);
+   </%perl>
+   <tr>
+    <td>&nbsp;&nbsp;</td>
+    <th class='label' style="width:220px">
+	<i18n> Art </i18n>
+    </th>
+    <td>
+     <%$akt_bezeichnung%>
+    </td>
+    <td width="180">
+      <input type="button" value='<i18n>l&ouml;schen</i18n>' onclick="javascript:del(<% $aus_lfdnr %>)">&nbsp;
+      <input type="button" value='<i18n>bearbeiten</i18n>' onclick="javascript:edit(<% $aus_lfdnr %>)">
+    </td>
+   </tr>
+
+   <tr>
+    <td>
+    </td>
+    <th class='label'>
+	<i18n> Ausbildungsinstitut </i18n>
+    </th>
+    <td colspan="2">
+     <%$aus_institut%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Bezeichnung/Studiengang </i18n>
+    </th>
+    <td colspan="2">
+     <%$aus_bezeichnung%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Datum </i18n>
+    </th>
+    <td colspan="2">
+     <% $aus_nomonth ? '' : $aus_datvon->monat() .'/' %><% $aus_datvon->jahr() %>
+     &ndash;
+%    if ($aus_datbis->is_null and not $aus_datvon->is_null) {
+       heute
+%    } else {
+       <% $aus_nomonth ? '' : $aus_datbis->monat() .'/' %><% $aus_datbis->jahr() %>
+%    }
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Abschluss </i18n>
+    </th>
+    <td colspan="2">
+     <%$aus_abschluss%>
+    </td>
+   </tr>
+
+   <tr>
+    <td colspan="4">
+     <hr>
+    </td>
+   </tr>
+
+   <%perl>
+     }
+
+     my ($aus_lfdnr, $aus_katid, $akt_bezeichnung,
+         $aus_institut, $aus_bezeichnung, $aus_abschluss,
+         $aus_datvon, $aus_datbis, $aus_nomonth) = @sel;
+     $aus_datvon = new Contavia::Date($aus_datvon);
+     $aus_datbis = new Contavia::Date($aus_datbis);
+   </%perl>
+
+   <tr>
+    <td>
+     <a name="editmark"></a>
+%    if ($aus_lfdnr) {
+     <input type='hidden' name='aus_lfdnr' value='<%$aus_lfdnr%>'>
+%    }
+    </td>
+    <th class='label'>
+	<i18n> Art </i18n>
+    </th>
+    <td>
+     <select name='aus_katid'>
+      <option>
+%     foreach (@$auskat) {
+%       my ($akt_id, $akt_bezeichnung) = @$_;
+      <option value='<%$akt_id%>'<%$aus_katid == $akt_id ? ' selected' : ''%>><%$akt_bezeichnung%>
+%     }
+     </select>
+    </td>
+   </tr>
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Ausbildungsinstitut </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='40'
+            maxlength='80'
+            name='aus_institut'
+            value='<%$aus_institut%>'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Bezeichnung/Studiengang </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='40'
+            maxlength='80'
+            name='aus_bezeichnung'
+            value='<%$aus_bezeichnung%>'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Datum </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='2'
+            maxlength='2'
+            name='aus_datvon_monat'
+            value='<% $aus_nomonth ? '' : $aus_datvon->monat() %>'>/
+     <input type='text'
+            size='4'
+            maxlength='4'
+            name='aus_datvon_jahr'
+            value='<%$aus_datvon->jahr()%>'>
+       -
+     <input type='text'
+            size='2'
+            maxlength='2'
+            name='aus_datbis_monat'
+            value='<% $aus_nomonth ? '' : $aus_datbis->monat() %>'>/
+     <input type='text'
+            size='4'
+            maxlength='4'
+            name='aus_datbis_jahr'
+            value='<%$aus_datbis->jahr()%>'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Abschlu&szlig; </i18n>
+    </th>
+    <td>
+     <input type='text'
+            size='20'
+            maxlength='80'
+            name='aus_abschluss'
+            value='<%$aus_abschluss%>'>
+    </td>
+   </tr>
+  </table>
+
+%#  <input type='submit' name='bearbeiten' value='Auswahl bearbeiten'>
+%#  <input type='submit' name='loeschen' value='Auswahl l&ouml;schen'>
+  <input type='submit' name='speichern' value='Speichern'>
+  <input type="hidden" name="auswahl">
+  <input type="hidden" name="bearbeiten">
+  <input type="hidden" name="loeschen">
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>
+
+  <script type="text/javascript">
+    function edit(id) {
+      document.forms[0].auswahl.value = id;
+      document.forms[0].bearbeiten.value = 'bearbeiten';
+      document.forms[0].action = '#editmark';
+      document.forms[0].submit();
+    }
+
+    function del(id) {
+      if (confirm('<i18n>Wirklich loeschen?</i18n>')) {
+        document.forms[0].auswahl.value = id;
+        document.forms[0].loeschen.value = 'l';
+        document.forms[0].submit();
+      }
+    }
+  </script>

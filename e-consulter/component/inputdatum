@@ -1,0 +1,52 @@
+<%args>
+$name
+$value => undef
+$bemerkung_name => undef
+$bemerkung_value => undef
+</%args>
+<%perl>
+
+ use Contavia::Date;
+ use Data::Dumper;
+
+ if ($value)
+ {
+   my $d = new Contavia::Date($value);
+
+</%perl>
+<table>
+ <tr>
+  <td><input type='text' name='<%$name%>' value='<%$d->tag%>' size=2 maxlength=2></td>
+  <td>.</td>
+  <td><input type='text' name='<%$name%>' value='<%$d->monat%>' size=2 maxlength=2></td>
+  <td>.</td>
+  <td><input type='text' name='<%$name%>' value='<%$d->jahr%>' size=4 maxlength=4></td>
+% if ($bemerkung_name) {
+  <td>&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="<% $bemerkung_name %>" value="<% $bemerkung_value %>"></td>
+% }
+ </tr>
+</table>
+<%perl>
+
+ }
+ else
+ {
+
+</%perl>
+<table>
+ <tr>
+  <td><input type='text' name='<%$name%>' size=2 maxlength=2></td>
+  <td>.</td>
+  <td><input type='text' name='<%$name%>' size=2 maxlength=2></td>
+  <td>.</td>
+  <td><input type='text' name='<%$name%>' size=4 maxlength=4></td>
+% if ($bemerkung_name) {
+  <td>&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="<% $bemerkung_name %>" value="<% $bemerkung_value %>"></td>
+% }
+ </tr>
+</table>
+<%perl>
+
+ }
+
+</%perl>

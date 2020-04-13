@@ -1,0 +1,77 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Admin
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Mai 2001
+
+  Beschreibung
+    Administrator
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Mai 2001
+
+</%doc>
+<%attr>
+
+  tool       => 'admin'
+  titel      => 'Administrator'
+  barcolor   => [255, 255, 0]
+  titel_img  => '/cgi-bin/titel?ADMINISTRATOR&amp;e-consulter'
+  logo       => '/images/logo/e-consulter.gif'
+  defmaske   => 'login'
+  startmaske => '-'
+  startmenu  => 'projekt'
+
+</%attr>
+
+
+<%method getmenu>
+<%args>
+$sessid => undef
+</%args>
+<%perl>
+
+  if (!$sessid)
+  {
+    return
+    (
+        { maske  => 'login',
+          label  => 'Login' },
+    );
+  }
+  else
+  {
+    return ();
+  }
+
+</%perl>
+</%method>
+
+<%method getmenu_head>
+<%perl>
+  return
+  (
+    { maske  => 'projekte',
+      menu   => 'projekt',
+      label  => 'Projekt' },
+    { maske  => 'gesamtprojekte',
+      menu   => 'gprojekt',
+      label  => 'Gesamtprojekte' },
+    { maske  => 'assergebnis',
+      menu   => 'assessment',
+      label  => 'Assessment' },
+    { maske  => 'qual',
+      menu   => 'qual',
+      label  => 'Qualifikationen' },
+    { maske  => 'benutzer_benutzer',
+      menu   => 'benutzer',
+      label  => 'Benutzer' },
+    { maske  => 'translate',
+      menu   => undef,
+      label  => 'Übersetzung' },
+    { maske  => 'fehler',
+      menu   => 'fehler',
+      label  => 'Fehler' },
+  );
+</%perl>
+</%method>

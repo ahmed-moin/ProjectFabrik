@@ -1,0 +1,212 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$sel_datum => undef
+$tid => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $current = Contavia::Date::current;
+
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  $sel_datum->tag(1);
+  my $pg_datum = $sel_datum->qpgdate;
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+       join teilprojekt
+         on tpl_pid = tpr_pid
+        and tpl_tid = tpr_tid
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan" );
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = new Contavia::Date($dbh->selectrow_array( "
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid" ));
+  $anf_datum->tag(1);
+
+  # lese Berichte
+  my $abr = $dbh->selectall_arrayref( "
+   select atr_nummer, atr_uid, atr_aid, auf_name,
+          apl_startdatum, apl_endedatum,
+          abr_realisierung, abr_fertigbis, abr_geprueft, abr_text
+     from auftrag
+      join aufgabe
+        on auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+      join aufgabenplan
+        on apl_pid = atr_pid
+       and apl_tid = atr_tid
+       and apl_aid = atr_aid
+       and apl_ppl = $projektplan
+      left outer join auftragbericht
+        on abr_nummer = atr_nummer
+       and abr_datum  = $pg_datum
+    where atr_pid = $projektid
+      and atr_tid = $tid
+    order by atr_aid" ) if $tid;
+
+</%perl>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Mitarbeiterbericht</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+    <& '/select_monat', name     => 'sel_datum',
+                        von      => $anf_datum,
+                        bis      => $current,
+                        selected => $sel_datum &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   <& '/select', name => 'tid',
+                 values => $tpr,
+                 selected => $tid &>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td rowspan='2' bgcolor='#ccccff'>
+   &nbsp;
+  </td>
+  <th rowspan='2' bgcolor='#ccccff'>
+   Mitarbeiter
+  </th>
+  <th colspan='2' rowspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   Auftrag
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Plan
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Ist
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   Geprüft
+  </th>
+ </tr>
+
+ <tr>
+  <th bgcolor='#ccccff'>
+   start
+  </th>
+  <th bgcolor='#ccccff'>
+   ende
+  </th>
+  <th bgcolor='#ccccff'>
+   fertig bis
+  </th>
+  <th bgcolor='#ccccff'>
+   Grad
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$abr)
+  {
+    my ($atr_nummer, $atr_uid, $atr_aid, $auf_name,
+        $apl_startdatum, $apl_endedatum,
+        $abr_realisierung, $abr_fertigbis,
+        $abr_geprueft, $abr_text) = @$_;
+
+    my $bericht =  $abr_realisierung || $abr_fertigbis || $abr_geprueft || $abr_text;
+
+ </%perl>
+ <tr>
+  <td>
+% if ($bericht) {
+   <input type='radio' name='atr_nummer' value='<%$atr_nummer%>'>
+% } else {
+   &nbsp;
+% }
+  </td>
+  <td>
+   <%$atr_uid%>
+  </td>
+  <td>
+   <%$atr_aid%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td>
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+
+  <%perl>
+
+    if ($bericht)
+    {
+      my ($fertigbis, $bgcolor);
+      if ($abr_fertigbis)
+      {
+        $fertigbis = new Contavia::Date($abr_fertigbis);
+        my $endedatum = new Contavia::Date($apl_endedatum);
+        $bgcolor = $fertigbis->cmp($apl_endedatum) > 0 ? ' bgcolor=#ff8888'
+                                                       : ' bgcolor=#88ff88';
+      }
+
+  </%perl>
+
+  <td<%$bgcolor%>>
+   <%$abr_fertigbis && new Contavia::Date($abr_fertigbis)->preformat%>
+  </td>
+  <td align='right'>
+   <% defined($abr_realisierung) && "$abr_realisierung%" %>
+  </td>
+  <td>
+   <%new Contavia::Date($abr_geprueft)->preformat%>
+  </td>
+
+%   } # if ($bericht)
+
+ </tr>
+
+% } # foreach (@$abr)
+
+</table>
+
+<p class='label'>
+ <input type='submit' name='anzeigen' value='Bericht anzeigen'>
+</p>
+
+<h2>Erläuterung</h2>
+
+<p>
+Hier werden alle Mitarbeiteraufträge des Teilprojektes aufgelistet.
+Zeilen, die in der 1. Spalte nicht aufrufbar sind, enthalten für den ausgewählten Monat
+keine Berichte.
+</p>

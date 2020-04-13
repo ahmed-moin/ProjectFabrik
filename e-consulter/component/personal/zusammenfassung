@@ -1,0 +1,484 @@
+<%args>
+$dbh
+$uid
+$sessid
+$projektid => undef
+$rol_uid => undef
+$anonymized => 0
+
+# uid:     user logged in
+# rol_uid: user whose details should be displayed
+</%args>
+<%once>
+    use constant ASSESSMENT_QUESTIONS => 40;
+</%once>
+<%init>
+  use Contavia::Db qw(select_hash);
+  use Contavia::Date;
+
+  my $first;
+
+  my $prj = $dbh->selectall_arrayref ( "
+   select prj_id, prj_titel
+     from projekt, rolle
+    where prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_kunde" );
+
+  my $rol = $dbh->selectcol_arrayref( "
+   select rol_uid
+     from rolle
+    where rol_pid = $projektid
+      and (rol_admin
+       or rol_mitarbeiter)" ) if $projektid;
+
+  my ($rol_admin, $rol_mitarbeiter) = $dbh->selectrow_array( "
+    select rol_admin, rol_mitarbeiter
+      from rolle
+     where rol_pid = $projektid
+       and rol_uid = '$rol_uid'" ) if $rol_uid and $projektid;
+
+  my (%auskat, %qual, %branche, %pos, %aufkat);
+
+  %auskat = select_hash($dbh, <<"EOF") unless %auskat;
+    select akt_id, akt_bezeichnung
+      from auskat
+EOF
+
+  %qual = select_hash($dbh, <<"EOF") unless %qual;
+    select qua_id, qua_bezeichnung, qua_rank
+      from qual
+EOF
+
+  %branche = select_hash($dbh, <<"EOF") unless %branche;
+    select bra_id, bra_bezeichnung
+      from branche
+EOF
+
+  %pos = select_hash($dbh, <<"EOF") unless %pos;
+    select pos_id, pos_bezeichnung
+      from pos
+EOF
+
+  %aufkat = select_hash($dbh, <<"EOF") unless %aufkat;
+    select auf_id, auf_bezeichnung
+      from aufkat
+EOF
+
+  # lese Daten
+  my ($ben_anrede, $ben_titel, $ben_vorname, $ben_nachname, $ben_ref,
+      $ben_strasse, $ben_ort, $ben_plz, $ben_telefon, $ben_telefax,
+	    $ben_handy, $ben_email, $ben_land ,$ben_assdel, $ben_blacklisted,
+      $ben_blackreason) = $dbh->selectrow_array( <<"EOF" );
+    select ben_anrede, ben_titel, ben_vorname, ben_nachname, ben_ref,
+	         ben_strasse, ben_ort, ben_plz, ben_telefon, ben_telefax,
+    		   ben_handy, ben_email, ben_land, ben_assdel, ben_blacklisted,
+           ben_blackreason
+      from benutzer
+     where ben_uid = '$rol_uid'
+EOF
+
+  my $aus = $dbh->selectall_arrayref( <<"EOF" );
+    select aus_katid, aus_institut, aus_bezeichnung,
+           aus_abschluss, aus_datvon, aus_datbis,
+           aus_nomonth
+      from ausbildung
+     where aus_benuid = '$rol_uid'
+     order by aus_datvon desc
+EOF
+
+  my $qualrank = $dbh->selectall_arrayref( <<"EOF" );
+    select qra_qualid, qra_rank, qra_bemerkung
+      from qualrank
+     where qra_benuid = '$rol_uid'
+EOF
+
+  my $bistaet = $dbh->selectall_arrayref( <<"EOF" );
+    select bta_branche, bta_position, bta_aufgabe,
+           bta_firma, bta_bemerkung, bta_datvon, bta_datbis,
+           bta_nomonth
+      from bistaet
+     where bta_benuid = '$rol_uid'
+     order by bta_datvon desc
+EOF
+
+  my $referenz = $dbh->selectall_arrayref( <<"EOF" );
+    select ref_firma, ref_projekt, ref_ansprechpartner, ref_kontakt
+      from referenz
+     where ref_benuid = '$rol_uid'
+     order by ref_lfdnr
+EOF
+
+  my $verfuegbarkeit = $dbh->selectall_arrayref( <<"EOF" );
+    select vfu_datvon, vfu_datbis, vfu_bemerkung
+      from verfuegbarkeit
+     where vfu_benuid = '$rol_uid'
+     order by vfu_datvon, vfu_datbis
+EOF
+
+  my $vkunde = $dbh->selectall_arrayref( <<"EOF" );
+    select vkn_firma
+      from vkunde
+     where vkn_benuid = '$rol_uid'
+     order by vkn_lfdnr
+EOF
+
+  my $pic_exists = ($dbh->selectrow_array("select count(*) from bild where bld_uid='$rol_uid'"))[0];
+
+  my $has_assessment = ($dbh->selectrow_array("
+    select count(*)
+      from assantwort
+     where ant_uid='$rol_uid'"))[0] if $rol_uid;
+
+  my $sth = $dbh->prepare('
+    select anh_id, anh_beschreibung
+      from anhaenge
+     where anh_uid=?
+     order by anh_beschreibung');
+
+  $sth->execute($rol_uid);
+
+  my $anhaenge = $sth->fetchall_arrayref();
+</%init>
+<%cleanup>
+  $ARGS{projektid} = undef;
+  return \%ARGS;
+</%cleanup>
+% if ($rol_uid) {
+<table border="0" style="width:100%;">
+  <tr><td style="width:520px">
+%#  if ($ben_blacklisted) {
+%#    <b>Benutzer ist auf der Blackliste! Grund:</b><br>
+%#    <% $ben_blackreason %><br><br>
+%#  }
+%  if (not $anonymized) {
+    <table border="0">
+      <tr>
+        <td colspan="2">
+	        <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%><br>
+          <%$ben_strasse%><br>
+          <%$ben_plz ." ". $ben_ort%><br><br>
+      	</td>
+      </tr>
+%   $m->print("<tr><td><b><i18n>Telefon</i18n></b></td><td>$ben_telefon</td></tr>") if $ben_telefon;
+%   $m->print("<tr><td><b><i18n>Telefax</i18n></b></td><td>$ben_telefax</td></tr>") if $ben_telefax;
+%   $m->print("<tr><td><b><i18n>Handy</i18n></b></td><td>$ben_handy</td></tr>")     if $ben_handy;
+%   $m->print("<tr><td><b><i18n>Email</i18n></b></td><td><a href=\"mailto:$ben_email\">$ben_email</a></td></tr>")     if $ben_email;
+    </table>
+%  }
+  </td>
+  <td style="text-align:right;vertical-align:top;">
+    <img src="/cgi-bin/bild?uid=<% $rol_uid %>" alt="bild">
+  </td></tr>
+</table>
+  
+<table border="1" width="100%">
+% if ($projektid) {
+ <tr>
+  <th class="label">
+   Rolle
+  </th>
+  <td style="vertical-align:top;">
+   <% $rol_mitarbeiter ? 'Mitarbeiter' :
+      $rol_admin       ? 'Projektleiter' : ''%>
+  </td>
+ </tr>
+% }
+ <tr>
+  <th class="label" style="width:132px">
+   Ausbildung
+  </th>
+  <td colspan="2">
+   <table width="100%">
+    <%perl>
+
+    $first = 1;
+    foreach (@$aus)
+    {
+      my ($aus_katid, $aus_institut, $aus_bezeichnung,
+          $aus_abschluss, $aus_datvon, $aus_datbis, $aus_nomonth) = @$_;
+
+      $aus_datvon = new Contavia::Date($aus_datvon);
+      $aus_datbis = new Contavia::Date($aus_datbis);
+
+      $m->out('<tr><td colspan=2><hr></td></tr>') unless $first;
+      $first = 0;
+
+    </%perl>
+    <tr>
+     <th class="label">
+      Art
+     </th>
+     <td colspan="2">
+      <%$auskat{$aus_katid}%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Institut
+     </th>
+     <td colspan="2">
+      <%$aus_institut%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Bezeichnung/Studiengang
+     </th>
+     <td colspan="2">
+      <%$aus_bezeichnung%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Datum
+     </th>
+     <td colspan="2">
+      <% $aus_nomonth ? '' : $aus_datvon->monat() .'/' %><% $aus_datvon->jahr() %>
+      &ndash;
+%#    if ($aus_datbis->is_null) {
+%#      heute
+%#    } else {
+      <% $aus_nomonth ? '' : $aus_datbis->monat() .'/' %><% $aus_datbis->jahr() %>
+%#    }
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Abschlu&szlig;
+     </th>
+     <td colspan="2">
+      <%$aus_abschluss%>
+     </td>
+    </tr>
+
+%   } # foreach (@$aus)
+   </table>
+  </td>
+ </tr>
+
+ <tr>
+  <th class="label">
+   Qualifikation
+  </th>
+  <td colspan="2">
+   <table width="100%">
+    <& '/profiles/maske/qualifikation:.qualnew', dbh => $dbh, uid => $rol_uid &>
+   </table>
+  </td>
+ </tr>
+
+ <tr>
+  <th class="label">
+   bisheriger<br>T&auml;tigkeitsbereich
+  </th>
+  <td colspan="2">
+% if (@$bistaet) {
+   <table width="100%">
+    <%perl>
+
+    $first = 1;
+    foreach (@$bistaet)
+    {
+      my ($bta_branche, $bta_position, $bta_aufgabe,
+          $bta_firma, $bta_bemerkung, $bta_datvon, $bta_datbis, $bta_nomonth) = @$_;
+
+      my $bra_bezeichnung = $branche{$bta_branche};
+      my $pos_bezeichnung = $pos{$bta_position};
+      my $auf_bezeichnung = $aufkat{$bta_aufgabe};
+
+      $bta_datvon = new Contavia::Date($bta_datvon);
+      $bta_datbis = new Contavia::Date($bta_datbis);
+
+      $m->out('<tr><td colspan=2><hr></td></tr>') unless $first;
+      $first = 0;
+
+    </%perl>
+    <tr>
+     <th class="label">
+      Branche
+     </th>
+     <td>
+      <%$bra_bezeichnung%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Position
+     </th>
+     <td>
+      <%$pos_bezeichnung%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Aufgabe
+     </th>
+     <td>
+      <%$auf_bezeichnung%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Firma
+     </th>
+     <td>
+      <%$bta_firma%>
+     </td>
+    </tr>
+
+% if ($bta_bemerkung) {
+    <tr>
+     <th class="label">
+      Bemerkung
+     </th>
+     <td>
+%     $bta_bemerkung =~ s/\n/<br>/g;
+      <%$bta_bemerkung%>
+     </td>
+    </tr>
+
+% }
+    <tr>
+     <th class="label">
+      Datum
+     </th>
+     <td>
+      <% $bta_nomonth ? '' : $bta_datvon->monat() .'/' %><% $bta_datvon->jahr() %> 
+      &ndash; 
+%     if ($bta_datbis->is_null) { 
+       heute 
+%     } else { 
+       <% $bta_nomonth ? '' : $bta_datbis->monat() .'/' %><% $bta_datbis->jahr() %> 
+%     } 
+     </td>
+    </tr>
+
+% }
+   </table>
+% }
+  </td>
+ </tr>
+
+% if (@$referenz) {
+ <tr>
+  <th class="label">
+   Referenzen
+  </th>
+  <td colspan="2">
+   <table width="100%">
+    <%perl>
+
+     $first = 1;
+     foreach (@$referenz)
+     {
+       my ($ref_firma, $ref_projekt, $ref_ansprechpartner, $ref_kontakt) = @$_;
+
+       $m->out('<tr><td colspan=2><hr></td></tr>') unless $first;
+       $first = 0;
+
+    </%perl>
+    <tr>
+     <th class="label">
+      Firma
+     </th>
+     <td>
+      <%$ref_firma%>
+     </td>
+    </tr>
+
+    <tr>
+     <th class="label">
+      Projekt
+     </th>
+     <td>
+      <%$ref_projekt%>
+     </td>
+    </tr>
+
+% if ($ref_ansprechpartner) {
+    <tr>
+     <th class="label">
+      Ansprechpartner
+     </th>
+     <td>
+      <%$ref_ansprechpartner%>
+     </td>
+    </tr>
+
+% }
+% if ($ref_kontakt) {
+    <tr>
+     <th class="label">
+      Kontakt
+     </th>
+     <td>
+      <%$ref_kontakt%>
+     </td>
+    </tr>
+
+% }
+% }
+   </table>
+  </td>
+ </tr>
+% } # if (@$referenz)
+
+ <tr>
+  <th class="label">
+   <i18n> Verfügbarkeit </i18n>
+  </th>
+  <td colspan="2">
+% foreach (@$verfuegbarkeit) {
+%   my ($vfu_datvon, $vfu_datbis, $vfu_bem) = @$_;
+%   $vfu_datvon = new Contavia::Date($vfu_datvon);
+%   $vfu_datbis = new Contavia::Date($vfu_datbis);
+   <%$vfu_datvon->format%> &ndash; <%$vfu_datbis->format%><% $vfu_bem ? "&nbsp;&nbsp;&nbsp;($vfu_bem)" : '' %><br>
+% }
+  </td>
+ </tr>
+
+ <tr>
+  <th class="label">
+   <i18n> Sperrvermerke </i18n>
+  </th>
+  <td colspan="2">
+% foreach (@$vkunde) {
+%   my ($vkn_firma) = @$_;
+   <%$vkn_firma%> <br>
+% }
+   &nbsp;
+  </td>
+ </tr>
+
+% if (not $anonymized) {
+ <tr>
+  <th class="label">
+   <i18n>Anh&auml;nge</i18n>
+  </th>
+  <td colspan="2">
+%  if ($anhaenge) {
+%    foreach (@$anhaenge) {
+%     my ($anh_id, $anh_beschreibung) = @$_;
+      <a href="/files/<% $anh_id %>?sid=<% $sessid %>&a=1"><% $anh_beschreibung %></a><br>
+%    }
+%  }
+   &nbsp;
+  </td>
+ </tr>
+% }
+% } # if ($rol_uid)
+</table>
+
+% if ($has_assessment == ASSESSMENT_QUESTIONS) {
+    <br><br><br>
+    <h2>Assessment Ergebnis</h2>
+    <& '/assergebnis', dbh => $dbh, uid => $rol_uid &>
+% }

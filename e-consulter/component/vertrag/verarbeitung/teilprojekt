@@ -1,0 +1,32 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$tpl_tid => undef
+$tpl_start => undef
+$tpl_ende => undef
+$speichern => undef
+$tpr_verantwortlich => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    $dbh->update( 'teilprojektplan',
+      { tpl_pid   => $projektid,
+        tpl_ppl   => $projektplan,
+        tpl_tid   => $tpl_tid },
+      { tpl_start => new Contavia::Date($tpl_start)->qpgdate,
+        tpl_ende  => new Contavia::Date($tpl_ende)->qpgdate } );
+
+    $dbh->update( 'teilprojekt',
+      { tpr_pid   => $projektid,
+        tpr_tid   => $tpl_tid },
+      { tpr_verantwortlich => $dbh->quote($tpr_verantwortlich) } );
+
+    $dbh->commit;
+  }
+
+</%perl>

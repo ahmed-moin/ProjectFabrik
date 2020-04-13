@@ -1,0 +1,256 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$waehrung => undef
+$sel_tid => undef
+$tagessatz => undef
+$loeschen => undef
+</%args>
+<%init>
+
+  use Contavia qw(formatnumber);
+
+  $projektplan = $dbh->selectrow_array( "
+    select max(ppl_nummer)
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_ablehnung is null" ) unless $projektplan;
+
+  my $ppl_angebotdatum = $dbh->selectrow_array( "
+   select ppl_angebotdatum
+     from projektplan
+    where ppl_pid = $projektid
+      and ppl_nummer = $projektplan" ) if $projektplan;
+
+  my $tpl = $projektplan ? $dbh->selectall_arrayref( "
+   select tpl_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+     order by tpl_tid" ) : [];
+
+  my $tpr0 = $dbh->selectall_arrayref( "
+   select tpr_tid, tpr_titel
+     from teilprojekt
+    where tpr_pid = $projektid
+      and not exists (select 1
+                        from teilprojektplan
+                       where tpl_pid = tpr_pid
+                         and tpl_tid = tpr_tid)" ) if $projektplan;
+
+  my %bud = $dbh->select_hash( "
+   select bud_tid, bud_betrag, bud_personentage,
+          bud_sachkosten, bud_investition
+     from budget
+    where bud_pid = $projektid
+      and bud_ppl = $projektplan" ) if $projektplan;
+
+  # berechne Tagessatz aus dem bisher eingegebenen Budget
+  my $bud = $bud{$sel_tid};
+  my ($bud_betrag, $bud_personentage) = @$bud if $bud;
+  $tagessatz = int($bud_betrag / $bud_personentage + .5)
+    if ($bud_betrag > 0 && $bud_personentage > 0);
+
+  my %sum;
+
+</%init>
+<%cleanup>
+
+  $ARGS{projektplan} = $projektplan;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Budget</h1>
+
+Tagessatz <input type='text' name='tagessatz' value='<% formatnumber($tagessatz, 0, $ARGS{lang}) %>' size='10'>
+% if ($waehrung) {
+<%$waehrung%>
+% } else {
+W&auml;hrung <input type='text' name='waehrung_neu' size='10'>
+% $ARGS{waehrung} = undef;
+% }
+
+<br><br>
+<table width='100%' border='1'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Betrag
+  </th>
+  <th bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Investment
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tpl)
+  {
+    my ($tpl_tid, $tpr_titel) = @$_;
+    my ($bud_betrag, $bud_personentage, $bud_sachkosten,
+        $bud_investition) = $bud{$tpl_tid} ? @{$bud{$tpl_tid}} : ();
+
+    $sum{betrag}       += $bud_betrag;
+    $sum{personentage} += $bud_personentage;
+    $sum{sachkosten}   += $bud_sachkosten;
+    $sum{investition}  += $bud_investition;
+
+ </%perl>
+%   if (!$ppl_angebotdatum && $sel_tid == $tpl_tid) {
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='hidden' name='tpl_tid' value='<%$tpl_tid%>'>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <input type='text' name='tpr_titel' size='30' maxlength='80' value='<%$tpr_titel%>'>
+  </td>
+  <td>
+%  my $tmp = $bud_personentage; $tmp =~ s/\./,/ if ($ARGS{lang} eq 'de');
+   <input type='text' name='bud_personentage' value='<% $tmp %>' size='4'>
+  </td>
+  <td>
+%  $tmp = $bud_betrag; $tmp =~ s/\./,/ if ($ARGS{lang} eq 'de');
+   <input type='text' name='bud_betrag' value='<%$tmp%>' size='10'>
+  </td>
+  <td>
+%  $tmp = $bud_sachkosten; $tmp =~ s/\./,/ if ($ARGS{lang} eq 'de');
+   <input type='text' name='bud_sachkosten' value='<%$tmp%>' size='10'>
+  </td>
+  <td>
+%  $tmp = $bud_investition; $tmp =~ s/\./,/ if ($ARGS{lang} eq 'de');
+   <input type='text' name='bud_investition' value='<%$tmp%>' size='10'>
+  </td>
+ </tr>
+
+%   } else {
+ <tr>
+  <td bgcolor='#cccccc'>
+%     unless ($ppl_angebotdatum) {
+   <input type='radio' name='sel_tid' value='<%$tpl_tid%>'<%$sel_tid == $tpl_tid ? ' selected' : ''%>>
+%     }
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_personentage, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_sachkosten, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_investition, 2, $ARGS{lang})%>
+  </td>
+ </tr>
+
+%   } # if (!$ppl_angebotdatum && $sel_tid == $tpl_tid)
+%
+% } # foreach (@$tpl)
+
+% unless ($sel_tid || $ppl_angebotdatum) {
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='tpr_titel' size='30' maxlength='80'>
+  </td>
+  <td>
+   <input type='text' name='bud_personentage' size='4'>
+  </td>
+  <td>
+   <input type='text' name='bud_betrag' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_sachkosten' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_investition' size='10'>
+  </td>
+ </tr>
+
+%   if ($tpr0 && @$tpr0) {
+ <tr>
+  <td colspan='2'>
+  </td>
+  <td>
+   <& '/select', name => 'tpr0', values => $tpr0, width => '300px' &>
+  </td>
+ </tr>
+%  }
+
+% }
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th bgcolor='#cccccc' colspan='2' class='label'>
+   Summe
+  </th>
+  <td bgcolor='#cccccc' align='right'>
+   <% formatnumber($sum{personentage}, 2, $ARGS{lang}) %>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{betrag}, 2, $ARGS{lang})%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{sachkosten}, 2, $ARGS{lang})%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{investition}, 2, $ARGS{lang})%>
+  </td>
+ </tr>
+
+</table>
+
+% unless ($ppl_angebotdatum) {
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='speichern' value='speichern'>
+%   if ($loeschen) {
+ <input type='submit' name='loeschen_ok' value='wirklich löschen?'>
+%   } else {
+ <input type='submit' name='loeschen' value='löschen'>
+%   }
+</p>
+% }
+
+<script language="JavaScript" type="text/javascript">
+% if ($sel_tid) {
+   document.forms[0].bud_personentage.focus()
+% } else {
+   document.forms[0].tpr_titel.focus()
+% }
+</script>
+
+<h2>Erl&auml;uterung</h2>
+
+<h3>Budget</h3>
+
+<p>
+Das Budget ist das für den Kunden sichtbare Budget. Hier wird nur das im aktuellen Projektplan zus&auml;tzlich zu genehmigende oder genehmigte Budget angezeigt. Es ist nur auf Teilprojektebene. Das Budget muß vom Projektleiter in einem Budgetplan auf Aufgaben und Zeitr&auml;ume umgesetzt werden.
+</p>
+

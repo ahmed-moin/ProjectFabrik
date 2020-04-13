@@ -1,0 +1,49 @@
+<%args>
+$dbh
+$uid
+$projektid => undef
+$prj_titel
+</%args>
+<%perl>
+
+use Contavia::Db qw(update replace quote insert);
+
+if ($projektid > 0)
+{
+  die "<fehler><i18n>Titel darf nicht leer sein</i18n></fehler>" unless $prj_titel;
+
+  update( $dbh, 'projekt',
+    { prj_id    => $projektid },
+    { prj_titel => quote($prj_titel) } );
+}
+elsif ($prj_titel)
+{
+  $projektid = $dbh->selectrow_array( <<"EOF" );
+    select max(prj_id) + 1
+      from projekt
+EOF
+
+  insert( $dbh, 'projekt',
+    { prj_id       => $projektid,
+      prj_titel    => quote($prj_titel),
+      prj_status   => 1,
+      prj_waehrung => quote('EUR') } );
+
+  insert( $dbh, 'rolle',
+    { rol_uid   => quote($uid),
+      rol_rolid => 1,
+      rol_pid   => $projektid,
+      rol_admin => quote('f'),
+      rol_kunde => quote('t'),
+      rol_mitarbeiter => quote('f') } );
+
+  $ARGS{projektid}  = $projektid;
+  $ARGS{folgemaske} = 'ziel';
+}
+
+$dbh->commit;
+
+
+return \%ARGS;
+
+</%perl>

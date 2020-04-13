@@ -1,0 +1,61 @@
+<%args>
+$dbh
+$projektid
+$angebot
+$speichern => undef
+$tid => []
+$betrag => []
+$personentage => []
+$titel_neu => undef
+$betrag_neu => undef
+$personentage_neu => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(replace insert quote);
+
+  if ($speichern)
+  {
+    $tid = [$tid] unless ref($tid);
+    $betrag = [$betrag] unless ref($betrag);
+    $personentage = [$personentage] unless ref($personentage);
+
+    my @tid = @$tid;
+    for (my $i = 0; $i <= $#tid; ++$i)
+    {
+      replace($dbh, 'budget',
+        { bud_pid          => $projektid,
+          bud_tid          => $tid[$i],
+          bud_angebot      => $angebot },
+        { bud_betrag       => $betrag->[$i],
+          bud_personentage => $personentage->[$i] } );
+    }
+
+    if ($titel_neu)
+    {
+      my $tid = $dbh->selectrow_array( <<"EOF" ) || 1;
+       select max(tpr_tid) + 1
+         from teilprojekt
+        where tpr_pid = $projektid
+EOF
+
+      insert($dbh, 'teilprojekt',
+        { tpr_pid    => $projektid,
+          tpr_tid    => $tid,
+          tpr_titel  => quote($titel_neu),
+          tpr_status => 1 } );
+      insert($dbh, 'budget',
+        { bud_pid          => $projektid,
+          bud_tid          => $tid,
+          bud_angebot      => $angebot,
+          bud_betrag       => $betrag_neu,
+          bud_personentage => $personentage_neu } );
+    }
+
+    $dbh->commit;
+  }
+
+  $ARGS{folgemaske} = 'angebot';
+  return \%ARGS;
+
+</%perl>

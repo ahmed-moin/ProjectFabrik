@@ -1,0 +1,20 @@
+#!/usr/bin/perl -w
+
+package Contavia::econsulter::projekt;
+
+use vars qw($AUTOLOAD);
+
+sub new
+{
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self = {};
+  $self->{dbh} = shift;
+  $self->{id} = shift;
+  bless ($self, $class);
+  return $self;
+}
+
+sub AUTOLOAD
+{
+}

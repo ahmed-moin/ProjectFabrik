@@ -1,0 +1,118 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$speichern => undef
+$speichern_angebot => undef
+$budgetplan => undef
+$erstellen => undef
+$ppl_angebotbis => undef
+$ppl_angebottext => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(update quote);
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    update($dbh, 'projektplan',
+      { ppl_pid         => $projektid,
+        ppl_nummer      => $projektplan },
+      { ppl_angebotbis  => new Contavia::Date($ppl_angebotbis)->qpgdate,
+        ppl_angebottext => quote($ppl_angebottext) } );
+
+    $dbh->commit;
+  }
+  elsif ($speichern_angebot)
+  {
+    fehler("G&uuml;ltig bis-Datum mu&szlig; angegeben werden")
+      unless $ppl_angebotbis && $ppl_angebotbis->[0];
+
+    my $current = Contavia::Date::current;
+
+    fehler("G&uuml;ltig bis-Datum mu&szlig; in der Zukunft liegen")
+      if ($current->cmp($ppl_angebotbis) > 0);
+
+    my @bud = $dbh->selectrow_array( "
+      select sum(bud_betrag), sum(bud_personentage),
+             sum(bud_sachkosten), sum(bud_investition)
+        from budget
+       where bud_pid = $projektid
+         and bud_ppl = $projektplan" );
+
+    fehler("kein Budget vorhanden")
+      unless ($bud[0] || $bud[1] || $bud[2] || $bud[3]);
+
+    update($dbh, 'projektplan',
+      { ppl_pid          => $projektid,
+        ppl_nummer       => $projektplan },
+      { ppl_angebotdatum => Contavia::Date::current->qpgdate,
+        ppl_angebotbis   => new Contavia::Date($ppl_angebotbis)->qpgdate,
+        ppl_angebottext  => quote($ppl_angebottext) } );
+
+    $dbh->do( <<"EOF" );
+      update projekt
+         set prj_status = 3
+       where prj_id     = $projektid
+         and prj_status = 2
+EOF
+
+    $dbh->commit;
+  }
+  elsif ($erstellen)
+  {
+    # lese geplantes Budget
+    my %bpl = $dbh->select_hash( "
+      select bpl_tid,
+             sum(bpl_betrag),
+             sum(bpl_personentage),
+             sum(bpl_sachkosten),
+             sum(bpl_investition)
+        from budgetplan
+        where bpl_pid = $projektid
+          and bpl_ppl = $projektplan
+        group by bpl_tid" );
+
+    # lese bereits erteiltes Budget
+    my %bud = $dbh->select_hash( "
+      select bud_tid, sum(bud_betrag), sum(bud_personentage)
+        from budget join projektplan
+             on bud_pid = ppl_pid
+            and bud_ppl = ppl_nummer
+       where bud_pid = $projektid
+         and bud_ppl <> $projektplan
+         and ppl_auftrag is not null
+       group by bud_tid" );
+
+    # erstelle aus der Differenz ein Budgetreview
+    while (my ($tid, $bpl) = each(%bpl))
+    {
+      my $bud = $bud{$tid};
+
+      my $bud_betrag       = $bpl->[0] - $bud->[0];
+      my $bud_personentage = $bpl->[1] - $bud->[1];
+      my $bud_sachkosten   = $bpl->[2] - $bud->[2];
+      my $bud_investition  = $bpl->[3] - $bud->[3];
+
+      $dbh->replace('budget',
+        { bud_pid => $projektid,
+          bud_ppl => $projektplan,
+          bud_tid => $tid },
+        { bud_betrag => $bud_betrag,
+          bud_personentage => $bud_personentage,
+          bud_sachkosten => $bud_sachkosten,
+          bud_investition => $bud_investition } );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($budgetplan)
+  {
+    $ARGS{folgemaske} = 'budgetplan';
+    $ARGS{menu} = 'budget';
+    return \%ARGS;
+  }
+
+</%perl>

@@ -1,0 +1,44 @@
+<%args>
+$dbh
+$projektid
+$speichern => undef
+$sel_datum => undef
+$abr_text => undef
+$atr_nummer => undef
+$abr_fertigbis => undef
+$abr_realisierung => 0
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(replace quote);
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler("<i18n>Realisierungsgrad muﬂ zwischen 0 und 100 liegen</i18n>")
+      unless $abr_realisierung >= 0 && $abr_realisierung <= 100;
+
+    replace($dbh, 'auftragbericht',
+      { abr_nummer       => $atr_nummer,
+        abr_datum        => new Contavia::Date($sel_datum)->qpgdate },
+      { abr_fertigbis    => new Contavia::Date($abr_fertigbis)->qpgdate,
+        abr_realisierung => $abr_realisierung,
+        abr_text         => $dbh->quote($abr_text) } );
+
+    if ($abr_realisierung == 100)
+    {
+      $dbh->do( <<"EOF" );
+        update auftrag
+           set atr_status = 6
+         where atr_nummer = $atr_nummer
+EOF
+      $ARGS{folgemaske} = 'auftraguebersicht';
+    }
+
+    $dbh->commit;
+  }
+
+  return \%ARGS;
+
+</%perl>

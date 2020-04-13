@@ -1,0 +1,248 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+$waehrung
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojektplan, teilprojekt
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+EOF
+
+  my $apl = $dbh->selectall_arrayref( <<"EOF" ) if $tid;
+   select apl_aid, auf_name
+     from aufgabenplan, aufgabe
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid = $tid
+      and auf_pid = apl_pid
+      and auf_tid = apl_tid
+      and auf_aid = apl_aid
+EOF
+
+  my %budgetplan = $dbh->select_hash( <<"EOF" ) if $tid;
+   select bpl_aid, sum(bpl_betrag), sum(bpl_personentage)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+    group by bpl_aid
+EOF
+
+  my $sth_atr = $dbh->prepare( <<"EOF" ) if $tid;
+   select atr_uid, ben_vorname, ben_nachname,
+          atr_tagessatz, atr_btagessatz, atr_personentage,
+          atr_sachkosten, atr_investition
+     from auftrag, benutzer
+    where atr_pid = $projektid
+      and atr_tid = $tid
+      and atr_aid = ?
+      and ben_uid = atr_uid
+EOF
+
+</%perl>
+
+<h1>Verantwortlich</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   
+   <select name='tid' onChange='document.forms[0].submit()'>
+    <option>
+%    foreach (@$tpl) {
+%      my ($tpl_tid, $tpr_titel) = @$_;
+    <option value='<%$tpl_tid%>'<%$tpl_tid == $tid && ' selected'%>>
+      <%$tpl_tid%> <%$tpr_titel%>
+%    }
+   </select>
+
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Währung
+  </th>
+  <td>
+   <%$waehrung%>
+  </td>
+ </tr>
+</table>
+
+% return unless $tid;
+
+<table border='1'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Verantwortl.
+  </th>
+  <th bgcolor='#ccccff'>
+   interner<br>Tagessatz
+  </th>
+  <th bgcolor='#ccccff'>
+   externer<br>Tagessatz
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Auftrags<br>summe
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget<br>summe
+  </th>
+  <th bgcolor='#ccccff'>
+   Sach<br>kosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Investition
+  </th>
+ </tr>
+
+ <%perl>
+
+  my %sum;
+
+  foreach (@$apl)
+  {
+    my ($apl_aid, $auf_name) = @$_;
+    my ($bpl_betrag, $bpl_personentage)
+           = $budgetplan{$apl_aid} ? @{$budgetplan{$apl_aid}} : ();
+    my $atr  = $dbh->selectall_arrayref($sth_atr, {}, $apl_aid);
+    my $rows = scalar(@$atr) || 1;
+
+    $sum{budget} += $bpl_betrag;
+    $sum{personentage} += $bpl_personentage;
+
+ </%perl>
+ <tr>
+  <td rowspan='<%$rows%>' bgcolor='#cccccc'>
+   <input type='radio' name='aid'
+          value='<%$apl_aid%>'<%$apl_aid == $aid && ' checked'%>>
+  </td>
+  <td rowspan='<%$rows%>'>
+   <%$apl_aid%>
+  </td>
+  <td rowspan='<%$rows%>'>
+   <%$auf_name%>
+  </td>
+  <td align='right' rowspan='<%$rows%>'>
+   <pre><%formatnumber($bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' rowspan='<%$rows%>'>
+   <pre><%$bpl_personentage%></pre>
+  </td>
+
+  <%perl>
+    my $first = 1;
+    foreach (@$atr)
+    {
+      my ($atr_uid, $ben_vorname, $ben_nachname,
+          $atr_tagessatz,  $atr_btagessatz, $atr_personentage,
+          $atr_sachkosten, $atr_investition) = @$_;
+      $sum{auftragpt}    += $atr_personentage;
+      $sum{auftragsumme} += $atr_personentage * $atr_tagessatz;
+      $sum{budgetsumme}  += $atr_personentage * $atr_btagessatz;
+      $sum{sachkosten}   += $atr_sachkosten;
+      $sum{investition}  += $atr_investition;
+
+      if ($first)
+      { $first = 0; }
+      else
+      { $m->out("</tr><tr>"); }
+
+  </%perl>
+  <td>
+   <%$atr_uid%>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_tagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_btagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_tagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_btagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_investition, 0, $ARGS{lang})%></pre>
+  </td>
+  <%perl>
+    }
+      </%perl>
+
+ </tr>
+
+% }
+
+ <tr>
+  <th class='label' colspan='3' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{budget}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum{personentage}%></pre>
+  </td>
+  <td colspan='3' bgcolor='#cccccc'>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum{auftragpt}%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{auftragsumme}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{budgetsumme}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{investition}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+
+% $ARGS{tid} = undef;
+% $ARGS{aid} = undef;
+% return \%ARGS;

@@ -1,0 +1,172 @@
+<%args>
+$dbh
+$uid
+$projektid
+$sessid
+$subdir
+$radio => 1
+</%args>
+<%once>
+
+  use Contavia qw(formatnumber);
+  use Contavia::tlfile;
+  use URI::Escape;
+
+  sub parse_dir
+  {
+    my @dir;
+    foreach my $e (@_)
+    {
+      my ($perm, $uid, $gid, $size, $mtime, $name) = split(/\t/, $e);
+
+      next if (substr($name, 0, 1) eq '.');
+
+      my @pw = getpwuid($uid);
+      my @gr = getgrgid($gid);
+
+      my $type = substr($perm, 0, 1);
+      push @dir, { perm   => $perm,
+                   uid    => $uid,
+                   uidnam => $pw[0],
+                   gid    => $gid,
+                   gidnam => $gr[0],
+                   size   => $size,
+                   mtime  => $mtime,
+                   name   => $name,
+                   type   => $type };
+    }
+    return @dir;
+  }
+
+</%once>
+<%perl>
+
+  my $tlfile = new Contavia::tlfile($uid);
+
+  $tlfile->mkdir($projektid) if (not -e "/u/e-con/daten/$projektid");
+
+  my $dir   = $subdir ? "$projektid/$subdir" : $projektid;
+  my $updir = $subdir;
+  $updir    = undef unless($updir =~ s{/?[^/]+$} {});
+
+  my $ldir = $tlfile->ldir($dir);
+  my @dir = parse_dir( split(/\n/, $ldir) );
+  @dir = sort { $a->{name} cmp $b->{name} } @dir;  # sortiere alphabetisch
+
+</%perl>
+
+<script language="JavaScript" type="text/javascript">
+
+  function ChDir(d)
+  {
+    document.forms[0].subdir.value = d;
+    document.forms[0].submit();
+  }
+
+</script>
+
+<input type='hidden' name='subdir' value='<%$subdir%>'>
+
+<h2>aktuelles Verzeichnis: /<%$subdir%></h2>
+
+<table width='100%'>
+ <tr>
+  <td width='5%'>
+% if (defined $updir) {
+   <a href='javascript:ChDir("<%$updir%>")'><img src='/icons/up.gif' border='0' alt='up' title='up'></a>
+% }
+  </td>
+% if ($radio) {
+  <th align='left' width='5%'>
+  </th>
+% }
+  <th align='left' width='5%'>
+  </th>
+  <th align='left' width='10%'>
+   User
+  </th>
+  <th align='left' width='10%'>
+   Gruppe
+  </th>
+  <th align='left' width='10%'>
+   Grösse
+  </th>
+  <th align='left' width='55%'>
+   Name
+  </th>
+ </tr>
+
+ <%perl>
+
+  # Verzeichnisse ausgeben
+
+  foreach my $d (grep { $_->{type} eq 'd' } @dir)
+  {
+    my $name = $d->{name};
+
+ </%perl>
+ <tr>
+% if ($radio) {
+  <td>
+   <input type='radio' name='direntry' value='<%$name%>'>
+  </td>
+% }
+  <td colspan='2'>
+   <a href='javascript:ChDir("<%$subdir ? "$subdir/$name" : $name%>")'><img src='/icons/folder.gif' border='0'></a>
+  </td>
+  <td>
+   <pre><%$d->{uidnam} || $d->{uid}%></pre>
+  </td>
+  <td>
+   <pre><%$d->{gidnam} || $d->{gid}%></pre>
+  </td>
+  <td>
+  </td>
+  <td>
+   <pre><%$name%></pre>
+  </td>
+ </tr>
+% }
+
+ <%perl>
+
+  # Dateien ausgeben
+
+  foreach my $d (grep { $_->{type} eq '-' } @dir)
+  {
+    my $name = $d->{name};
+    my $url = "$projektid/";
+    $url .= "$subdir/" if $subdir;
+    $url .= $name;
+    $url = uri_escape($url);
+
+ </%perl>
+ <tr>
+% if ($radio) {
+  <td>
+   <input type='radio' name='direntry' value='<%$name%>'>
+  </td>
+% }
+  <td>
+   <a href='/files/<%$url%>?sessid=<%$sessid%>'
+      target=_blank><img src='/icons/index.gif' border='0' alt='anzeigen' title='anzeigen'></a>
+  </td>
+  <td>
+   <a href='/files/<%$url%>?sessid=<%$sessid%>&download=1'><img src='/icons/forward.gif' border='0' alt='download' title='download'></a>
+  </td>
+  <td>
+   <pre><%$d->{uidnam} || $d->{uid}%></pre>
+  </td>
+  <td>
+   <pre><%$d->{gidnam} || $d->{gid}%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($d->{size}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td>
+   <pre><%$name%></pre>
+  </td>
+ </tr>
+% }
+
+</table>

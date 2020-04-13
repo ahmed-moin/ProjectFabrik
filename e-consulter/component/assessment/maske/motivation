@@ -1,0 +1,13 @@
+<%args>
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n> Motivation - Stresstoleranz </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> Die Dimension "Motivation/Stresstoleranz" ist mit der Dimension "Gewissenhaftigkeit" eng verbunden.</i18n> </p>
+
+<p> <i18n> Menschen mit hohen Punktwerten zeichnen sich in der Regel durch einen gesunden Optimismus aus, der es ihnen ermöglicht, ihre Ziele und Aufgaben beharrlich zu verfolgen, Hindernissen und Rückschlägen zum Trotz. Diese Menschen zeigen meist auch eine größere Eigeninitiative, wenn es darum geht, Chancen nicht nur zu sehen, sondern auch zu ergreifen und zu nutzen. Des Weiteren ist eine höhere Leistungsmotivation zu nennen, gesetzte Ziele zu erreichen oder zu übertreffen. Personen mit hohen Punktwerten im Bereich "Motivation" verstehen es auch meist sehr gut, innerhalb eines Teams oder einer Gruppe Engagement zu zeigen und die Zusammenarbeit aller Teammitglieder zum Erreichen gemeinsamer Ziele zu fördern.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

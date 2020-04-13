@@ -1,0 +1,194 @@
+<%args>
+$dbh
+$projektid
+$sel_ang
+</%args>
+<%once>
+  my %grund = (
+    1 => 'Angebot zu teuer',
+    2 => 'Anforderung falsch interpretiert',
+    3 => 'internet Priorisierung hat sich ver&auml;ndert',
+    4 => 'Projekt zur&uuml;ckgestellt',
+    5 => 'f&uuml;r einen anderen Anbieter entschiedenen' );
+
+  my %vorgehen = (
+    1 => 'Kontaktaufnahme per Telefon',
+    2 => 'Kontaktaufnahme per E-Mail',
+    3 => 'Kontaktaufnahme per Fax',
+    4 => 'Termin zu einem pers&ouml;nlichen Gespr&auml;ch',
+    5 => 'keine weitere Kontaktaufnahme' );
+</%once>
+<%perl>
+
+  use Contavia::Date;
+
+  my ($ang_datum, $ang_freigabe, $ang_text, $ang_ablehnung,
+      $ang_gueltigbis, $ang_auftragsdatum, $ang_ablehnungsgrund,
+      $ang_vorgehen) =
+     $dbh->selectrow_array( <<"EOF" );
+    select ang_datum, ang_freigabe, ang_text, ang_ablehnung,
+           ang_gueltigbis, ang_auftragsdatum, ang_ablehnungsgrund,
+           ang_vorgehen
+      from angebot
+     where ang_pid    = $projektid
+       and ang_nummer = $sel_ang
+EOF
+
+</%perl>
+
+  <table>
+   <tr>
+    <th style='text-align:left'>
+     Nummer
+    </th>
+    <td>
+     <%$sel_ang%>
+    </td>
+   </tr>
+
+   <tr>
+    <th style='text-align:left'>
+     Datum
+    </th>
+    <td>
+     <%new Contavia::Date($ang_datum)->format%>
+    </td>
+   </tr>
+
+   <tr>
+    <th style='text-align:left'>
+     Status
+    </th>
+    <td>
+     <% $ang_auftragsdatum ? 'beauftragt'
+      : $ang_ablehnung     ? 'abgelehnt'
+      : $ang_freigabe      ? 'angebot' : 'neu' %>
+    </td>
+   </tr>
+
+% if ($ang_freigabe) {
+% # Freigegebene Aufträge kann ich nicht mehr ändern
+   <tr>
+    <th style='text-align:left'>
+     Angebotstext
+    </th>
+   </tr>
+
+   <tr>
+    <td colspan='2'>
+     <%perl>
+      $_ = $ang_text;
+      s/\n/<br>/g;
+     </%perl>
+     <%$_%>
+    </td>
+   </tr>
+
+   <tr>
+    <th style='text-align:left'>
+     Freigabedatum
+    </th>
+    <td>
+     <%new Contavia::Date($ang_freigabe)->format%>
+    </td>
+   </tr>
+
+%   if ($ang_ablehnung) {
+   <& '_ablehnung', ablehnung       => $ang_ablehnung,
+                    ablehnungsgrund => $ang_ablehnungsgrund,
+                    vorgehen        => $ang_vorgehen &>
+%   } elsif ($ang_auftragsdatum) {
+   <& '_auftrag', auftragsdatum => $ang_auftragsdatum &>
+%   } else {
+   <& '_angebot' &>
+%   }
+% } else {
+   <& '_neu', text => $ang_text, gueltigbis => $ang_gueltigbis &>
+% }
+  </table>
+
+<p class='button'>
+% unless ($ang_freigabe) {
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='freigeben' value='Freigeben'>
+% }
+ <input type='submit' name='uebersicht' value='zur&uuml;ck zur &Uuml;bersicht'>
+</p>
+
+%#---------------------------------------------------------------------------
+<%def _ablehnung>
+ <%args>
+ $ablehnung
+ $grund => undef
+ $vorgehen => undef
+ </%args>
+   <tr>
+    <th style='text-align:left'>
+     Ablehnungsdatum
+    </th>
+    <td>
+     <%new Contavia::Date($ablehnung)->format%>
+    </td>
+   </tr>
+
+   <tr>
+    <th style='text-align:left'>
+     Ablehnungsgrund
+    </th>
+    <td>
+     <%$grund{$grund}%>
+    </td>
+   </tr>
+
+   <tr>
+    <th style='text-align:left'>
+     weiteres Vorgehen
+    </th>
+    <td>
+     <%$vorgehen{$vorgehen}%>
+    </td>
+   </tr>
+</%def>
+
+<%def _auftrag>
+ <%args>
+ $auftragsdatum
+ </%args>
+   <tr>
+    <th style='text-align:left'>
+     Auftragsdatum
+    </th>
+    <td>
+     <%new Contavia::Date($auftragsdatum)->format%>
+    </td>
+   </tr>
+</%def>
+
+<%def _angebot>
+</%def>
+
+<%def _neu>
+ <%args>
+  $text
+  $gueltigbis
+ </%args>
+   <tr>
+    <th style='text-align:left'>
+     G&uuml;ltig bis
+    </th>
+    <td>
+     <&'/inputdatum', name => 'gueltigbis', value => $gueltigbis&>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     Angebotstext
+    </td>
+   </tr>
+
+   <tr>
+    <td colspan='2'>
+     <textarea name='text' rows='20' cols='60'><%$text%></textarea>
+    </td>
+   </tr>
+</%def>

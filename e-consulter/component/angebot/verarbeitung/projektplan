@@ -1,0 +1,21 @@
+<%args>
+$dbh
+$projektid
+$ppl_version => undef
+$oeffnen => undef
+$loeschen => undef
+</%args>
+<%perl>
+  if ($oeffnen)
+  {
+    die "<fehler>kein Projektplan ausgew&auml;hlt</fehler>" unless $ppl_version;
+    $ARGS{menu} = 'projektplan';
+  }
+  elsif ($loeschen)
+  {
+    die "<fehler>kein Projektplan ausgew&auml;hlt</fehler>" unless $ppl_version;
+    die "<fehler>Funktion noch nicht implementiert</fehler>";
+  }
+
+  return \%ARGS;
+</%perl>

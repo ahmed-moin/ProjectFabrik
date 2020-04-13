@@ -1,0 +1,297 @@
+<%args>
+$dbh
+$uid
+$projektid
+$waehrung
+$tid => undef
+$aid => undef
+$atr_nummer => undef
+$kos_lfdnr => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  if ($atr_nummer)
+  {
+    ($tid, $aid) = $dbh->selectrow_array( "
+      select atr_tid, atr_aid
+        from auftrag
+       where atr_nummer = $atr_nummer" ) unless $tid && $aid;
+  }
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select distinct atr_tid, tpr_titel
+      from auftrag
+       join teilprojekt
+         on atr_pid = tpr_pid
+        and atr_tid = tpr_tid
+     where atr_pid = $projektid
+       and atr_uid = '$uid'" );
+
+  my $auf = $dbh->selectall_arrayref( "
+    select distinct atr_aid, auf_name
+      from auftrag
+       join aufgabe
+         on atr_pid = auf_pid
+        and atr_tid = auf_tid
+        and atr_aid = auf_aid
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and atr_tid = $tid" ) if $tid;
+
+  my $atr = $dbh->selectall_arrayref( "
+    select atr_nummer
+      from auftrag
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and atr_tid = $tid
+       and atr_aid = $aid" ) if $tid && $aid;
+
+  $atr_nummer = $atr->[0]->[0] if $atr && @$atr == 1;
+
+  my ($atr_sachkosten, $atr_investition) = $dbh->selectrow_array( "
+    select atr_sachkosten, atr_investition
+      from auftrag
+     where atr_nummer = $atr_nummer" ) if $atr_nummer;
+
+  my $kos = $dbh->selectall_arrayref( "
+    select kos_datum, kos_art, kos_lfdnr, kos_betrag,
+           kos_beschreibung, kos_freigabe
+      from kosten
+     where kos_auftrag = $atr_nummer" ) if $atr_nummer;
+
+</%perl>
+
+<h1><i18n>Aufwandserfassung</i18n></h1>
+
+<table>
+ <tr>
+  <th class='label'>
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <td colspan='2'>
+   <& '/select', name     => 'tid',
+                 values   => $tpr,
+                 selected => $tid,
+                 width    => 400 &>
+  </td>
+ </tr>
+
+% if ($tid) {
+ <tr>
+  <th class='label'>
+	<i18n>
+   Aufgabe
+	</i18n>
+  </th>
+  <td colspan='2'>
+   <& '/select', name     => 'aid',
+                 values   => $auf,
+                 selected => $aid,
+                 width    => 400 &>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Auftrag Nr.
+	</i18n>
+  </th>
+  <td>
+% if ($atr && @$atr > 1) {
+   <& '/select', name     => 'atr_nummer',
+                 values   => [ map { [$_->[0], $_->[0]] } @$atr ],
+                 selected => $atr_nummer &>
+% } else {
+   <input type='hidden' name='atr_nummer' value='<%$atr_nummer%>'>
+   <%$atr_nummer%>
+% }
+  </td>
+ </tr>
+
+% if ($atr_nummer) {
+ <tr>
+  <th class='label'>
+	<i18n>
+   Sachkostenbudget
+	</i18n>
+  </th>
+  <td align='right'>
+   <%formatnumber($atr_sachkosten, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Investitionbudget
+	</i18n>
+  </th>
+  <td align='right'>
+   <%formatnumber($atr_investition, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+<br>
+
+% if ($atr_nummer) {
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Datum
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Sachkosten</i18n>/<br><i18n>Investment</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Betrag</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Freigabe</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  my %sum;
+
+  foreach (@$kos)
+  {
+    my ($kos_datum, $kos_art, $_kos_lfdnr, $kos_betrag,
+        $kos_beschreibung, $kos_freigabe) = @$_;
+
+    $sum{sachkosten}  += $kos_betrag if $kos_art == 3;
+    $sum{investition} += $kos_betrag if $kos_art == 4;
+
+ </%perl>
+%   if ($kos_lfdnr == $_kos_lfdnr) {
+ <input type='hidden' name='kos_lfdnr' value='<%$kos_lfdnr%>'>
+ <& '.edit', kos_datum => $kos_datum,
+             kos_beschreibung => $kos_beschreibung,
+             kos_art => $kos_art,
+             kos_betrag => $kos_betrag,
+             kos_freigabe => $kos_freigabe &>
+%   } else {
+ <tr>
+  <td bgcolor='#cccccc'>
+%   unless ($kos_freigabe) {
+   <input type='radio' name='kos_lfdnr' value='<%$_kos_lfdnr%>'>
+%   }
+  </td>
+  <td>
+   <%new Contavia::Date($kos_datum)->format%>
+  </td>
+  <td>
+   <%$kos_beschreibung%>
+  </td>
+  <td>
+   <%$kos_art == 3 && 'S' || $kos_art == 4 && 'I'%>
+  </td>
+  <td align='right'>
+   <% formatnumber($kos_betrag, 2, $ARGS{lang}) %> <%$waehrung%>
+  </td>
+  <td>
+   <%$kos_freigabe && 'X'%>
+  </td>
+ </tr>
+
+ <%perl>
+
+    } #  if ($kos_lfdnr == $_kos_lfdnr) {
+
+  } # foreach (@$kos)
+
+ </%perl>
+
+% unless ($kos_lfdnr) {
+  <& '.edit' &>
+% }
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th colspan='3' class='label' bgcolor='#cccccc'>
+   <i18n>Summe Sachkosten</i18n>
+  </th>
+  <td align='right'<%$sum{sachkosten} > $atr_sachkosten &&
+                     ' bgcolor=\'#ffaaaa\''%>>
+   <% formatnumber($sum{sachkosten}, 2, $ARGS{lang}) %> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th colspan='3' class='label' bgcolor='#cccccc'>
+  <i18n> Summe Investition</i18n>
+  </th>
+  <td align='right'<%$sum{investition} > $atr_investition &&
+                     ' bgcolor=\'#ffaaaa\''%>>
+   <% formatnumber($sum{investition}, 2, $ARGS{lang}) %> <%$waehrung%>
+  </td>
+ </tr>
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+ <input type='submit' name='bearbeiten' value='<i18n>Bearbeiten</i18n>'>
+ <input type='submit' name='loeschen' value='<i18n>Löschen</i18n>'>
+</p>
+
+% } # if ($atr_nummer)
+%
+% $ARGS{atr_nummer} = undef;
+% return \%ARGS;
+
+<%def .edit>
+<%args>
+  $kos_datum => undef
+  $kos_beschreibung => undef
+  $kos_art => 3
+  $kos_betrag => undef
+  $kos_freigabe => undef
+</%args>
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'kos_datum', value => $kos_datum &>
+   <& '/setfocus', name => 'kos_datum' &>
+  </td>
+  <td>
+   <input type='text' name='kos_beschreibung' size='30'
+          value='<%$kos_beschreibung%>'>
+  </td>
+  <td>
+   <input type='radio' name='kos_art'
+          value='3'<%$kos_art == 3 && ' checked'%>><i18n>Sach</i18n><br>
+   <input type='radio' name='kos_art'
+          value='4'<%$kos_art == 4 && ' checked'%>><i18n>Invest</i18n>
+  </td>
+  <td>
+   <input type='text' name='kos_betrag' value='<% formatnumber($kos_betrag, 2, $ARGS{lang}) %>' size='12'>
+  </td>
+  <td>
+   <input type='checkbox' name='kos_freigabe'<%$kos_freigabe && ' checked'%>>
+  </td>
+ </tr>
+</%def>

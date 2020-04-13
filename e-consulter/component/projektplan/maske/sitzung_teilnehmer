@@ -1,0 +1,118 @@
+<%args>
+$dbh
+$projektid
+$sid
+$lfdnr => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $sit = $dbh->selectall_arrayref( "
+    select sit_sid, sit_titel, sit_datum
+      from sitzung
+     where sit_pid = $projektid" );
+
+  my $stt = $dbh->selectall_arrayref( "
+    select stt_lfdnr, stt_uid, stt_name,
+           ben_vorname, ben_nachname
+      from sitzungsteilnehmer
+       left outer join benutzer
+         on ben_uid = stt_uid
+     where stt_pid = $projektid
+       and stt_sid = $sid" );
+
+  my $uid = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+       join rolle
+         on ben_uid = rol_uid
+     where rol_pid = $projektid
+       and (rol_admin
+         or rol_kunde
+         or rol_mitarbeiter)" );
+
+</%perl>
+
+<h1>Sitzung - Teilnehmer</h1>
+
+<table width='100%'>
+ <tr>
+  <th class='label' width='10%'>
+   Sitzung
+  </th>
+  <td>
+   <& '/select', name     => 'sid',
+                 values   => [ ( map {
+
+                   my ($sit_sid, $sit_titel, $sit_datum) = @$_;
+
+                   $sit_datum = new Contavia::Date($sit_datum)->format;
+                   [ $sit_sid, "$sit_datum / $sit_titel" ];
+
+                 } @$sit),
+                 [ -1, '(neu)' ] ],
+                 selected => $sid &>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <th class='label' bgcolor='#ccccff'>
+  </th>
+  <th class='label' bgcolor='#ccccff' width='10%'>
+   Benutzerkennung
+  </th>
+  <th class='label' bgcolor='#ccccff'>
+   Name
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$stt)
+  {
+
+    my ($stt_lfdnr, $stt_uid, $stt_name, $ben_vorname, $ben_nachname) = @$_;
+
+    $stt_name = "$ben_vorname $ben_nachname" unless ($stt_name);
+
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='stt_lfdnr' value='<%$stt_lfdnr%>'>
+  </td>
+  <td>
+   <%$stt_uid%>
+  </td>
+  <td>
+   <%$stt_name%>
+  </td>
+ </tr>
+
+% } # foreach (@$stt)
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+   <& '/select', name => 'stt_uid',
+                 values => [ map {
+                   my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                   [ $ben_uid, "$ben_uid: $ben_vorname $ben_nachname" ];
+                 } @$uid ],
+                 onChange => "document.forms[0].stt_name.value = this.options[this.selectedIndex].text"&>
+  </td>
+  <td>
+   <input type='text' name='stt_name' size='50' maxlength='255'
+      onChange='document.forms[0].stt_uid.selectedIndex = 0'>
+  </td>
+ </tr>
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='tspeichern' value='speichern'>
+ <input type='submit' name='tloeschen' value='loeschen'>
+</p>

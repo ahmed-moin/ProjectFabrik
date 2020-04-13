@@ -1,0 +1,19 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske   => 'sitzung',
+             dlabel  => 'Übersicht',
+             menu    => 'sitzung' },
+           { maske   => 'sitzung_detail',
+             dlabel  => 'Details',
+             menu    => 'sitzung' },
+           { maske   => 'sitzung_bearbeiten',
+             dlabel  => 'Bearbeiten',
+             menu    => 'sitzung' },
+           @$menu_footer
+         ];
+</%perl>

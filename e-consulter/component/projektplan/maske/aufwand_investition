@@ -1,0 +1,3 @@
+<h1>Investitionen</h1>
+
+% return $m->comp( 'aufwand_erfassen', kos_art => 4, %ARGS );

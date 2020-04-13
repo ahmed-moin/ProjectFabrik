@@ -1,0 +1,33 @@
+<%args>
+@menu
+$nb => undef
+</%args>
+<& '/masketitel', titel => 'Erstkontakt',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+% if ($nb) {
+
+ <p class=label>Anrede</p>
+  <input type='radio' name='anrede' value='Herr'>Herr
+  <input type='radio' name='anrede' value='Frau'>Frau
+
+ <p class=label>Titel</p>
+  <input class='norm' type='text' name='titel'>
+
+ <p class=label>Vorname</p>
+  <input class='super' type='text' name='vorname'>
+
+ <p class=label>Nachname</p>
+  <input class='super' type='text' name='nachname'>
+
+ <p class=label>Ihre E-Mail-Adresse</p>
+  <input class='super' type='text' name='email'>
+
+ <br>
+ <br>
+ <input type='submit' name='absenden' value='Absenden'>
+% } else {
+Bitte lesen Sie die Nutzungsbedingungen und akzeptieren Sie sie.
+% }
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

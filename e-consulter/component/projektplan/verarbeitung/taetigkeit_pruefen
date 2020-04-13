@@ -1,0 +1,109 @@
+<%args>
+$dbh
+$projektid
+@tae_lfdnr => ()
+$atr_nummer => undef
+$akzeptieren => undef
+$akzeptieren_alle => undef
+$ablehnen => undef
+$ablehnen_alle => undef
+</%args>
+<%once>
+
+  sub abr_realisierung
+  {
+    my ($dbh, $atr_nummer) = @_;
+
+    my $abr_realisierung = $dbh->selectrow_array( "
+      select abr_realisierung
+        from auftragbericht
+       where abr_nummer = $atr_nummer
+         and abr_datum = (
+           select max(abr_datum)
+             from auftragbericht
+            where abr_nummer = $atr_nummer)" );
+
+    return $abr_realisierung;
+  }
+
+  sub chk_auftragstatus
+  {
+    my ($dbh, $atr_nummer) = @_;
+
+    my $abr_realisierung = abr_realisierung($dbh, $atr_nummer);
+    if ($abr_realisierung >= 100)
+    {
+      my $s = $dbh->selectrow_array( "
+        select sum(tae_stunden)
+          from taetigkeit
+         where tae_auftrag = $atr_nummer
+           and tae_geprueft is null" );
+
+      unless ($s)
+      {
+        $dbh->do( "
+          update auftrag
+             set atr_status = 6
+           where atr_nummer = $atr_nummer" );
+      }
+    }
+  }
+
+</%once>
+<%perl>
+
+  use Contavia::Date;
+
+  if ($akzeptieren)
+  {
+    fehler('keine Tätigkeiten ausgewählt') unless (@tae_lfdnr);
+
+    foreach my $tae_lfdnr (@tae_lfdnr)
+    {
+      $dbh->update('taetigkeit',
+        { tae_auftrag  => $atr_nummer,
+          tae_lfdnr    => $tae_lfdnr },
+        { tae_geprueft => Contavia::Date::current->qpgdate } );
+    }
+
+    chk_auftragstatus($dbh, $atr_nummer);
+
+    $dbh->commit;
+  }
+  elsif ($akzeptieren_alle)
+  {
+    $dbh->do( "
+      update taetigkeit
+         set tae_geprueft = CURRENT_DATE
+       where tae_auftrag = $atr_nummer
+         and tae_freigabedatum is not null" );
+
+    chk_auftragstatus($dbh, $atr_nummer);
+
+    $dbh->commit;
+  }
+  elsif ($ablehnen)
+  {
+    fehler('keine Tätigkeiten ausgewählt') unless (@tae_lfdnr);
+
+    foreach my $tae_lfdnr (@tae_lfdnr)
+    {
+      $dbh->update('taetigkeit',
+        { tae_auftrag       => $atr_nummer,
+          tae_lfdnr         => $tae_lfdnr },
+        { tae_freigabedatum => undef } );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($ablehnen_alle)
+  {
+    $dbh->do( "
+      update taetigkeit
+         set tae_freigabedatum = null
+       where tae_auftrag = $atr_nummer" );
+
+    $dbh->commit;
+  }
+
+</%perl>

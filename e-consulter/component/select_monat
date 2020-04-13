@@ -1,0 +1,26 @@
+<%args>
+$name
+$von
+$bis
+$onChange => 'document.forms[0].submit()\''
+$width => undef
+$selected => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  $von = new Contavia::Date($von);
+  $bis = new Contavia::Date($bis);
+
+  my $params = "name='$name'";
+  $params   .= " onChange=$onChange" if $onChange;
+  $params   .= " style='width:$width'" if $width;
+
+</%perl>
+   <select <%$params%>>
+% for (my $x = $von; $x->cmp($bis) <= 0;
+%      $x = $x->naechster_monat) {
+    <option value='<%$x->cgiformat%>'<%$x->cmp($selected) == 0 && ' selected'%>> <%$x->monat%>/<%$x->jahr%>
+% }
+   </select>

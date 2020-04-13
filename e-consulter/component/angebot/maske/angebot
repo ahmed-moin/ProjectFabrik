@@ -1,0 +1,20 @@
+<%args>
+$sel_ang => undef
+$freigeben => undef
+</%args>
+
+<& '/masketitel', titel => 'Angebot' &>
+
+% if ($freigeben) {
+  <p>
+   Soll der Auftrag wirklich freigegeben werden?
+  </p>
+  <p class='button'>
+   <input type='submit' name='freigebenok' value='Ja'>
+   <input type='submit' name='nein' value='Nein'>
+  </p>
+% } elsif ($sel_ang) {
+  <& 'angebot_bearbeiten', %ARGS &>
+% } else {
+  <& 'angebote_anzeigen', %ARGS &>
+% }

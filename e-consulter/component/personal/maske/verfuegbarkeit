@@ -1,0 +1,89 @@
+<%args>
+  @menu
+  $uid
+  $dbh
+  $sel_vfu_lfdnr => undef
+</%args>
+<%perl>
+  use Contavia::Date;
+
+  my $vfu = $dbh->selectall_arrayref( <<"EOF" );
+    select vfu_lfdnr, vfu_datvon, vfu_datbis, vfu_bemerkung
+      from verfuegbarkeit
+     where vfu_benuid = '$uid'
+     order by vfu_datvon, vfu_datbis
+EOF
+
+  my @sel;
+</%perl>
+  <& '/masketitel', titel => 'Verf&uuml;gbarkeit',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+  <table width="100%">
+   <tr>
+    <td></td>
+    <th class="label">
+	   <i18n> Datum von </i18n>
+    </th>
+    <th class="label">
+	   <i18n> Datum bis </i18n>
+    </th>
+    <th class="label">
+     <i18n> Bemerkung </i18n>
+    </th>
+   </tr>
+
+   <tr>
+    <td colspan="4">
+     <hr>
+    </td>
+   </tr>
+   <%perl>
+     foreach (@$vfu) {
+       my ($vfu_lfdnr, $vfu_datvon, $vfu_datbis, $vfu_bem) = @$_;
+       if ($vfu_lfdnr == $sel_vfu_lfdnr) {
+         @sel = @$_;
+         next;
+       }
+   </%perl>
+   <tr>
+    <td style="vertical-align:top">
+     <input type="radio" name="auswahl" value="<% $vfu_lfdnr %>">
+    </td>
+    <td style="vertical-align:top">
+     <%new Contavia::Date($vfu_datvon)->format%>
+    </td>
+    <td style="vertical-align:top">
+     <%new Contavia::Date($vfu_datbis)->format%>
+    </td>
+    <td style="vertical-align:top">
+     <% $vfu_bem %>
+    </td>
+   </tr>
+   <%perl>
+     }
+
+     my ($vfu_lfdnr, $vfu_datvon, $vfu_datbis, $vfu_bem) = @sel;
+   </%perl>
+   <tr>
+    <td>
+%    if ($vfu_lfdnr) {
+     <input type="hidden" name="vfu_lfdnr" value="<%$vfu_lfdnr%>">
+%    }
+    </td>
+    <td width="160">
+     <& "/inputdatum", name => "vfu_datvon", value => $vfu_datvon &>
+    </td>
+    <td width="160">
+     <& "/inputdatum", name => "vfu_datbis", value => $vfu_datbis &>
+    </td>
+    <td>
+     <input type="text" size="60" name="vfu_bemerkung" value="<% $vfu_bem %>">
+    </td>
+   </tr>
+  </table>
+  <input type="submit" name="bearbeiten" value="<i18n>Auswahl bearbeiten</i18n>">
+  <input type="submit" name="loeschen" value="<i18n>Auswahl l&ouml;schen</i18n>">
+  <input type="submit" name="speichern" value="<i18n>Speichern</i18n>">
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

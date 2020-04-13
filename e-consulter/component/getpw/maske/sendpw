@@ -1,0 +1,20 @@
+<%args>
+$userid => undef
+$password => undef
+</%args>
+<& '/masketitel', titel => 'Freischaltung' &>
+
+<p>
+Ihre Freischaltung war erfolgreich. Ihre Zugangsdaten lauten:
+</p>
+
+<table>
+ <tr>
+  <td>Ihre Benutzerkennung</td>
+  <td> <b> <%$userid%> </b> </td>
+ </tr>
+ <tr>
+  <td>Ihr pers&ouml;nliches Passwort</td>
+  <td> <b> <%$password%> </b> </td>
+ </tr>
+</table>

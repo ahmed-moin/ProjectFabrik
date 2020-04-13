@@ -1,0 +1,12 @@
+<%once>
+  my $atr_status = {
+    1  => 'beauftragt',
+    5  => 'in arbeit',
+    6  => 'erledigt',
+    10 => 'abgenommen',
+    -1 => 'zur&uuml;ckgestellt',
+  };
+</%once>
+<%perl>
+  return $atr_status;
+</%perl>

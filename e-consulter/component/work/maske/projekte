@@ -1,0 +1,71 @@
+<%args>
+$dbh
+$uid
+@menu
+$projektid => undef
+</%args>
+<%once>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my ($sth_prj, $sth_tpr, $sth_auf);
+
+</%once>
+<%perl>
+
+  my $prj = $dbh->selectall_arrayref ( <<"EOF" );
+   select prj_id, prj_titel, prj_status
+     from projekt, rolle
+    where prj_status > 3
+      and prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_mitarbeiter
+EOF
+
+</%perl>
+<%cleanup>
+
+  $ARGS{projektid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+ <h1>Projekte</h1>
+
+ <table border='1' width='100%'>
+  <tr>
+   <th bgcolor='#ccccff'>
+   </th>
+   <th bgcolor='#ccccff'>
+	<i18n>
+    Projekt
+	</i18n>
+   </th>
+   <th bgcolor='#ccccff'>
+	<i18n>
+    Status
+	</i18n>
+   </th>
+  </tr>
+
+% foreach (@$prj) {
+%   my ($prj_id, $prj_titel, $prj_status) = @$_;
+  <tr>
+   <td bgcolor='#cccccc'>
+    <input type='radio' name='projektid'
+           value='<%$prj_id%>'<%$prj_id == $projektid && ' selected'%>>
+   </td>
+   <td>
+    <%$prj_titel%>
+   </td>
+   <td>
+    <%$prj_status{$prj_status}%>
+   </td>
+  </tr>
+
+% }
+ </table>
+
+ <p class='button'>
+  <input type='submit' name='oeffnen' value='<i18n>&Ouml;ffnen</i18n>' style='width:3cm'>
+ </p>

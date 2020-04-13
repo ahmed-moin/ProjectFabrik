@@ -1,0 +1,6 @@
+<%args>
+</%args>
+<span style="float:right"><a href="/contacts.csv?cond=blacklisted&sessid=<% $ARGS{sessid} %>">download</a></span>
+<h1>Blacklisted</h1>
+<& 'benutzer', cond => 'ben_blacklisted',
+               %ARGS &>

@@ -1,0 +1,381 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+$aid => undef
+$bpl_aid => undef
+$showbudget => 1
+$hidebudget => undef
+</%args>
+<%perl>
+
+  $showbudget = 0 if $hidebudget;
+
+  use Contavia qw(formatnumber fehler);
+  use Contavia::Date;
+
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+   select tpr_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpr_pid = $projektid
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+      and tpl_ppl = $projektplan
+EOF
+
+  my ($bud_betrag, $bud_personentage,
+      $bud_sachkosten, $bud_investition) =
+        $dbh->selectrow_array( "
+   select sum(bud_betrag), sum(bud_personentage),
+          sum(bud_sachkosten), sum(bud_investition)
+     from budget, projektplan
+    where bud_pid = $projektid
+      and bud_tid = $tid
+      and bud_pid = ppl_pid
+      and bud_ppl = ppl_nummer
+      and ppl_auftrag is not null" ) if $tid;
+
+  $bud_betrag       = 0 unless $bud_betrag;
+  $bud_personentage = 0 unless $bud_personentage;
+
+  my ($bud_betrag_ppl, $bud_personentage_ppl,
+      $bud_sachkosten_ppl, $bud_investition_ppl) =
+        $dbh->selectrow_array( "
+   select sum(bud_betrag), sum(bud_personentage),
+          sum(bud_sachkosten), sum(bud_investition)
+     from budget, projektplan
+    where bud_pid = $projektid
+      and bud_ppl = $projektplan
+      and bud_tid = $tid
+      and bud_pid = ppl_pid
+      and bud_ppl = ppl_nummer" ) if $tid;
+
+  $bud_betrag_ppl       = 0 unless $bud_betrag_ppl;
+  $bud_personentage_ppl = 0 unless $bud_personentage_ppl;
+
+  my ($bpl_betrag, $bpl_personentage, $bpl_sachkosten, $bpl_investition)
+    = $dbh->selectrow_array( <<"EOF" ) if $tid;
+   select sum(bpl_betrag), sum(bpl_personentage),
+          sum(bpl_sachkosten), sum(bpl_investition)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+EOF
+  $bpl_betrag       = 0 unless $bpl_betrag;
+  $bpl_personentage = 0 unless $bpl_personentage;
+  $bpl_sachkosten   = 0 unless $bpl_sachkosten;
+  $bpl_investition  = 0 unless $bpl_investition;
+
+  my $bpl = $dbh->selectall_arrayref( <<"EOF" ) if $tid;
+   select bpl_aid, auf_name, bpl_datum, bpl_betrag, bpl_personentage,
+          bpl_sachkosten, bpl_investition
+     from budgetplan, aufgabe
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+      and auf_pid = bpl_pid
+      and auf_tid = bpl_tid
+      and auf_aid = bpl_aid
+    order by bpl_aid, bpl_datum
+EOF
+
+  my $apl = $dbh->selectall_arrayref( <<"EOF" ) if $tid;
+   select apl_aid, auf_name
+     from aufgabenplan, aufgabe
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid     = $tid
+      and auf_pid     = apl_pid
+      and auf_tid     = apl_tid
+      and auf_aid     = apl_aid
+EOF
+
+  my $ppl_auftrag = $dbh->selectrow_array( <<"EOF" );
+    select ppl_auftrag
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_nummer = $projektplan
+EOF
+
+  my ($sum_bpl_betrag, $sum_bpl_personentage, $sum_bpl_sachkosten,
+      $sum_bpl_investition) = (0, 0, 0, 0);
+
+</%perl>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Budgetplan bearbeiten</h1>
+
+Teilprojekt <& '/select', name     => 'tid',
+                          values   => $tpr,
+                          showkey  => 1,
+                          selected => $tid &>
+
+% if ($tid) {
+
+%   if ($showbudget) {
+<table border='1' width='100%'>
+ <tr>
+  <td rowspan='2'>
+  </td>
+  <th colspan='2'>
+   Budget
+  </th>
+  <th rowspan='2'>
+   geplant
+  </th>
+  <th rowspan='2'>
+   frei
+  </th>
+ </tr>
+
+ <tr>
+  <th>
+   beauftragt
+  </th>
+  <th>
+   neu
+  </th>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Personalkosten (<%$waehrung%>)
+  </th>
+  <td align='right'>
+   <%formatnumber($bud_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag_ppl, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bpl_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag - $bpl_betrag, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Personentage
+  </th>
+  <td align='right'>
+   <%$bud_personentage%>
+  </td>
+  <td align='right'>
+   <%$bud_personentage_ppl%>
+  </td>
+  <td align='right'>
+   <%$bpl_personentage%>
+  </td>
+  <td align='right'>
+   <%$bud_personentage - $bpl_personentage%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Sachkosten (<%$waehrung%>)
+  </th>
+  <td align='right'>
+   <%formatnumber($bud_sachkosten, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_sachkosten_ppl, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bpl_sachkosten, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_sachkosten - $bpl_sachkosten, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Investition (<%$waehrung%>)
+  </th>
+  <td align='right'>
+   <%formatnumber($bud_investition, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_investition_ppl, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bpl_investition, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_investition - $bpl_investition, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+</table>
+%   } # if $showbudget
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+   Datum
+  </th>
+  <th bgcolor='#ccccff'>
+   Personalkosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Personentage
+  </th>
+  <th bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Investment
+  </th>
+ </tr>
+
+ <%perl>
+  my $bpl_aid_akt;
+  foreach (@$bpl)
+  {
+    my ($bpl_aid, $auf_name, $bpl_datum, $bpl_betrag, $bpl_personentage,
+        $bpl_sachkosten, $bpl_investition) = @$_;
+
+    $sum_bpl_betrag       += $bpl_betrag;
+    $sum_bpl_personentage += $bpl_personentage;
+    $sum_bpl_sachkosten   += $bpl_sachkosten;
+    $sum_bpl_investition  += $bpl_investition;
+
+    if ($bpl_aid != $bpl_aid_akt)
+    {
+      $bpl_aid_akt = $bpl_aid;
+
+ </%perl>
+
+ <tr>
+  <td colspan='5' bgcolor='#ccccff'>
+   <b>Aufgabe</b> <i><%$bpl_aid%> <%$auf_name%></i>
+  </td>
+ </tr>
+%   }
+
+ <tr>
+  <td>
+   <% new Contavia::Date($bpl_datum)->preformat %>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%$bpl_personentage%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl_investition, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <td colspan='5' bgcolor='#ccccff'>
+   <b>Aufgabe</b>
+   <& '/select', name     => 'bpl_aid',
+                 values   => $apl,
+                 showkey  => 1,
+                 selected => $bpl_aid,
+                 submit   => 0 &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <& '/inputdatum', name => 'bpl_datum' &>
+   <& '/setfocus', name => 'bpl_datum' &>
+  </td>
+  <td>
+   <input type='text' name='bpl_betrag' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bpl_personentage' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bpl_sachkosten' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bpl_investition' size='10'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum_bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bpl_personentage%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bpl_sachkosten%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bpl_investition%></pre>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+% if ($showbudget) {
+ <input type='submit' name='hidebudget' value='Budget ausblenden'>
+% } else {
+ <input type='submit' name='showbudget' value='Budget anzeigen'>
+% }
+</p>
+
+<input type='hidden' name='showbudget' value='<%$showbudget%>'>
+
+<h2>Erläuterung</h2>
+
+<p>
+In der oberen Tabelle wird als Übersicht der aktuelle Zustand angezeigt. Folgende Punkte werden ausgegeben:
+</p>
+
+<h3>Budget beauftragt</h3>
+
+<p>
+Das bisher vom Kunden beauftragte Budget über alle Projektpläne. Wenn das Budget im aktuellen Projektplan vom Kunden genehmigt ist, ist es in der Summe auch hier enthalten.
+</p>
+
+<h3>Budget neu</h3>
+
+<p>
+Das Budget vom aktuellen Projektplan.
+</p>
+
+<h3>geplant</h3>
+
+<p>
+Das bisher verteilte Budget. Das ist regelrecht hochgradig Projektplanspezifisch.
+</p>
+
+<h3>frei</h3>
+
+<p>
+Die Differenz von beauftragten und geplanten Budget. Das ist das Budget, welches es hier zu verteilen gilt. Ist das neue Budget als Angebot zum Kunden freigegeben, kann nicht mehr verplant werden, als angeboten.
+</p>
+
+<h3>Hinweis zur Eingabe</h3>
+
+<p>
+Bei Eingabe der gleichen Aufgabe und Datum wird der Betrag addiert. Löschen von einzelnen Budgetposten ist durch Negativbuchung möglich. Positionen ohne Beträge werden automatisch entfernt.
+</p>
+
+% } # if $tid

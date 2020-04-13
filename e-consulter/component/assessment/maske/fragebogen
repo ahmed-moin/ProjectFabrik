@@ -1,0 +1,98 @@
+<%args>
+$dbh
+$uid
+@menu => undef
+$start => undef
+$antworten => undef
+$lang => 'de'
+</%args>
+<%doc>
+es gibt 4 Einstiegsmodi in diese Seite:
+  1. es gibt noch keine Antworten und der User hat nicht den Start-button
+     betätigt:
+       - biete dem User den Start-button an
+
+  2. es gibt noch keine Antworten und der User hat den Start-button
+     betätigt:
+       - lese die erste Seite und trage die Fragezeit in die
+         Antwort-Tabelle ein
+
+  3. es gibt noch offene Fragen
+      
+  4. es gibt keine offenen Fragen mehr
+</%doc>
+<%perl>
+
+  my $hidden_answer = $dbh->selectrow_array(<<"EOF");
+    select ben_assdel
+      from benutzer
+     where ben_uid='$uid'
+EOF
+
+  if ($hidden_answer == 1) {
+    $ARGS{hidden_answer} = 1;
+    $m->comp('fragebogen_auswertung', %ARGS);
+    return;
+  }
+
+  my $ant;
+
+  # wenn es keine gestellten Fragen gibt, schauen wir mal, ob der
+  # User den Start-button betätigt hat
+
+  $ant = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from assfrage, assantwort
+      where fra_fid  = ant_fid
+        and fra_lang = '$lang'
+        and ant_uid  = '$uid'
+EOF
+
+  if ($ant == 0 && !$start)
+  {
+    # keine Antworten, kein Start
+    $m->comp('fragebogen_start', %ARGS);
+    return;
+  }
+
+  # jetzt prüfen wir mal, ob Fragen offen sind:
+  my $offenefragen = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from assantwort
+      where ant_uid = '$uid'
+        and ant_antwortzeit is null
+EOF
+
+  if ($offenefragen == 0)
+  {
+    # keine offenen Fragen; wir initialisieren mal die nächsten
+    my $seite = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(fra_seite) + 1
+       from assfrage, assantwort
+      where fra_fid  = ant_fid
+        and fra_lang = '$lang'
+        and ant_uid  = '$uid'
+EOF
+    $offenefragen = $dbh->do( <<"EOF" );
+     insert into assantwort(ant_uid, ant_fid, ant_fragezeit)
+       select '$uid', fra_fid, CURRENT_TIMESTAMP
+         from assfrage
+        where fra_seite = $seite
+          and fra_lang  = '$lang'
+EOF
+  }
+
+  # wenn jetzt keine offenen Fragen mehr da sind, können wir zur Auswertung
+  # schreiten, ansonsten stellen wir die Fragen mal
+
+  if ($offenefragen > 0)
+  {
+    $m->comp('fragebogen_fragen', %ARGS);
+  }
+  else
+  {
+    $m->comp('fragebogen_auswertung', %ARGS);
+  }
+
+  $dbh->commit;
+</%perl>

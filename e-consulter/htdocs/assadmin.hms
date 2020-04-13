@@ -1,0 +1,67 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           AssAdmin
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Mai 2001
+
+  Beschreibung
+    Verwaltung von Projekten
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Mai 2001
+
+</%doc>
+<%attr>
+
+  tool      => 'assadmin'
+  titel     => 'Assessment Admin'
+  barcolor  => [255, 255, 0]
+  titel_img => '/cgi-bin/titel?ASSESSMENT&amp;Admin'
+  logo      => undef
+  defmaske  => 'login'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$sessid => undef
+</%args>
+<%perl>
+
+  if (!$sessid)
+  {
+    return
+    (
+        { maske  => 'login',
+          label  => 'Login' },
+    );
+  }
+  else
+  {
+    return ();
+  }
+
+</%perl>
+</%method>
+
+<%method getmenu_head>
+<%perl>
+  return
+  (
+    { maske  => 'ergebnisse',
+      menu   => 'ergebnisse',
+      label  => 'Ergebnisse' },
+  );
+</%perl>
+</%method>
+
+<%method getmenu_footer>
+<%perl>
+  return
+  (
+    { space  => 80 },
+    { aktion => 'abmelden',
+      label  => 'Abmelden' },
+  );
+</%perl>
+</%method>

@@ -1,0 +1,77 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+
+</%args>
+<%init>
+
+  use Contavia::Db qw(select_hash);
+
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+EOF
+
+  my %bud = select_hash( $dbh, <<"EOF" );
+   select bud_tid, bud_betrag, bud_personentage, bud_sachkosten, bud_investition
+     from budget
+    where bud_pid = $projektid
+      and bud_ppl = $projektplan
+EOF
+
+</%init>
+
+<& '/masketitel', titel => 'Budget' &>
+
+<table>
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <th class='label'>
+   Betrag
+  </th>
+  <th class='label'>
+   Personentage
+  </th>
+  <th class='label'>
+   Sachkosten
+  </th>
+  <th class='label'>
+   Investment
+  </th>
+ </tr>
+
+% foreach (@$tpl) {
+%   my ($tpl_tid, $tpr_titel) = @$_;
+%   my ($bud_betrag, $bud_personentage, $bud_sachkosten,
+%       $bud_investition) = @{$bud{$tpl_tid}};
+ <tr>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <input type='text' name='bud_betrag' value='<%$bud_betrag%>' size='12'>
+  </td>
+  <td>
+   <input type='text' name='bud_personentage' value='<%$bud_personentage%>' size='12'>
+  </td>
+  <td>
+   <input type='text' name='bud_sachkosten' value='<%$bud_sachkosten%>' size='12'>
+  </td>
+  <td>
+   <input type='text' name='bud_investition' value='<%$bud_investition%>' size='12'>
+  </td>
+ </tr>
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='budgetplan' value='aus Budgetplan f&uuml;llen'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>

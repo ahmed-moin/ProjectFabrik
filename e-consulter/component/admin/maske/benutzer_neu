@@ -1,0 +1,100 @@
+<%args>
+$dbh
+</%args>
+
+<h1>Benutzer anlegen</h1>
+
+<h2>Benutzerdaten</h2>
+
+<table>
+ <tr>
+  <td>
+   Benutzerkennung
+  </td>
+  <td>
+   <input type='text' name='ben_uid' size='8' maxlength='8'>
+   <& '/setfocus', name => 'ben_uid' &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Anrede
+  </td>
+  <td>
+   <input type='radio' name='ben_anrede' value='Herr'>Herr
+   <input type='radio' name='ben_anrede' value='Frau'>Frau
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Titel
+  </td>
+  <td>
+   <input class='norm' type='text' name='ben_titel'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Vorname
+  </td>
+  <td>
+   <input class='super' type='text' name='ben_vorname'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Nachname
+  </td>
+  <td>
+   <input class='super' type='text' name='ben_nachname'>
+  </td>
+ </tr>
+</table>
+
+<h2>Status</h2>
+
+<table width='100%'>
+ <tr>
+  <td width='25%'>
+   <input type='radio' name='ben_status'
+          value='0' checked> kein Mitarbeiterstatus
+  </td>
+  <td width='25%'>
+   <input type='radio' name='ben_status'
+          value='1'> Mitarbeiter
+  </td>
+  <td width='25%'>
+   <input type='radio' name='ben_status'
+       value='-1'> zurückgestellt
+  </td>
+ </tr>
+</table>
+
+<br>
+
+<input type='checkbox' name='ben_kunde'>
+  Kunde <br>
+<input type='checkbox' name='ben_projektleiter'>
+  Projektleiter <br>
+<input type='checkbox' name='ben_admin'>
+  Administrator <br>
+
+<br>
+
+Passwort
+<input type='password' name='passwort1' size='12'>
+<input type='password' name='passwort2' size='12'>
+
+<br>
+
+<h2> Anmelderecht </h2>
+<input type='checkbox' name='ben_personal'> Personaltool
+<input type='checkbox' name='ben_projekt'> Projekttool
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+</p>

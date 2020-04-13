@@ -1,0 +1,119 @@
+<%args>
+$projektid
+$dbh
+$zid => 1
+$stand
+$waehrung
+$lang => ''
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  $stand = new Contavia::Date($stand)->qpgdate;
+
+  my $projektplan = $m->comp('/get_projektplan', %ARGS);
+
+  # ermittele, welches Projektziel wir haben
+  my ($prz_titel, $prz_einheit) = $dbh->selectrow_array(<<"EOF");
+    select prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid = $zid
+EOF
+
+  # lese Zielwerte zu dem Teilprojektziel
+  my %tpz = $dbh->select_hash(<<"EOF");
+    select tpz_tid, tpz_ziel
+      from teilprojektziel
+     where tpz_pid = $projektid
+       and tpz_ppl = $projektplan
+       and tpz_zid = $zid
+EOF
+
+  # lese aktuelle Werte zu dem Teilprojektziel
+  my %tpe = $dbh->select_hash(<<"EOF");
+    select tpe_tid, tpe_realisierung
+      from teilprojektrealisierung a
+     where tpe_pid = $projektid
+       and tpe_zid = $zid
+       and tpe_datum = (select max(tpe_datum)
+         from teilprojektrealisierung b
+        where a.tpe_pid = b.tpe_pid
+          and a.tpe_tid = b.tpe_tid
+          and a.tpe_zid = b.tpe_zid
+          and b.tpe_datum <= $stand)
+EOF
+
+  # lese Kosten und Budget
+  my %kos    = $m->comp('budget:kosten_gesamt', %ARGS, projektplan => $projektplan);
+  my %budget = $m->comp('budget:budget_gesamt', %ARGS, projektplan => $projektplan);
+
+  # Jetzt müssen wir 2 Balkengrafiken erstellen. Die erste (linke) ist
+  # Rückwärts und enthält die Werte aus %kos und %budget. Die zweite
+  # enthält die Werte aus %tpz und %tpe.
+
+</%perl>
+
+<& '/masketitel', titel => "<i18n>Status</i18n> - $prz_titel" &>
+
+<table>
+ <tr>
+<& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<& '/balkengrafik2', dbh         => $dbh,
+                     projektid   => $projektid,
+                     projektplan => $projektplan,
+                     werte_l     => [\%budget, \%kos],
+                     werte_r     => [\%tpz, \%tpe],
+                     color_l     => [[0, 0, 128], [0, 192, 0]],
+                     color_r     => [[128, 64, 192], [192, 192, 0]],
+                     unit_l      => $waehrung,
+                     unit_r      => $prz_einheit,
+                     lang        => $lang,
+                     titel_l     => '<i18n>Kosten</i18n>',
+                     titel_r     => $prz_titel &>
+
+ <table>
+  <tr>
+   <td>
+	<i18n>
+    Budget
+	</i18n>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [0, 0, 128] &>
+   </td>
+
+   <td>
+	<i18n>
+    Ziel
+	</i18n>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [128, 64, 192] &>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+	<i18n>Ist</i18n>
+%# <%$lang eq 'en' ? 'Actual state' : 'Ist'%>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [0, 192, 0] &>
+   </td>
+
+   <td>
+	<i18n>Ist</i18n>
+%# <%$lang eq 'en' ? 'Actual state' : 'Ist'%>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [192, 192, 0] &>
+   </td>
+  </tr>
+
+
+ </table>

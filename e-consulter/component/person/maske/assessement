@@ -1,0 +1,33 @@
+<%args>
+$dbh
+$user
+</%args>
+<%perl>
+
+  my $count = $dbh->selectrow_array( "
+    select count(*)
+      from assfrage
+     where fra_lang='de'" );
+
+  my $ant = $dbh->selectall_arrayref( "
+    select ant_uid, count(*)
+      from assantwort
+     where ant_antwort is not null
+     group by ant_uid
+     having count(*) = $count" );
+
+  my $zeit = $dbh->selectrow_array( "
+    select max(ant_antwortzeit) - min(ant_fragezeit)
+      from assantwort
+     where ant_uid = '$user'" );
+
+</%perl>
+
+<h1>Assessment Ergebnis</h1>
+
+<h2> <%$user%> </h2>
+
+<& '/assergebnis', dbh => $dbh, uid => $user &>
+
+Zeit: <%$zeit%>
+

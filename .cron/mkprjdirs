@@ -1,0 +1,57 @@
+#!/usr/bin/perl -w
+
+use lib qw(/usr/local/lib/perl5);
+use EConsulter;
+use Getopt::Std;
+
+$ENV{PGUSER} = 'e-consulter';
+$ENV{PGHOST} = 'localhost';
+
+my %opts;
+getopts('d:o:qv', \%opts);
+
+my $dbh = EConsulter::connect;
+my $dir = $opts{d} || '/u/e-con/daten';
+my $owner = $opts{o} || 10000;
+my $verbose = $opts{v};
+my $quiet = $opts{q};
+
+chdir $dir;
+
+my $sth = $dbh->prepare( "
+  select prj_id, prj_titel, prj_kurztitel
+    from projekt" );
+
+my $sth_upd = $dbh->prepare( "
+  update projekt
+     set prj_kurztitel = ?
+   where prj_id = ?" );
+
+$sth->execute;
+while ( my ($prj_id, $prj_titel, $prj_kurztitel) = $sth->fetchrow_array)
+{
+  printf "prüfe Projekt %4d: %s\n", $prj_id, $prj_titel if $verbose;
+
+  my $gid = $prj_id + 10000;
+  unless ( -d $prj_id )
+  {
+    print "erstelle Projektverzeichnis für $prj_titel\n" unless $quiet;
+    mkdir $prj_id;
+  }
+
+  unless($prj_kurztitel)
+  {
+    my $prj_kurztitel = $prj_id;
+    print "erzeuge Kurztitel für $prj_titel\n" unless $quiet;
+    $sth_upd->execute($prj_kurztitel, $prj_id);
+  }
+
+  chown $owner, $gid, $prj_id; # Owner E-Consulter, Gruppe = Projektmitglieder
+  chmod 0770, $prj_id;         # Gruppenmitglieder dürfen zugreifen
+}
+
+$sth = undef;
+$sth_upd = undef;
+$dbh->commit;
+
+$dbh->disconnect;

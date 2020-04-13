@@ -1,0 +1,82 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Dokumentationstool
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Mai 2001
+
+  Beschreibung
+    Mitarbeitertool
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Mai 2001      1. Release
+
+</%doc>
+<%attr>
+
+  tool      => 'doku'
+  titel     => 'Dokumentation'
+  barcolor  => [255, 170, 0]
+  titel_img => '/images/titel/doku.gif'
+  icon      => '/images/icon/doku.gif'
+  foto      => '/images/129-5.jpg'
+  defmaske  => 'login'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$projektid => undef
+</%args>
+<%perl>
+  my @menu;
+
+  if ( $projektid )
+  {
+    my @menu_head =
+    (
+#      { maske  => 'sitzung',
+#        menu   => 'sitzung',
+#        label  => 'Sitzungsprotokolle' },
+      { maske  => 'projekt',
+        menu   => 'projekt',
+        label  => 'Projektdokumentation' },
+#      { maske  => 'summary',
+#        menu   => 'summary',
+#        label  => "monatiches\nSummary" },
+    );
+
+    my @menu_footer =
+    (
+      { space  => 80 },
+      { aktion => 'projektschliessen',
+        label  => 'Projekt wechseln' },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+    my $ret = $m->comp('/getmenu', %ARGS,
+                       menu_head => \@menu_head,
+                       menu_footer => \@menu_footer );
+    @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                 : ( @menu_head, @menu_footer );
+  }
+  elsif ($ARGS{sessid} )
+  {
+    @menu = ( { maske  => 'projekte',
+                label  => 'Projekte' },
+              { space  => 80 },
+              { aktion => 'abmelden',
+                label  => 'Abmelden' },
+            );
+  }
+  else
+  {
+    @menu = ( { maske    => 'login',
+                label    => 'Login',
+                selected => 1 }
+            );
+  }
+
+  return @menu;
+</%perl>
+</%method>

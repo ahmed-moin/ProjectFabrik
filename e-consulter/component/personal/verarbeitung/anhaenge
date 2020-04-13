@@ -1,0 +1,67 @@
+<%args>
+  $dbh
+  $uid
+  $anh_id => undef
+  $anh_filename => undef
+  $anh_beschreibung => undef
+  $upload => undef
+  $del => undef
+</%args>
+<%once>
+  use Contavia::Db qw(replace quote);
+  my ($sth, $uid, $data);
+</%once>
+<%perl>
+  my $path = "$ENV{MAINDIR}/daten/anhaenge/$uid/";
+
+  
+  if ($upload and $anh_filename =~ /.+/) {
+    my $q  = new CGI;
+    my $fh = $q->upload('anh_filename');
+
+    # only the crappy Internet Explorer sends the whole path (the
+    # local one from the client!!!) instead of only the file name.
+    # So we have to filter it... :\
+    ($anh_filename) = $anh_filename =~ /.*\\(.*)$/ if ($anh_filename =~ /\\/g);
+
+    mkdir($path) or die("couldn't create dir $path!") if (!-d $path);
+
+    open(FILE, ">$path/$anh_filename") or die ("couldn't open file $anh_filename for writing!");
+    print(FILE $data) while ($data = <$fh>);
+    close(FILE);
+
+    replace(
+      $dbh, 'anhaenge',
+      { anh_uid          => quote($uid),
+        anh_filename     => quote($anh_filename)},
+      { anh_id           => "nextval('anh_id_seq')",
+        anh_beschreibung => quote($anh_beschreibung),
+        anh_ins_time     => 'now()' });
+
+    $dbh->commit();
+
+  } elsif ($del and $anh_id) {
+    $sth = $dbh->prepare('
+      select anh_filename
+        from anhaenge
+       where anh_id=?');
+
+    $sth->execute($anh_id);
+    $anh_filename = $sth->fetchrow_array();
+
+    return if (not $anh_filename);
+
+    $sth = $dbh->prepare('
+      delete from anhaenge
+       where anh_uid=?
+         and anh_id=?');
+
+    $sth->execute($uid, $anh_id);
+    $dbh->commit();
+
+    my $delpath = "$path/deleted/";
+    mkdir($delpath) or die("couldn't create dir $delpath!") if (!-d $delpath);
+    
+    `mv "$path/$anh_filename" "$delpath/$anh_filename.del_$anh_id"`
+  }
+</%perl>

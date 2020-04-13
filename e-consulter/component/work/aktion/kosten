@@ -1,0 +1,5 @@
+<%perl>
+  $ARGS{menu} = 'kosten';
+  $ARGS{folgemaske} = 'kostenauswahl';
+  return \%ARGS;
+</%perl>

@@ -1,0 +1,17 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'projektteam',
+             dlabel   => 'Übersicht',
+             menu     => 'projektteam' },
+           { maske    => 'personalsuche',
+             dlabel   => 'Personalsuche',
+             menu     => 'projektteam' },
+           @$menu_footer
+         ];
+
+</%perl>

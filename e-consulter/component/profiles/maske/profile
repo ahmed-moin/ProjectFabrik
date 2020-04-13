@@ -1,0 +1,69 @@
+<%args>
+$dbh
+$uid
+$projektid => undef
+$rol_uid => undef
+$anonymized => 1
+</%args>
+<%init>
+  use Contavia::Db qw(select_hash);
+  use Contavia::Date;
+
+  my $first;
+
+  my $prj = $dbh->selectall_arrayref ( "
+   select prj_id, prj_titel
+     from projekt, rolle
+    where prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_kunde" );
+
+  my $rol = $dbh->selectcol_arrayref( "
+   select rol_uid
+     from rolle
+    where rol_pid = $projektid
+      and (rol_admin
+       or rol_mitarbeiter)" ) if $projektid;
+
+  my $sth = $dbh->prepare("
+    select flg_mime
+      from firmenlogo
+     where flg_uid=?");
+
+  $sth->execute($uid);
+
+  my $bild = $sth->fetchrow_arrayref();
+  my $logo = $bild ? "/cgi-bin/firmenlogo?uid=$uid" : '/images/logo/p_logo.gif';
+</%init>
+<%cleanup>
+  $ARGS{projektid} = undef;
+  $ARGS{rol_uid}   = undef;
+  return \%ARGS;
+</%cleanup>
+<div style="width:100%;text-align:right;"><img src="<% $logo %>" alt="logo"></div>
+<a href="/print/profile.hms?sid=<% $ARGS{sessid} %>&rol_uid=<% $rol_uid %>" target="_blank"><img src="/images/icon/print.jpg" border="0" alt="print"></a>
+<h1>Profile</h1>
+
+<table border="1" width="100%">
+ <tr>
+  <th class="label" style="height:30px;width:150px;">Projekt</th>
+  <td>
+   <& '/select', name     => 'projektid',
+                 values   => $prj,
+                 selected => $projektid,
+                 width    => 250 &>
+  </td>
+ </tr>
+ <tr>
+  <th class="label" style="height:30px">Mitglieder</th>
+  <td style="vertical-align:top">
+   <& '/select', name     => 'rol_uid',
+                 values   => [ map { [$_, $_] } @$rol ],
+                 selected => $rol_uid,
+                 width    => 250 &>
+  </td>
+ </tr>
+</table>
+% if ($rol_uid) {
+<& '/personal/zusammenfassung', dbh => $dbh, uid => $uid, rol_uid => $rol_uid, anonymized => 1, sessid => $ARGS{sessid} &>
+% }

@@ -1,0 +1,41 @@
+<%attr>
+noautohandler => 1
+</%attr>
+<%init>
+  use MIME::Base64;
+
+  $m->dhandler_arg =~ /^([^-]+)-([^-]+)\.hms$/ or return 404;
+  my ($sessid, $uid) = ($1, $2);
+
+  my $dbh = $m->comp('/connect', db => 'projekt');
+
+#  my ($ben_admin, $ben_uid) = $dbh->selectrow_array( <<"EOF" );
+#   select ben_admin, ben_uid
+#     from benutzer
+#    where ben_sessid = '$sessid'
+#EOF
+#
+#  return 403 unless $ben_uid eq $uid || $ben_admin;  # forbidden
+
+  my $bld = $dbh->selectall_arrayref( <<"EOF" );
+   select bld_mime, bld_bild
+     from bild
+    where bld_uid = '$uid'
+    order by bld_lfdnr
+EOF
+
+  return 404 unless ($bld);  # not found
+
+  my $bld_mime = $bld->[0]->[0];
+
+  $r->content_type($bld_mime);
+
+  my $bld_bild;
+  foreach (@$bld)
+  {
+    my ($mime, $bild) = @$_;
+    $bld_bild .= decode_base64($bild);
+  }
+
+</%init>
+<%$bld_bild%>

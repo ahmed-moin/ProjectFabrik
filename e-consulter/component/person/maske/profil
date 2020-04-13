@@ -1,0 +1,8 @@
+<%args>
+$user
+</%args>
+% $ARGS{uid} = $user;
+
+<h1>Profil</h1>
+
+<& '/personal/zusammenfassung', %ARGS &>

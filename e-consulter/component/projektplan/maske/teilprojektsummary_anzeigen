@@ -1,0 +1,91 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # lese Teilprojekte zum Projektplan
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+       join teilprojekt
+         on tpl_pid = tpr_pid
+        and tpl_tid = tpr_tid
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan" );
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = new Contavia::Date($dbh->selectrow_array( "
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid" ));
+  $anf_datum->tag(1);
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # lese ausgewählten Bericht
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  my $pg_datum = $sel_datum->qpgdate;
+  my $brt_text = $dbh->selectrow_array( "
+    select brt_text
+      from tbericht
+     where brt_pid   = $projektid
+       and brt_tid   = $tid
+       and brt_datum = $pg_datum" ) if ($tid);
+
+</%perl>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Teilprojektsummary</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <& '/select_monat', name     => 'sel_datum',
+                       von      => $anf_datum,
+                       bis      => $current,
+                       selected => $sel_datum &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   <& '/select', name     => 'tid',
+                 values   => $tpr,
+                 selected => $tid &>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td>
+   <%$brt_text%>
+  </td>
+ </tr>
+</table>
+
+% if ($tid) {
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+% }
+

@@ -1,0 +1,49 @@
+<%args>
+$dbh
+@menu
+$uid
+$projektid => undef
+</%args>
+<%perl>
+
+  my $prj = $dbh->selectall_arrayref ( <<"EOF" );
+   select prj_id, prj_titel
+     from projekt, rolle
+    where prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_kunde
+EOF
+
+</%perl>
+<%cleanup>
+$ARGS{projektid} = undef;
+return \%ARGS;
+</%cleanup>
+
+<h1>Projekte</h1>
+
+  <table>
+   <tr>
+    <th>
+    </th>
+    <th>
+     Projekt
+    </th>
+   </tr>
+%   foreach (@$prj) {
+%     my ($prj_id, $prj_titel) = @$_;
+   <tr>
+    <td>
+     <input type='radio' name='projektid' value='<%$prj_id%>'<%$prj_id == $projektid && ' checked'%>>
+    </td>
+    <td>
+     <%$prj_titel%>
+    </td>
+   </tr>
+%   }
+  </table>
+
+  <p class='button'>
+    <input type='submit' name='oeffnen' value='&Ouml;ffnen' style='width:3cm'>
+  </p>
+

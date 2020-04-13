@@ -1,0 +1,275 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%once>
+  my %branchen;
+</%once>
+<%perl>
+
+  my %prj_status = $m->comp('/prj_status', lang => 'en');
+
+  my %rollen =
+     ( 1 => 'Projectsteering',
+       2 => 'Member of the project team',
+       4 => 'Project management',
+       8 => 'Coach' );
+
+  use Contavia::Date;
+
+  unless (%branchen)
+  {
+    my $branchen = $dbh->selectall_arrayref( <<"EOF" );
+      select bra_id, bra_bezeichnung
+        from branche
+EOF
+    foreach (@$branchen)
+    {
+      my ($bra_id, $bra_bezeichnung) = @$_;
+      $branchen{$bra_id} = $bra_bezeichnung;
+    }
+  }
+
+  my ($prj_titel, $prj_kurzbeschreibung, $prj_statusquo, $prj_verbesserung,
+      $prj_aufmerksam, $prj_bemerkung, $prj_eigenleistung,
+      $prj_start, $prj_ende, $prj_ziel, $prj_rolle,
+      $prj_reaktionsart, $prj_telefon, $prj_telefax, $prj_email,
+      $prj_beschreibung, $prj_branche, $prj_status) =
+        $dbh->selectrow_array( <<"EOF" );
+  select prj_titel, prj_kurzbeschreibung, prj_statusquo, prj_verbesserung,
+         prj_aufmerksam, prj_bemerkung, prj_eigenleistung,
+         prj_start, prj_ende, prj_ziel, prj_rolle,
+         prj_reaktionsart, prj_telefon, prj_telefax, prj_email,
+         prj_beschreibung, prj_branche, prj_status
+    from projekt
+   where prj_id = $projektid
+EOF
+
+  my ($ben_telefon, $ben_telefax, $ben_email) =
+    $dbh->selectrow_array( <<"EOF" );
+  select ben_telefon, ben_telefax, ben_email
+    from benutzer, rolle
+   where rol_pid = $projektid
+     and rol_kunde
+     and rol_uid = ben_uid
+EOF
+
+  $prj_telefon = $ben_telefon unless $prj_telefon;
+  $prj_telefax = $ben_telefax unless $prj_telefax;
+  $prj_email   = $ben_email   unless $prj_email;
+
+  my ($prj_ziele) = $dbh->selectall_arrayref( <<"EOF" );
+  select prj_ziel, prj_zielreihenfolge
+    from prjziel
+   where prj_id = $projektid
+   order by prj_zielreihenfolge desc
+EOF
+
+  my ($prj_bereiche) = $dbh->selectcol_arrayref( <<"EOF" );
+  select prj_bereich
+    from prjbereich
+   where prj_id = $projektid
+EOF
+
+  my ($prj_eigenschaften) = $dbh->selectcol_arrayref( <<"EOF" );
+  select prj_eigenschaft
+    from prjteameigenschaft
+   where prj_id = $projektid
+EOF
+
+</%perl>
+
+ <table border='1'>
+  <tr>
+   <th style='text-align:left'>
+    Project title
+   </th>
+   <td>
+    <%$prj_titel%>
+   </td>
+  </tr>
+
+  <tr>
+   <th style='text-align:left'>
+    Status
+   </th>
+   <td>
+    <%$prj_status{$prj_status}%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Objectives
+   </th>
+   <td>
+    <%perl>
+     $_ = $prj_ziel;
+     s/\n/<br>/g;
+    </%perl>
+    <%$_%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Rating of objectives
+   </th>
+   <td>
+    <table>
+     <tr>
+      <td rowspan='2'>
+       <table>
+%    foreach (@$prj_ziele) {
+%      my ($prj_ziel, $prj_zielreihenfolge) = @$_;
+        <tr>
+         <td>
+          <%$prj_ziel%>
+         </td>
+         <td>
+          <%$prj_zielreihenfolge%>
+         </td>
+        </tr>
+%    }
+       </table>
+      </td>
+      <td valign='top'>
+       <img src='/images/plus.png'>
+      </td>
+     </tr>
+     <tr>
+      <td valign='bottom'>
+       <img src='/images/minus.png'>
+      </td>
+     </tr>
+    </table>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    project start
+   </th>
+   <td>
+    <%new Contavia::Date($prj_start)->format%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    project delivery
+   </th>
+   <td>
+    <%new Contavia::Date($prj_ende)->format%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    brief description
+   </th>
+   <td>
+    <%perl>
+     $_ = $prj_kurzbeschreibung;
+     s/\n/<br>\n/g;
+    </%perl>
+    <%$_%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Background information / Status quo
+   </th>
+   <td>
+    <%perl>
+     $_ = $prj_statusquo;
+     s/\n/<br>\n/g;
+    </%perl>
+    <%$_%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Business area
+   </th>
+   <td>
+    <ul>
+%   foreach my $prj_bereich (@$prj_bereiche) {
+     <li><%$prj_bereich%> </li>
+%   }
+    </ul>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Role of Projektfabrik GmbH 
+   </th>
+   <td>
+%   foreach (grep { $_ & $prj_rolle } keys(%rollen)) {
+    <%$rollen{$_}%> <br>
+%   }
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Part to be performed by yourself
+   </th>
+   <td>
+    <%$prj_eigenleistung%>%
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    hardskills: keycompetence required
+   </th>
+   <td>
+    <%$branchen{$prj_branche}%>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Features of the projectteam
+   </th>
+   <td>
+    <ul>
+%   foreach my $prj_eigenschaft (@$prj_eigenschaften) {
+     <li><%$prj_eigenschaft%> </li>
+%   }
+    </ul>
+   </td>
+  </tr>
+
+  <tr>
+   <th valign='top' style='text-align:left'>
+    Please contact me by:
+   </th>
+   <td>
+%   if ($prj_reaktionsart == 1) {
+    telephone <%$prj_telefon%>
+%   } elsif ($prj_reaktionsart == 2) {
+    email <%$prj_email%>
+%   } elsif ($prj_reaktionsart == 3) {
+    telefax <%$prj_telefax%>
+%   }
+   </td>
+  </tr>
+
+  <tr>
+   <th style='text-align:left'>
+    Remarks
+   </th>
+   <td>
+    <%perl>
+     $_ = $prj_bemerkung;
+     s/\n/<br>/g;
+    </%perl>
+    <%$_%>
+   </td>
+  </tr>
+ </table>

@@ -1,0 +1,12 @@
+<%args>
+$db
+</%args>
+<%perl>
+
+use Contavia::DBI;
+
+my $dbh = Contavia::DBI->connect("dbi:Pg:dbname=$db", '', '',
+   { RaiseError => 1, AutoCommit => 0 } );
+
+return $dbh;
+</%perl>

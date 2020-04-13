@@ -1,0 +1,44 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+<%once>
+  my %rollen = ( 1 => '<i18n>Projektleitung</i18n>',
+                 2 => '<i18n>Projektmitglied</i18n>',
+                 4 => '<i18n>Projektmanagement</i18n>',
+                 8 => '<i18n>Coach</i18n>' );
+</%once>
+<%perl>
+
+  my ($prj_eigenleistung, $prj_rolle) =
+    $dbh->selectrow_array( <<"EOF" );
+    select prj_eigenleistung, prj_rolle
+      from projekt
+     where prj_id=$projektid
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => 'Rolle',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p class='label'><i18n>Welche Funktion im Projekt soll Die Projektfabrik wahrnehmen?</i18n></p>
+ <input type='checkbox' name='prj_rolle_leitung' value='1'
+        <%$prj_rolle & 1 ? ' checked' : ''%>><%$rollen{1}%> <br>
+ <input type='checkbox' name='prj_rolle_mitglied' value='2'
+        <%$prj_rolle & 2 ? ' checked' : ''%>><%$rollen{2}%> <br>
+ <input type='checkbox' name='prj_rolle_management' value='4'
+        <%$prj_rolle & 4 ? ' checked' : ''%>><%$rollen{4}%> <br>
+ <input type='checkbox' name='prj_rolle_coach' value='8'
+        <%$prj_rolle & 8 ? ' checked' : ''%>><%$rollen{8}%> <br>
+ <br>
+ <br>
+
+ <p class='label'><i18n>Bitte geben Sie den Anteil an, den Sie selbst leisten k&ouml;nnen</i18n>
+  <input type='text' name='prj_eigenleistung' value='<%$prj_eigenleistung%>'
+    size='3' maxlength='3'> %
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

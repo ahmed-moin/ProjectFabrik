@@ -1,0 +1,180 @@
+<%args>
+$dbh
+$uid
+$projektid
+$sessid
+$folder => 0
+$uplink => 0
+</%args>
+<%once>
+  my $bg = 'bgcolor="#C5D1FF"';
+  my ($isAdmin, $isProjManager, $isClient, $isEmployee, $i, $x);
+</%once>
+<%perl>
+	
+    ($isAdmin) = $dbh->selectrow_array(<<"EOF") unless $isAdmin;
+	select ben_admin
+	  from benutzer
+	 where ben_uid = '$uid'
+EOF
+
+    ($isProjManager, $isClient, $isEmployee) = $dbh->selectrow_array(<<"EOF");
+	select rol_admin, rol_kunde, rol_mitarbeiter
+	  from rolle
+	 where rol_uid = '$uid'
+	   and rol_pid = '$projektid'
+EOF
+
+    my $folderList = $dbh->selectall_arrayref(<<"EOF");
+    select fol_id, fol_name
+      from folder
+     where fol_prjid  = '$projektid'
+       and fol_parent = '$folder'
+	   and fol_deleted <>'1'
+EOF
+
+    my $fileList = $dbh->selectall_arrayref(<<"EOF");
+	select fil_id, fil_name, fil_comment, fil_ins_time
+	  from files
+	 where fil_prjid = '$projektid'
+	   and fil_folid = '$folder'
+	   and fil_deleted <>'1'
+EOF
+
+    if ($folder != 0) {
+      ($uplink) = $dbh->selectrow_array(<<"EOF");
+	  select fol_parent
+	    from folder
+	   where fol_id = '$folder'
+         and fol_prjid = '$projektid'
+EOF
+	}
+</%perl>
+
+
+<h1>Projektdokumentation</h1>
+
+<table width="99%" border="0" cellpadding="2" cellspacing="0" style="font-family:arial,times,courier;font-size:10pt;">
+  <tr bgcolor="#000080">
+    <th width="2%">&nbsp;</th>
+    <th width="45%" align="left"><font color="#FFFFFF"><b>Name</b></font></th>
+    <th width="34%" align="left"><font color="#FFFFFF"><b><i18n>Kommentar</i18n></b></font></th>
+    <th width="16%" align="left"><font color="#FFFFFF"><b><i18n>Datum</i18n></b></font></th>
+    <th width="2%">&nbsp;</th>
+  </tr>
+
+% if ($folder != 0) {
+  <tr>
+    <td align="left">
+	    <a href="javascript:changeFolder(<%$uplink%>);" style="text-decoration:none;color:#0000A0;"><img border="0" src="/images/folder_up.gif" alt="up"></a>
+    </td>
+    <td align="left">
+	    <a href="javascript:changeFolder(<%$uplink%>);" style="text-decoration:none;color:#0000A0;">Up</a>
+    </td>
+    <td colspan="3" align="left">&nbsp;</td>
+  </tr>	
+% }
+
+<%perl>
+  if ($folder == 0) {
+    $x = 1;
+  } else {
+    $x = 0;
+  }
+
+  my ($fol_id, $fol_name, $fol_parent, $del);
+
+  if ($isAdmin or $isProjManager) {
+    $del = '<img border="0" src="/images/delete.gif" alt="del">';
+  }
+
+  foreach (@$folderList) {
+    ($fol_id, $fol_name, $fol_parent) = @$_;
+</%perl>
+  <tr <%($i % 2 == $x) ? $bg : ""%>>
+    <td align="left">
+      <a href="javascript:changeFolder(<%$fol_id%>);" style="text-decoration:none;color:#0000A0;"><img border="0" src="/images/folder.gif" alt="fol"></a>
+    </td>
+    <td align="left">
+      <a href="javascript:changeFolder(<%$fol_id%>);" style="text-decoration:none;color:#0000A0;"><%$fol_name%></a>
+    </td>
+    <td colspan="2" align="left">&nbsp;</td>
+    <td align="left"><a href="javascript:ok('<%$fol_name%>','d<%$fol_id%>','<%$folder%>');"><%$del%></a></td>
+  </tr>
+<%perl>
+    ++$i;
+  } # foreach (@$folderList)
+
+  my ($fil_id, $fil_name, $fil_comment, $link, $fil_ins_time);
+
+  foreach (@$fileList) {
+    ($fil_id, $fil_name, $fil_comment, $fil_ins_time) = @$_;
+    $link = "/files/$projektid/$folder/$fil_id?sid=$sessid";
+    $fil_ins_time =~ s/\..*$//;
+</%perl>
+  <tr <%($i % 2 == $x) ? $bg : ""%>>
+    <td align="left">
+      <a href="<%$link%>" style="text-decoration:none;color:#0000A0;"><img border="0" src="/images/file.gif" alt="file"></a>
+    </td>
+    <td align="left">
+      <a href="<%$link%>" style="text-decoration:none;color:#0000A0;"><%$fil_name%></a>
+    </td>
+    <td align="left">
+      <%$fil_comment%>
+    </td>
+    <td><% $fil_ins_time %></td>
+    <td><a href="javascript:ok('<%$fil_name%>','f<%$fil_id%>','<%$folder%>');"><%$del%></a></td>
+  </tr>
+% ++$i; } # foreach (@$fileList)
+</table>
+
+
+
+% if ($isAdmin or $isProjManager or $isClient) {
+  <br><br>
+  <table>
+    <tr><td colspan=2><h2>Upload:</h2></td></tr>
+    <tr>
+	  <td><i18n>Dateiname</i18n>:</td>
+	  <td>
+	    <input type="file" name="filename" size="40">&nbsp;&nbsp;
+		<input type="submit" name="upload" value="Upload"><br>
+	  </td>
+    </tr>
+    <tr>
+      <td><i18n>Kommentar</i18n>:</td>
+	  <td>
+		<input type="text" size="40" name="comment" maxlength="100">
+      </td>
+    </tr>
+	<tr><td>&nbsp;</td></tr>
+    <tr><td colspan=2><h2>Neuen Ordner anlegen:</h2></td></tr>
+    <tr>
+	  <td>Ordnername:</td>
+	  <td>
+	    <input type="text" size="40" name="foldername" maxlength="79">
+		<input type="submit" name="create" value="Create">
+	  </td>
+	</tr>
+  </table>
+% }
+
+% if ($isAdmin or $isProjManager) {
+  <input type="hidden" name="del">
+  <script language="JavaScript" type="text/javascript">
+  <!--
+    function ok(filename, id, d) {
+      if (confirm("Delete \""+ filename +"\"?")) {
+        document.forms[0].folgemaske.value = document.forms[0].maske.value;
+        document.forms[0].del.value = filename +"|"+ id +"|"+ d;
+        document.forms[0].submit();
+      }
+    }
+  -->
+  </script>
+% }
+
+<input type="hidden" name="folder" value="<%$folder%>">
+<input type="hidden" name="download" value="">
+%#<input type="hidden" name="uplink" value="<%$uplink%>">
+

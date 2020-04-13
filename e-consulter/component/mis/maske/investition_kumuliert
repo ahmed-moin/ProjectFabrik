@@ -1,0 +1,12 @@
+<%args>
+$waehrung
+</%args>
+
+<h1><i18n>Investition</i18n> - <%$waehrung%></h1>
+
+<& 'budgetaufwand_kumuliert', %ARGS,
+                              art    => 4,
+                              color1 => [0, 0, 128],
+                              color2 => [128, 128, 255],
+                              label1 => 'Budget',
+                              label2 => 'Ist', &>

@@ -1,0 +1,32 @@
+<%args>
+$maske
+@menu
+</%args>
+<%perl>
+
+my $i;
+
+for ($i = 0; $i < $#menu; ++$i)
+{
+  last if ($maske eq $menu[$i]->{maske} || $maske eq $menu[$i]->{aktion});
+}
+
+my $next = ++$i <= $#menu && $menu[$i]->{maske} || $menu[$i]->{aktion};
+if ($next)
+{
+</%perl>
+  <a href="javascript:Maskenwechsel('<%$next%>')"><img src='/images/vor.gif'
+     alt='weiter' border='0'
+        onMousedown="this.src='/images/vor-pr.gif'"
+        onMouseover="this.src='/images/vor-ak.gif'"
+        onMouseup="this.src='/images/vor.gif'"
+        onMouseout="this.src='/images/vor.gif'"></a>
+<%perl>
+}
+else
+{
+</%perl>
+   <img src="/images/vor-de.gif" alt="weiter">
+<%perl>
+}
+</%perl>

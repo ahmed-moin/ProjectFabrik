@@ -1,0 +1,66 @@
+<%args>
+$menu_head
+$menu_footer
+$dbh
+$uid
+</%args>
+<%perl>
+
+  my $rol_admin = $dbh->selectrow_array( <<"EOF" );
+    select 1
+      from rolle
+     where rol_uid = '$uid'
+       and rol_admin
+EOF
+
+  my $rol_kunde = $dbh->selectrow_array( <<"EOF" );
+    select 1
+      from rolle
+     where rol_uid = '$uid'
+       and rol_kunde
+EOF
+
+  my $rol_mitarbeiter = $dbh->selectrow_array( <<"EOF" );
+    select 1
+      from rolle
+     where rol_uid = '$uid'
+       and rol_mitarbeiter
+EOF
+
+  my @menu;
+
+  push @menu,
+    { tool   => 'projekt.hms',
+      label  => 'Projekttool' }
+        if ($rol_kunde);
+  push @menu,
+    { tool   => 'personal.hms',
+      label  => 'Personaltool' }
+        if ($rol_mitarbeiter);
+
+  push @menu, 
+    { space => 40 }
+        if (@menu);
+
+  push @menu,
+    { tool   => 'umsetzer.hms',
+      maske  => 'projekte',
+      label  => 'Umsetzer' }
+        if ($rol_admin);
+  push @menu,
+    { tool   => 'mis.hms',
+      maske  => 'projekte',
+      label  => "Management\nInformation\nSystem" }
+        if ($rol_kunde);
+  push @menu,
+    { tool   => 'work.hms',
+      maske  => 'projekte',
+      label  => 'Mitarbeitertool' }
+        if ($rol_mitarbeiter);
+
+  return [ @$menu_head,
+           { space => 20 },
+           @menu,
+           @$menu_footer
+         ];
+</%perl>

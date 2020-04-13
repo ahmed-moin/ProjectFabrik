@@ -1,0 +1,17 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'aufgabenplanung',
+             dlabel   => 'Aufgabenplanung',
+             menu     => 'aufgaben' },
+           { maske    => 'aufgaben',
+             dlabel   => 'Aufgabenbeschreibung',
+             menu     => 'aufgaben' },
+           @$menu_footer
+         ];
+
+</%perl>

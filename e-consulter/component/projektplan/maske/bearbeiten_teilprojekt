@@ -1,0 +1,115 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+</%args>
+<%perl>
+  use Contavia::Db qw(select_hash);
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+      join teilprojekt
+        on tpl_pid = tpr_pid
+       and tpl_tid = tpr_tid
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan" );
+
+  my ($tpr_titel, $tpr_status, $tpl_beschreibung)
+    = $dbh->selectrow_array( "
+    select tpr_titel, tpr_status, tpl_beschreibung
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_tid = $tid
+       and tpl_pid = tpr_pid
+       and tpl_tid = tpr_tid
+       and tpl_ppl = $projektplan" ) if $tid;
+
+  my $prz = $dbh->selectall_arrayref( "
+    select prz_zid, prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid <> 0" ) if $tid;
+
+  my %tpz = $dbh->select_hash( "
+    select tpz_zid, tpz_ziel
+      from teilprojektziel
+     where tpz_pid = $projektid
+       and tpz_ppl = $projektplan
+       and tpz_tid = $tid" ) if $tid;
+
+</%perl>
+<%cleanup>
+  $ARGS{tid} = undef;
+  return \%ARGS;
+</%cleanup>
+
+<& '/masketitel', titel => 'Teilprojekt bearbeiten' &>
+
+% if ($tpr && @$tpr) {
+
+<& '/select', name => 'tid',
+              values => [
+                map {
+                  my ($tid, $titel) = @$_;
+                  [ $tid, "$tid $titel" ];
+                } @$tpr
+              ],
+              selected => $tid &>
+
+% }
+
+% if ($tid) {
+<table>
+ <tr>
+  <th class='label'>
+   Titel
+  </th>
+  <td>
+   <input type='text' name='titel' value='<%$tpr_titel%>' size='40'>
+   <& '/setfocus', name => 'titel' &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Beschreibung
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+  <textarea name='beschreibung' rows='10' cols='60'><%$tpl_beschreibung%></textarea>
+  </td>
+ </tr>
+
+% if (@$prz) {
+ <tr>
+  <th class='label'>
+   Zielwerte
+  </th>
+ </tr>
+
+% }
+% foreach (@$prz) {
+%   my ($prz_zid, $prz_titel, $prz_einheit) = @$_;
+ <tr>
+  <td>
+   <%$prz_titel%>
+  </td>
+  <td>
+   <input type='hidden' name='tpz_zid' value='<%$prz_zid%>'>
+   <input type='text' name='tpz_ziel' size='12' value='<%$tpz{$prz_zid}%>'> <%$prz_einheit%>
+  </td>
+ </tr>
+
+% } # foreach(@$prz)
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+
+% } # if ($tid)

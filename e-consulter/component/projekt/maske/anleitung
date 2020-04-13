@@ -1,0 +1,41 @@
+<%args>
+@menu
+</%args>
+
+<&  '/masketitel', titel => '<i18n>Anleitung</i18n>',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu  &>
+
+<p>
+Zur Anmeldung lesen Sie bitte die Nutzungsbedingungen durch. Sind Sie damit
+einverstanden, füllen Sie die Seite 'Erstkontakt' aus. Sie erhalten sofort auf
+dem Bildschirm eine User-ID, die Sie sich bitte notieren. Ausserdem
+erhalten Sie per Mail eine Request-ID, die dazu dient, Ihre Anmeldung freizuschalten.
+Die Mail enthält einen Link, den Sie bitte aufrufen. Dort werden Sie nach
+der User-ID gefragt. Sobald Sie diese korrekt eingegeben und bestätigt haben,
+können Sie sich anmelden.
+</p>
+
+<p>
+Im Projekttool füllen Sie bitte Ihre Stammdaten von Ihnen und Ihrer Firma aus.
+</p>
+
+<p>
+Anschliessend können Sie ein neues Projekt anlegen, oder wenn Sie das Tool früher
+bereits verwendet haben, bestehende Projekte zur weiteren Bearbeitung öffnen oder
+löschen.
+</p>
+
+<p>
+Das Projekttool hilft Ihnen, ein neues Projekt zu erfassen. Es unterstützt Sie
+bei der Formulierung Ihrer Wünsche. Als Ziel soll ein Gesamtbild Ihres Projektwunsches
+erscheinen, welches es uns ermöglicht Ihnen ein Angebot zu unterbreiten.
+</p>
+
+<p>
+Sollten Sie ihre Eingabe unterbrechen und sich abmelden, werden die bisher gemachten Angaben
+erhalten bleiben, bis Sie diese explizit l&ouml;schen. Sie k&ouml;nnen ihre Eingaben so auch
+zu einem sp&auml;teren Zeitpunkt fortsetzen.
+</p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

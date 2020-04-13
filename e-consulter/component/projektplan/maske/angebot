@@ -1,0 +1,330 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$erstellen0 => undef
+</%args>
+<%once>
+
+  use Contavia qw(formatnumber);
+  use HTML::Entities;
+
+  my %grund = (
+    1 => 'Angebot zu teuer',
+    2 => 'Anforderung falsch interpretiert',
+    3 => 'internet Priorisierung hat sich verändert',
+    4 => 'Projekt zurückgestellt',
+    5 => 'für einen anderen Anbieter entschiedenen' );
+
+  my %vorgehen = (
+    1 => 'Kontaktaufnahme per Telefon',
+    2 => 'Kontaktaufnahme per E-Mail',
+    3 => 'Kontaktaufnahme per Fax',
+    4 => 'Termin zu einem persönlichen Gespräch',
+    5 => 'keine weitere Kontaktaufnahme' );
+
+</%once>
+<%perl>
+
+  use Contavia::Date;
+
+  my ($ppl_angebotdatum, $ppl_angebottext, $ppl_angebotbis,
+           $ppl_auftrag, $ppl_ablehnung, $ppl_ablehnungsgrund, $ppl_vorgehen,
+           $ppl_ablehnungstext)
+      = $dbh->selectrow_array( <<"EOF" );
+    select ppl_angebotdatum, ppl_angebottext, ppl_angebotbis,
+           ppl_auftrag, ppl_ablehnung, ppl_ablehnungsgrund, ppl_vorgehen,
+           ppl_ablehnungstext
+      from projektplan
+     where ppl_pid    = $projektid
+       and ppl_nummer = $projektplan
+EOF
+
+  my $bud = $dbh->selectall_arrayref( <<"EOF" );
+    select bud_tid, tpr_titel, bud_betrag, bud_personentage,
+           bud_sachkosten, bud_investition
+      from budget, teilprojekt
+     where bud_pid = $projektid
+       and bud_ppl = $projektplan
+       and tpr_pid = bud_pid
+       and tpr_tid = bud_tid
+     order by bud_tid
+EOF
+
+  # lese Gesamtbudget aus allen beauftragten Budgetplänen
+  # und dem aktuellen Budgetplan
+  my %budg = $dbh->select_hash( "
+    select bud_tid,
+           sum(bud_betrag),
+           sum(bud_personentage),
+           sum(bud_sachkosten),
+           sum(bud_investition)
+      from budget
+       join projektplan
+         on ppl_pid    = bud_pid
+        and ppl_nummer = bud_ppl
+     where bud_pid     = ?
+       and (ppl_auftrag is not null
+         or ppl_nummer = ?)
+     group by bud_tid", {}, $projektid, $projektplan );
+
+  # lese geplantes Budget des aktuellen Budgetplanes
+  my %bplg = $dbh->select_hash( "
+    select bpl_tid,
+           sum(bpl_betrag),
+           sum(bpl_personentage),
+           sum(bpl_sachkosten),
+           sum(bpl_investition)
+      from budgetplan
+     where bpl_pid     = ?
+       and bpl_ppl     = ?
+     group by bpl_tid", {}, $projektid, $projektplan );
+
+  my %sum;
+  foreach (@$bud)
+  {
+    my ($bud_tid, $tpr_titel, $bud_betrag, $bud_personentage,
+        $bud_sachkosten, $bud_investition) = @$_;
+    $sum{betrag}       += $bud_betrag;
+    $sum{personentage} += $bud_personentage;
+    $sum{sachkosten}   += $bud_sachkosten;
+    $sum{investition}  += $bud_investition;
+  }
+
+  my ($show_sachkosten, $show_investition);
+  $show_sachkosten  = 1 if $sum{sachkosten}  > 0;
+  $show_investition = 1 if $sum{investition} > 0;
+
+  foreach (@$bud)
+  {
+    my ($tid) = @$_;
+    my ($budg_betrag, $budg_personentage, $budg_sachkosten, $budg_investition) =
+         @{$budg{$tid}} if $budg{$tid};
+    my ($bplg_betrag, $bplg_personentage, $bplg_sachkosten, $bplg_investition) =
+         @{$bplg{$tid}} if $bplg{$tid};
+
+    $show_sachkosten  = 1 if $budg_sachkosten > 0  || $bplg_sachkosten > 0;
+    $show_investition = 1 if $budg_investition > 0 || $bplg_investition > 0;
+  }
+
+</%perl>
+
+<h1>Angebot</h1>
+
+<table width='100%'>
+ <tr>
+  <td width='80%'>
+  <td>
+   <i>Datum</i>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_angebotdatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <td width='100%'>
+  <td>
+   <i>gültig bis</i>
+  </td>
+  <td align='right'>
+% if ($ppl_angebotdatum) {
+   <%new Contavia::Date($ppl_angebotbis)->format%>
+% } else {
+   <& '/inputdatum', name => 'ppl_angebotbis', value => $ppl_angebotbis &>
+% }
+  </td>
+ </tr>
+</table>
+
+% if ($ppl_angebotdatum) {
+%  $ppl_angebottext = encode_entities($ppl_angebottext);
+%  $ppl_angebottext =~ s/([^\n]+)\n\n/<p>$1<\/p>/g;
+%  $ppl_angebottext =~ s/\n/<br>/g;
+
+<p>
+<%$ppl_angebottext%>
+</p>
+
+% } else {
+
+   <textarea name='ppl_angebottext'
+     rows='20' cols='70'><%$ppl_angebottext%></textarea>
+
+% }
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   Betrag <%$waehrung%>
+  </th>
+  <th bgcolor='#ccccff'>
+   Personentage
+  </th>
+% if ($show_sachkosten) {
+  <th bgcolor='#ccccff'>
+   Sachkosten <%$waehrung%>
+  </th>
+% }
+% if ($show_investition) {
+  <th bgcolor='#ccccff'>
+   Investitionen <%$waehrung%>
+  </th>
+% }
+ </tr>
+
+ <%perl>
+
+  foreach (@$bud)
+  {
+    my ($bud_tid, $tpr_titel, $bud_betrag, $bud_personentage,
+        $bud_sachkosten, $bud_investition) = @$_;
+
+    my ($budg_betrag, $budg_personentage, $budg_sachkosten, $budg_investition) =
+         @{$budg{$bud_tid}} if $budg{$bud_tid};
+    my ($bplg_betrag, $bplg_personentage, $bplg_sachkosten, $bplg_investition) =
+         @{$bplg{$bud_tid}} if $bplg{$bud_tid};
+
+    my %bg;
+    $bg{betrag}       = getbgcolor($budg_betrag,       $bplg_betrag);
+    $bg{personentage} = getbgcolor($budg_personentage, $bplg_personentage, 0.1);
+    $bg{sachkosten}   = getbgcolor($budg_sachkosten,   $bplg_sachkosten);
+    $bg{investition}  = getbgcolor($budg_investition,  $bplg_investition);
+
+ </%perl>
+
+ <tr>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'<%$bg{betrag}%>>
+   <%formatnumber($bud_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'<%$bg{personentage}%>>
+   <%$bud_personentage%>
+  </td>
+% if ($show_sachkosten) {
+  <td align='right'<%$bg{sachkosten}%>>
+   <%formatnumber($bud_sachkosten, 0, $ARGS{lang})%>
+  </td>
+% }
+% if ($show_investition) {
+  <td align='right'<%$bg{investition}%>>
+   <%formatnumber($bud_investition, 0, $ARGS{lang})%>
+  </td>
+% }
+ </tr>
+
+% }
+ <tr>
+  <th class='label' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <%formatnumber($sum{betrag}, 0, $ARGS{lang})%>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <%$sum{personentage}%>
+  </td>
+% if ($show_sachkosten) {
+  <td align='right' bgcolor='#cccccc'>
+   <%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%>
+  </td>
+% }
+% if ($show_investition) {
+  <td align='right' bgcolor='#cccccc'>
+   <%formatnumber($sum{investition}, 0, $ARGS{lang})%>
+  </td>
+% }
+ </tr>
+</table>
+
+% if ($ppl_auftrag) {
+Das Angebot ist am <%new Contavia::Date($ppl_auftrag)->format%> beauftragt worden.
+% }
+
+% if ($ppl_ablehnung) {
+
+  <p>
+    Das Angebot ist am <%new Contavia::Date($ppl_ablehnung)->format%> abgelehnt worden. Als Grund wurde angegeben:
+
+    <ul>
+% for (my $i = 1; $i <= 5; ++$i) {
+%   if ($ppl_ablehnungsgrund & (1 << $i)) {
+     <li><%$grund{$i}%></li>
+%   }
+% }
+    </ul>
+  </p>
+
+  <p>
+   <%$ppl_ablehnungstext%>
+  </p>
+
+  <p>
+    Gewünschte weitere vorgehensweise: 
+
+    <ul>
+      <li><%$vorgehen{$ppl_vorgehen}%></li>
+    </ul>
+  </p>
+
+% }
+
+% if ($erstellen0) {
+  <p style='color:red'>
+   Soll das aktuelle Budget durch den Budgetplan wirklich überschrieben werden?
+  </p>
+% }
+
+% unless ($ppl_angebotdatum) {
+  <p class='button'>
+% if ($erstellen0) {
+   <input type='submit' name='erstellen' value='Ja, Budget überschreiben'>
+   <input type='submit' name='nichterstellen' value='Nein, Budget nicht überschreiben'>
+% } else {
+   <input type='submit' name='erstellen0' value='Budget aus Budgetplan erstellen'>
+   <input type='submit' name='speichern' value='Speichern'>
+   <input type='submit' name='speichern_angebot' value='Angebot freischalten'>
+   <input type='submit' name='budgetplan' value='Budgetplan bearbeiten'>
+% }
+  </p>
+% }
+
+<p>Um ein Angebot erstellen zu k&ouml;nnen, mu&szlig; ein entsprechendes Budget angelegt sein.</p>
+
+<h2>Legende:</h2>
+
+<table>
+ <tr>
+  <td width='20' bgcolor='#aaffaa'>
+   &nbsp;
+  </td>
+  <td>
+   Budget ist grösser als Budgetplan
+  </td>
+ </tr>
+
+ <tr>
+  <td bgcolor='#ffaaaa'>
+   &nbsp;
+  </td>
+  <td>
+   Budget ist kleiner als Budgetplan
+  </td>
+ </tr>
+</table>
+
+<%once>
+  sub getbgcolor
+  {
+    my ($budget, $betrag, $diff) = @_;
+    $diff = 10 unless defined $diff;
+    return $budget - $betrag > $diff  ? ' bgcolor=\'#aaffaa\'' :
+           $budget - $betrag < -$diff ? ' bgcolor=\'#ffaaaa\'' : undef;
+  }
+</%once>

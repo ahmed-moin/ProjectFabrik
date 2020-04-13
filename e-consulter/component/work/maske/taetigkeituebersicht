@@ -1,0 +1,168 @@
+<%args>
+$dbh
+$uid
+$projektid
+$sel_nummer => undef
+$datum_von => undef
+$datum_bis => undef
+$anzeigen => undef
+</%args>
+<%perl>
+
+  use Time::localtime;
+  my $current = localtime;
+
+  $datum_von = [ 1, $current->mon() + 1, $current->year() + 1900 ]
+    unless ($datum_von && $datum_von->[2]);
+  $datum_bis = [ $current->mday(), $current->mon() + 1, $current->year() + 1900 ]
+    unless ($datum_bis);
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+    select atr_nummer, tpr_titel, auf_name
+      from auftrag, teilprojekt, aufgabe
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+       and auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+       and atr_status in (1, 5)
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'T&auml;tigkeiten' &>
+
+<table>
+ <tr>
+  <td>
+	<i18n>
+   Zeitraum
+	</i18n>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'datum_von', value => $datum_von &>&nbsp;-&nbsp;<& '/inputdatum', name => 'datum_bis', value => $datum_bis &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+	<i18n>
+   Auftrag
+	</i18n>
+  </td>
+  <td>
+   <select name='sel_nummer' onChange='document.forms[0].submit()'>
+    <option>
+% foreach (@$atr) {
+%   my ($n, $tpr_titel, $auf_name) = @$_;
+    <option value='<%$n%>'<%$sel_nummer == $n ? ' selected' : ''%>><%"$n / $tpr_titel / $auf_name"%>
+% }
+   </select>
+  </td>
+ </tr>
+</table>
+
+<input type='submit' name='anzeigen' value='<i18n>Anzeigen</i18n>'>
+
+<%perl>
+
+  if ($anzeigen)
+  {
+    my $db_datum_von = $m->comp('/dbdate', datum => $datum_von);
+    my $db_datum_bis = $m->comp('/dbdate', datum => $datum_bis);
+    my $sql = <<"EOF";
+      select tae_auftrag, tae_datum, tae_lfdnr,
+             tae_datum_bis, tae_stunden,
+             tae_beschreibung, tae_freigabedatum, tae_geprueft
+        from taetigkeit, auftrag
+       where tae_auftrag = atr_nummer
+         and atr_uid = '$uid'
+         and atr_pid = $projektid
+         and (tae_datum between '$db_datum_von'
+                           and '$db_datum_bis'
+           or tae_datum_bis between '$db_datum_von'
+                           and '$db_datum_bis')
+EOF
+    $sql .= <<"EOF" if $sel_nummer;
+          and tae_auftrag = $sel_nummer
+EOF
+
+    my $tae = $dbh->selectall_arrayref($sql);
+</%perl>
+
+<hr>
+
+<table>
+ <tr>
+  <td>
+  </td>
+  <th>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Datum
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Stunden
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Status
+	</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tae) {
+    my ($tae_auftrag, $tae_datum, $tae_lfdnr,
+        $tae_datum_bis, $tae_stunden,
+        $tae_beschreibung, $tae_freigabedatum, $tae_geprueft,
+        $tpr_titel, $auf_name) = @$_;
+
+    my $status = $tae_geprueft      ? 'OK' :
+                 $tae_freigabedatum ? 'zu pr&uuml;fen' : '';
+ </%perl>
+ <tr>
+  <td>
+% unless ($status) {
+   <input type='radio' name='tae_nummer'
+          value='<%"$tae_auftrag,$tae_datum,$tae_lfdnr"%>'>
+% }
+  </td>
+  <td>
+   <%$tae_auftrag%>
+  </td>
+  <td>
+   <%new Contavia::Date($tae_datum)->format%>
+  </td>
+  <td>
+   <%$tae_stunden%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+  <td>
+   <%$status%>
+  </td>
+ </tr>
+% }
+</table>
+
+%#<input type='submit' name='bearbeiten' value='Auswahl bearbeiten'>
+
+<%perl>
+  }
+</%perl>

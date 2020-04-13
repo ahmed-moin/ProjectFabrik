@@ -1,0 +1,205 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$werte_l
+$werte_r
+$color_l
+$color_r
+$unit_l
+$unit_r
+$titel_l => undef
+$titel_r => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(select_hash);
+
+  $projektplan = $m->comp('/get_projektplan', %ARGS) unless $projektplan;
+
+  # lese alle Teilprojekte
+  my %tpr = select_hash( $dbh, <<"EOF" );
+    select tpr_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan
+EOF
+
+  $m->comp( '/aggregiere', dbh => $dbh,
+        projektid   => $projektid,
+        projektplan => $projektplan,
+        tpr         => \%tpr,
+        werte       => [ $werte_l->[0], $werte_l->[1],
+                         $werte_r->[0], $werte_r->[1] ] );
+
+  my ($max_l, $sum1_l, $sum2_l) = (0, 0, 0);
+  my ($max_r, $sum1_r, $sum2_r) = (0, 0, 0);
+
+  foreach my $tid (keys(%tpr))
+  {
+    next unless $tpr{$tid};
+    $max_l = $werte_l->[0]->{$tid} if $werte_l->[0]->{$tid} > $max_l;
+    $max_l = $werte_l->[1]->{$tid} if $werte_l->[1]->{$tid} > $max_l;
+    $sum1_l += $werte_l->[0]->{$tid};
+    $sum2_l += $werte_l->[1]->{$tid};
+
+    $max_r = $werte_r->[0]->{$tid} if $werte_r->[0]->{$tid} > $max_r;
+    $max_r = $werte_r->[1]->{$tid} if $werte_r->[1]->{$tid} > $max_r;
+    $sum1_r += $werte_r->[0]->{$tid};
+    $sum2_r += $werte_r->[1]->{$tid};
+  }
+
+  my $maxsum_l = $sum1_l > $sum2_l ? $sum1_l : $sum2_l;
+  my $maxsum_r = $sum1_r > $sum2_r ? $sum1_r : $sum2_r;
+
+  $max_l    = 10 if $max_l < 10;
+  $maxsum_l = 10 if $maxsum_l < 10;
+  $max_r    = 10 if $max_r < 10;
+  $maxsum_r = 10 if $maxsum_r < 10;
+
+  # Die Maximalwerte werden nur für die Skalierung benötigt. Daher
+  # können wir diese ein wenig korrigieren, damit die Balken ein wenig
+  # schöner werden.
+  $max_l    *= 0.9;
+  $maxsum_l *= 0.9;
+  $max_r    *= 0.9;
+  $maxsum_r *= 0.9;
+
+  my $scale_l = $m->comp('/hscale',
+                         output => 0,
+                         maxvalue => $max_l,
+                         width => 200);
+  my $scale_r = $m->comp('/hscale',
+                         output => 0,
+                         maxvalue => $max_r,
+                         width => 200);
+
+</%perl>
+
+<table>
+ <tr>
+  <th class='label'>
+   Teilprojekte
+  </th>
+  <th>
+   <%$titel_l%>
+  </th>
+  <th>
+   <%$titel_r%>
+  </th>
+ </tr>
+
+% foreach my $tid (keys %tpr) {
+%   my $titel = $tpr{$tid};
+%   next unless $titel;
+ <tr>
+  <td class='klein'> <%$titel%> </td>
+  <td align='right'>
+   <%perl>
+   {
+     my $wert1   = $werte_l->[0]->{$tid} || 0;
+     my $wert2   = $werte_l->[1]->{$tid} || 0;
+     my $width1 = int($wert1 * $scale_l);
+     my $width2 = int($wert2 * $scale_l);
+     $m->comp('/rbar2', width1 => $width1,
+                        width2 => $width2,
+                        height => 10,
+                        color1 => $color_l->[0],
+                        color2 => $color_l->[1],
+                        alt    => "$wert1/$wert2");
+   }
+   </%perl>
+  </td>
+  <td>
+   <%perl>
+   {
+     my $wert1   = $werte_r->[0]->{$tid} || 0;
+     my $wert2   = $werte_r->[1]->{$tid} || 0;
+     my $width1 = int($wert1 * $scale_r);
+     my $width2 = int($wert2 * $scale_r);
+     $m->comp('/bar2', width1 => $width1,
+                       width2 => $width2,
+                       height => 10,
+                       color1 => $color_r->[0],
+                       color2 => $color_r->[1],
+                       alt    => "$wert1/$wert2");
+   }
+   </%perl>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <td>
+  </td>
+  <td align='right'>
+   <& '/hrscale', maxvalue => $max_l, width => 200, unit => $unit_l &>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => $max_r, width => 200, unit => $unit_r &>
+  </td>
+ </tr>
+
+ <%perl>
+  $scale_l = $m->comp('/hscale',
+                      output => 0,
+                      maxvalue => $maxsum_l,
+                      width => 200);
+  $scale_r = $m->comp('/hscale',
+                      output => 0,
+                      maxvalue => $maxsum_r,
+                      width => 200);
+ </%perl>
+
+ <tr>
+  <th class='ksumme'>
+   Gesamt
+  </th>
+ </tr>
+ <tr>
+  <td>
+   
+  </td>
+  <td align='right'>
+   <%perl>
+   {
+     my $width1 = int($sum1_l * $scale_l) || 0;
+     my $width2 = int($sum2_l * $scale_l) || 0;
+     $m->comp('/rbar2', width1 => $width1,
+                        width2 => $width2,
+                        height => 10,
+                        color1 => $color_l->[0],
+                        color2 => $color_l->[1],
+                        alt => "$sum1_l/$sum2_l");
+   }
+   </%perl>
+  </td>
+  <td>
+   <%perl>
+   {
+     my $width1 = int($sum1_r * $scale_r) || 0;
+     my $width2 = int($sum2_r * $scale_r) || 0;
+     $m->comp('/bar2', width1 => $width1,
+                       width2 => $width2,
+                       height => 10,
+                       color1 => $color_r->[0],
+                       color2 => $color_r->[1],
+                       alt => "$sum1_r/$sum2_r");
+   }
+   </%perl>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <td align='right'>
+   <& '/hrscale', maxvalue => $maxsum_l, width => 200, unit => $unit_l &>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => $maxsum_r, width => 200, unit => $unit_r &>
+  </td>
+ </tr>
+</table>

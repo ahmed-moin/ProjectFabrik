@@ -1,0 +1,71 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+$vfu_lfdnr => undef
+$vfu_datvon => undef
+$vfu_datbis => undef
+$vfu_bemerkung => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia::Date;
+use Contavia qw(fehler);
+
+$auswahl = $vfu_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($vfu_datvon && $vfu_datvon->[2] || $vfu_datbis && $vfu_datbis->[2])
+{
+  if ($vfu_lfdnr)
+  {
+    update( $dbh, 'verfuegbarkeit',
+            { vfu_benuid  => quote($uid),
+              vfu_lfdnr   => $vfu_lfdnr },
+            { vfu_datvon  => new Contavia::Date($vfu_datvon)->qpgdate,
+              vfu_datbis  => new Contavia::Date($vfu_datbis)->qpgdate,
+              vfu_bemerkung => quote($vfu_bemerkung) } );
+  }
+  else
+  {
+    $vfu_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(vfu_lfdnr) + 1
+       from verfuegbarkeit
+      where vfu_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'verfuegbarkeit',
+            { vfu_benuid  => quote($uid),
+              vfu_lfdnr   => $vfu_lfdnr,
+              vfu_datvon  => new Contavia::Date($vfu_datvon)->qpgdate,
+              vfu_datbis  => new Contavia::Date($vfu_datbis)->qpgdate,
+              vfu_bemerkung => quote($vfu_bemerkung) } );
+  }
+
+  $ARGS{sel_vfu_lfdnr} = undef;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from verfuegbarkeit
+    where vfu_benuid = '$uid'
+      and vfu_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_vfu_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

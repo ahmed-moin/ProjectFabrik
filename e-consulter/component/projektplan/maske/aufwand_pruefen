@@ -1,0 +1,264 @@
+<%args>
+$dbh
+$projektid
+$waehrung
+$atr_uid => undef
+$atr_tid => undef
+$atr_aid => undef
+$atr_nummer => undef
+$sel_lfdnr => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  my $uid = $dbh->selectall_arrayref( "
+    select distinct atr_uid
+      from auftrag
+     where atr_pid = $projektid
+       and exists (select 1
+                     from kosten
+                    where kos_auftrag = atr_nummer
+                      and kos_geprueft is null)" );
+
+  $atr_uid = $uid->[0]->[0] if ($uid && @$uid == 1);
+  $atr_tid = undef unless $atr_uid;
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select distinct atr_tid, tpr_titel
+      from auftrag
+       join teilprojekt
+         on tpr_pid = atr_pid
+        and tpr_tid = atr_tid
+      where atr_pid = $projektid
+        and atr_uid = '$atr_uid'
+        and exists(select 1
+                     from kosten
+                    where kos_auftrag = atr_nummer
+                      and kos_geprueft is null)") if $atr_uid;
+
+  $atr_tid = $tpr->[0]->[0] if ($tpr && @$tpr == 1);
+  $atr_aid = undef unless $atr_tid;
+
+  my $auf = $dbh->selectall_arrayref( "
+    select distinct atr_aid, auf_name
+      from auftrag
+       join aufgabe
+         on auf_pid = atr_pid
+        and auf_tid = atr_tid
+        and auf_aid = atr_aid
+      where atr_pid = $projektid
+        and atr_uid = '$atr_uid'
+        and atr_tid = $atr_tid
+        and exists(select 1
+                     from kosten
+                    where kos_auftrag = atr_nummer
+                      and kos_geprueft is null)") if $atr_uid && $atr_tid;
+
+  $atr_aid = $auf->[0]->[0] if ($auf && @$auf == 1);
+  $atr_nummer = undef unless $atr_aid;
+
+  my $atr = $dbh->selectall_arrayref( "
+    select atr_nummer
+      from auftrag
+     where atr_pid = $projektid
+       and atr_uid = '$atr_uid'
+       and atr_tid = $atr_tid
+       and atr_aid = $atr_aid
+       and exists(select 1
+                    from kosten
+                   where kos_auftrag = atr_nummer
+                     and kos_geprueft is null)" )
+      if $atr_uid && $atr_tid && $atr_aid;
+
+  $atr_nummer = $atr->[0]->[0] if ($atr && @$atr == 1);
+
+  my ($atr_sachkosten, $atr_investition) = $dbh->selectrow_array( "
+    select atr_sachkosten, atr_investition
+      from auftrag
+     where atr_nummer = $atr_nummer" ) if $atr_nummer;
+
+  my $kos_sachkosten = $dbh->selectrow_array( "
+    select sum(kos_betrag)
+      from kosten
+     where kos_auftrag = $atr_nummer
+       and kos_art = 3
+    " ) if ($atr_nummer);
+
+  my $kos_investition = $dbh->selectrow_array( "
+    select sum(kos_betrag)
+      from kosten
+     where kos_auftrag = $atr_nummer
+       and kos_art = 4
+    " ) if ($atr_nummer);
+
+  my $kos = $dbh->selectall_arrayref( "
+    select kos_lfdnr, kos_art, kos_datum, kos_betrag,
+           kos_bbetrag, kos_beschreibung
+      from kosten
+     where kos_auftrag = $atr_nummer
+       and kos_geprueft is null" )
+      if $atr_uid && $atr_tid && $atr_aid && $atr_nummer;
+
+</%perl>
+
+<h1>Aufwand prüfen</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Mitarbeiter
+  </th>
+  <td colspan='2'>
+   <& '/select', name     => 'atr_uid',
+                 values   => [ map { [$_->[0], $_->[0]] } @$uid ],
+                 selected => $atr_uid &> <br>
+  </td>
+ </tr>
+
+% if ($tpr) {
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td colspan='2'>
+   <& '/select', name => 'atr_tid',
+                 values => $tpr,
+                 selected => $atr_tid &> <br>
+  </td>
+ </tr>
+% }
+
+% if ($auf) {
+ <tr>
+  <th class='label'>
+   Aufgabe
+  </th>
+  <td colspan='2'>
+   <& '/select', name => 'atr_aid',
+                 values => $auf,
+                 selected => $atr_aid &> <br>
+  </td>
+ </tr>
+% }
+
+% if ($atr) {
+ <tr>
+  <th class='label'>
+   Auftrag Nr.
+  </th>
+  <td colspan='2'>
+   <& '/select', name => 'atr_nummer',
+                 values => [ map { [$_->[0], $_->[0] ] } @$atr ],
+                 selected => $atr_nummer &> <br>
+  </td>
+ </tr>
+% }
+
+% if ($atr_nummer) {
+ <tr>
+  <th class='label'>
+   Sachkostenbudget
+  </th>
+  <td align='right'>
+   <%formatnumber($atr_sachkosten, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Sachkosten erfasst
+  </th>
+  <td align='right'>
+   <%formatnumber($kos_sachkosten, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Investitionbudget
+  </th>
+  <td align='right'>
+   <%formatnumber($atr_investition, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Investition erfasst
+  </th>
+  <td align='right'>
+   <%formatnumber($kos_investition, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+
+% if ($atr_nummer) {
+<table border='1' width='100%'>
+ <tr>
+  <td>
+  </td>
+  <th>
+   Datum
+  </th>
+  <th>
+   Beschreibung
+  </th>
+  <th>
+   Betrag intern
+  </th>
+  <th>
+   Betrag extern
+  </th>
+ </tr>
+
+ <%perl>
+    foreach (@$kos)
+    {
+      my ($kos_lfdnr, $kos_art, $kos_datum, $kos_betrag,
+          $kos_bbetrag, $kos_beschreibung) = @$_;
+
+ </%perl>
+ <tr>
+  <td>
+% if ($kos_lfdnr == $sel_lfdnr) {
+   <input type='hidden' name='kos_lfdnr' value='<%$kos_lfdnr%>'>
+% } else {
+   <input type='checkbox' name='sel_lfdnr' value='<%$kos_lfdnr%>'>
+% }
+  </td>
+  <td>
+   <%new Contavia::Date($kos_datum)->format%>
+  </td>
+  <td>
+   <%$kos_beschreibung%>
+  </td>
+  <td align='right'>
+   <%formatnumber($kos_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+% if ($kos_lfdnr == $sel_lfdnr) {
+   <input type='text' name='kos_bbetrag' value='<%$kos_bbetrag%>' size='12'>
+   <& '/setfocus', name => 'kos_bbetrag' &>
+% } else {
+   <%formatnumber($kos_bbetrag, 0, $ARGS{lang})%>
+% }
+  </td>
+ </tr>
+
+%   }  # foreach (@$kos)
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='freigeben' value='freigeben'>
+ <input type='submit' name='freigeben_alles' value='alle freigeben'>
+</p>
+
+% } # if $atr_nummer

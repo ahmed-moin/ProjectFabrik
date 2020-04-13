@@ -1,0 +1,32 @@
+<%args>
+</%args>
+
+<h1>Budgetübersicht - Personalkosten</h1>
+
+<& '/budgetuebersicht', %ARGS &>
+
+<h2>Erläuterungen</h2>
+
+<h3>Beauftragt</h3>
+
+<p>
+Summe aller vom Kunden beauftragter Angebote des Projektes unabhängig vom Projektplan.
+</p>
+
+<h3>geplant</h3>
+
+<p>
+Summe des aktuellen Budgetplanes. Dieser ist Projektplanspezifisch.
+</p>
+
+<h3>verfügbar</h3>
+
+<p>
+Die Differenz der beiden. Das verfügbare Budget ist das beauftragte Budget, welches noch nicht auf Aufgaben und Zeiträume verteilt wurde. Dieses muß unter "Budget/Budgetplan bearbeiten" geplant werden. Ist der Verfügbare Betrag negativ, wurde mehr geplant als beauftragt. In dem Fall sollte ein Kundenangebot erstellt werden, so daß der Kunde die Möglichkeit erhält, das benötigte Budget zu genehmigen.
+</p>
+
+<h3>offene Angebote</h3>
+
+<p>
+Die Summe aller Angebote, die vom Projektleiter freigegeben sind, aber vom Kunden weder angenommen noch abgelehnt wurden. Gibt der Kunde dem Angebot statt, wird das offene Angebot zum beauftragten Budget.
+</p>

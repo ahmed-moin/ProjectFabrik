@@ -1,0 +1,31 @@
+<%args>
+$projektid
+$projektplan
+$dbh
+$stand
+</%args>
+<%perl>
+
+  my %tae_pt    = $m->comp('personentage:taetigkeit_gesamt', %ARGS);
+  my %budget_pt = $m->comp('personentage:budget_gesamt', %ARGS);
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Status - Personentage</i18n>' &>
+
+<table>
+ <tr>
+  <& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<& '/balkengrafik', dbh => $dbh,
+                    projektid => $projektid,
+                    projektplan => $projektplan,
+                    werte1 => \%budget_pt,
+                    werte2 => \%tae_pt, 
+                    color1 => [0, 0, 128],
+                    color2 => [255, 0, 0],
+                    unit   => 'PT' &>
+
+<&'personentage:legende'&>

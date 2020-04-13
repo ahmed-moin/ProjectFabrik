@@ -1,0 +1,42 @@
+<%args>
+$dbh
+$projektid
+$uid
+$rol_uid => undef
+$rol_admin => undef
+$rol_kunde => undef
+$rol_mitarbeiter => undef
+$speichern => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Db qw(quote pgboolean);
+
+  if ($speichern)
+  {
+    if ($uid eq $rol_uid && !$rol_admin)
+    {
+      fehler('Sie k&ouml;nnen sich die Projektleiterrechte nicht selbst entziehen');
+    }
+
+    $dbh->selectrow_array( <<"EOF" )
+     select 1
+       from benutzer
+      where ben_uid = '$rol_uid'
+EOF
+      || fehler("Benutzer $rol_uid nicht vorhanden");
+
+    $dbh->replace('rolle',
+      { rol_uid         => quote($rol_uid),
+        rol_pid         => $projektid },
+      { rol_admin       => pgboolean($rol_admin),
+        rol_kunde       => pgboolean($rol_kunde),
+        rol_mitarbeiter => pgboolean($rol_mitarbeiter) },
+      { rol_rolid       => 0 } );
+
+    $dbh->commit;
+  }
+
+</%perl>

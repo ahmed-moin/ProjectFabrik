@@ -1,0 +1,69 @@
+<%args>
+@menu
+$uid
+$dbh
+</%args>
+<%once>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+</%once>
+<%perl>
+
+  my $prj = $dbh->selectall_arrayref ( "
+   select prj_id, prj_titel, prj_status
+     from projekt, rolle
+    where prj_status >= 4
+      and prj_id = rol_pid
+      and rol_uid = '$uid'
+      and (rol_kunde or rol_admin)" );
+
+</%perl>
+
+ <h1> Projekte </h1>
+
+ <table width='100%' border='1'>
+  <tr>
+   <th bgcolor='#ccccff'>
+    &nbsp;
+   </th>
+   <th bgcolor='#ccccff'>
+    Nr
+   </th>
+   <th bgcolor='#ccccff'>
+	<i18n>
+    Projekt
+	</i18n>
+   </th>
+   <th bgcolor='#ccccff'>
+	<i18n>
+    Status
+	</i18n>
+   </th bgcolor='#ccccff'>
+  </tr>
+
+% foreach (@$prj) {
+%   my ($prj_id, $prj_titel, $prj_status) = @$_;
+  <tr>
+   <td>
+    <input type='radio' name='projekt' value='<%$prj_id%>'>
+   </td>
+   <td>
+    <%$prj_id%>
+   </td>
+   <td>
+    <%$prj_titel%>
+   </td>
+   <td>
+    <%$prj_status{$prj_status}%>
+   </td>
+  </tr>
+
+% }
+ </table>
+
+ <p class='button'>
+  <input type='submit' name='oeffnen' value='<i18n>Öffnen</i18n>' style='width:3cm'>
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

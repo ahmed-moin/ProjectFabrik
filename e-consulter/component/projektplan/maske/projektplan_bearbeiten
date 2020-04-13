@@ -1,0 +1,62 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(fehler);
+
+  fehler('kein Projektplan ausgewählt') unless $projektplan;
+
+  # lese Daten zum Projektplan
+  my ($prj_titel, $ppl_nummer, $ppl_datum, $ppl_text)
+    = $dbh->selectrow_array( <<"EOF" );
+    select prj_titel, ppl_nummer, ppl_datum, ppl_text
+      from projekt, projektplan
+     where prj_id = $projektid
+       and prj_id = ppl_pid
+       and ppl_nummer = $projektplan
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Projektplan bearbeiten' &>
+
+<table>
+ <tr>
+  <th class='summe'>
+   Projekt
+  </th>
+  <td>
+   <input type='text' name='prj_titel' value='<%$prj_titel%>'
+          size='30' maxlength='40'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Projektplan
+  </th>
+  <td>
+   <%$projektplan%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Beschreibung
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+   <textarea name='ppl_text' rows='10' cols='60'><%$ppl_text%></textarea>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>

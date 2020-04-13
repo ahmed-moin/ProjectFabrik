@@ -1,0 +1,17 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'qual',
+             dlabel   => 'anlegen',
+             menu     => 'qual' },
+           { maske    => 'qual_edit',
+             dlabel   => 'ändern',
+             menu     => 'qual' },
+           @$menu_footer
+         ];
+
+</%perl>

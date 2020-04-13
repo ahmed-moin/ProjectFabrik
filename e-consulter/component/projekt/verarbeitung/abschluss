@@ -1,0 +1,24 @@
+<%args>
+$dbh
+$projektid
+$absenden => undef
+</%args>
+<%perl>
+
+if ($absenden)
+{
+  $dbh->do( <<"EOF" );
+    update projekt
+       set prj_status = 2
+     where prj_id = $projektid
+EOF
+
+  $dbh->commit;
+
+  $ARGS{projektid} = undef;
+  $ARGS{folgemaske} = 'projekte';
+
+  return \%ARGS;
+}
+
+</%perl>

@@ -1,0 +1,36 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  # lese Projektpläne
+  my $ppl = $dbh->selectall_arrayref( "
+    select ppl_nummer, ppl_angebotdatum, ppl_auftrag, ppl_ablehnung
+      from projektplan
+     where ppl_pid = $projektid" );
+
+  # prüfe vorhandensein eines Projektplanes
+  my $projektplan_vorhanden = 1 if @$ppl;
+
+  # prüfe Angebote
+  my $angebot_vorhanden = grep
+       {
+         my ($ppl_nummer, $ppl_angebot, $ppl_auftrag, $ppl_ablehnung) = @$_;
+         $ppl_angebot && !$ppl_ablehnung;
+       } @$ppl;
+
+  # prüfe Budgetplan
+
+</%perl>
+
+<h1>Todo</h1>
+
+<ul>
+% unless ($ppl) {
+ <li>kein Projektplan vorhanden</li>
+% }
+% unless ($angebot_vorhanden) {
+ <li>kein Angebot vorhanden</li>
+% }
+</ul>

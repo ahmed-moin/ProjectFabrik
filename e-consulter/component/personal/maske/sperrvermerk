@@ -1,0 +1,82 @@
+<%args>
+@menu
+$uid
+$dbh
+$sel_vkn_lfdnr => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $vkn = $dbh->selectall_arrayref( <<"EOF" );
+    select vkn_lfdnr, vkn_firma
+      from vkunde
+     where vkn_benuid = '$uid'
+     order by vkn_lfdnr
+EOF
+
+  my @sel;
+
+</%perl>
+
+  <& '/masketitel', titel => '<i18n>Sperrvermerke</i18n>',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+ <i18n>Bitte geben Sie an, wo Sie zur Zeit nicht arbeiten d&uuml;rfen oder wollen</i18n>
+
+  <table width='100%'>
+   <tr>
+    <td></td>
+    <th class='label'>
+	<i18n>Firma</i18n>
+    </th>
+   </tr>
+
+   <tr>
+    <td colspan='2'>
+     <hr>
+    </td>
+   </tr>
+   <%perl>
+     foreach (@$vkn) {
+       my ($vkn_lfdnr, $vkn_firma) = @$_;
+       if ($vkn_lfdnr == $sel_vkn_lfdnr)
+       {
+         @sel = @$_;
+         next;
+       }
+   </%perl>
+   <tr>
+    <td>
+     <input type='radio' name='auswahl' value='<%$vkn_lfdnr%>'>
+    </td>
+    <td>
+     <%$vkn_firma%>
+    </td>
+   </tr>
+
+   <%perl>
+     }
+
+     my ($vkn_lfdnr, $vkn_firma) = @sel;
+   </%perl>
+
+   <tr>
+    <td>
+%    if ($vkn_lfdnr) {
+     <input type='hidden' name='vkn_lfdnr' value='<%$vkn_lfdnr%>'>
+%    }
+    </td>
+    <td>
+     <input type='text' name='vkn_firma' value='<%$vkn_firma%>'>
+    </td>
+   </tr>
+
+  </table>
+
+  <input type='submit' name='bearbeiten' value='<i18n>Auswahl bearbeiten</i18n>'>
+  <input type='submit' name='loeschen' value='<i18n>Auswahl l&ouml;schen</i18n>'>
+  <input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

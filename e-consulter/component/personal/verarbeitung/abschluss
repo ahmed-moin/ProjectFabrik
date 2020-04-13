@@ -1,0 +1,27 @@
+<%args>
+$abmelden => undef
+$sessid => undef
+$dbh
+$uid
+</%args>
+<%perl>
+
+if ($abmelden && $sessid)
+{
+  $dbh->do( <<"EOF" );
+   update benutzer
+      set ben_sessid = null
+    where ben_sessid = '$ARGS{sessid}'
+EOF
+
+  $dbh->commit;
+
+  $ARGS{sessid}     = undef;
+  $ARGS{folgemaske} = 'login';
+  $ARGS{menu}       = undef;
+
+  return \%ARGS;
+}
+
+</%perl>
+

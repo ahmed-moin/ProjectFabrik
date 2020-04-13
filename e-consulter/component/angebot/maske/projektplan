@@ -1,0 +1,56 @@
+<%args>
+$dbh
+$projektid
+$ppl_version => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $ppl = $dbh->selectall_arrayref( <<"EOF" );
+   select ppl_version, ppl_datum, ppl_freigabedatum
+     from projektplan
+    where ppl_pid = $projektid
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projektplan',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <table border='1'>
+  <tr>
+   <td>
+   </td>
+   <th>
+    Version
+   </th>
+   <th>
+    Freigabedatum
+   </th>
+  </tr>
+
+% foreach (@$ppl) {
+%   my ($version, $datum, $freigabedatum) = @$_;
+  <tr>
+   <td>
+    <input type='radio' name='ppl_version' value='<%$version%>'<%$ppl_version == $version ? ' checked' : ''%>>
+   </td>
+   <td>
+    <%$version%>
+   </td>
+   <td>
+    <%new Contavia::Date($freigabedatum)->format%>
+   </td>
+  </tr>
+
+% }
+ </table>
+
+ <p class='button'>
+  <input type='submit' name='oeffnen' value='&Ouml;ffnen'>
+  <input type='submit' name='loeschen' value='L&ouml;schen'>
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

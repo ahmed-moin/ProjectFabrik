@@ -1,0 +1,24 @@
+<%args>
+$dbh
+$projektid
+$prj_eigenleistung => undef
+$prj_rolle_leitung => 0
+$prj_rolle_mitglied => 0
+$prj_rolle_management => 0
+$prj_rolle_coach => 0
+</%args>
+<%perl>
+
+use Contavia::Db qw(replace);
+
+replace( $dbh, 'projekt',
+  { prj_id            => $projektid },
+  { prj_eigenleistung => $prj_eigenleistung || 'null',
+    prj_rolle         => $prj_rolle_leitung
+                       | $prj_rolle_mitglied
+                       | $prj_rolle_management
+                       | $prj_rolle_coach } );
+
+$dbh->commit;
+
+</%perl>

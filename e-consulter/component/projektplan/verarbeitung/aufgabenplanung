@@ -1,0 +1,180 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$speichern => undef
+$loeschen_ok => undef
+$abbrechen => undef
+$tid => undef
+$aid => undef
+$auf_name => undef
+$apl_aid => undef
+$apl_startdatum => undef
+$apl_endedatum => undef
+$apl_milestone => undef
+$tagessatz => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    $apl_startdatum = new Contavia::Date($apl_startdatum);
+    $apl_endedatum  = new Contavia::Date($apl_endedatum);
+
+    #fehler("kein Startdatum angegeben") if $apl_startdatum->is_null;
+    #fehler("kein Endedatum angegeben")  if $apl_endedatum->is_null;
+    fehler("Startdatum mu&szlig; kleiner als das Endedatum sein")
+      if (!$apl_startdatum->is_null && !$apl_endedatum->is_null && $apl_startdatum->cmp($apl_endedatum) > 0);
+
+    my $mindatum = new Contavia::Date($apl_startdatum);
+    $mindatum->tag(1) unless $apl_startdatum->is_null;
+    my $maxdatum = new Contavia::Date($apl_endedatum);
+    $maxdatum->naechster_monat->voriger_tag unless $apl_endedatum->is_null;
+
+    # sammle Budgetwerte
+    my %bpl;
+    while (my ($key, $value) = each(%ARGS) )
+    {
+      next unless $value;
+      next unless $key =~ /^bpl_(.*)_(\d+)$/;
+      my ($var, $datum) = ($1, $2);
+      my $d = new Contavia::Date($datum);
+      fehler("Budget liegt ausserhalb des Aufgabenzeitraumes")
+        if ($d->cmp($mindatum) < 0 || $d->cmp($maxdatum) > 0);
+      if ($bpl{$datum})
+      {
+        $bpl{$datum}->{$var} = $value;
+      }
+      else
+      {
+        $bpl{$datum} = { $var => $value };
+      }
+    }
+
+    unless ($apl_aid)
+    {
+      # neue Aufgabe
+      fehler("Aufgabenbezeichnung fehlt") unless ($auf_name);
+
+      $apl_aid = $dbh->selectrow_array( <<"EOF" ) || 1;
+       select max(auf_aid) + 1
+         from aufgabe
+        where auf_pid = $projektid
+          and auf_tid = $tid
+EOF
+
+      $dbh->insert( 'aufgabe',
+        { auf_pid => $projektid,
+          auf_tid => $tid,
+          auf_aid => $apl_aid,
+          auf_name => $dbh->quote($auf_name) } );
+
+      $ARGS{aid} = $apl_aid;
+    }
+    else
+    {
+      $dbh->update( 'aufgabe',
+        { auf_pid => $projektid,
+          auf_tid => $tid,
+          auf_aid => $apl_aid },
+        { auf_name => $dbh->quote($auf_name) } );
+    }
+
+    $dbh->replace( 'aufgabenplan',
+      { apl_pid => $projektid,
+        apl_ppl => $projektplan,
+        apl_tid => $tid,
+        apl_aid => $apl_aid },
+      { apl_startdatum => $apl_startdatum->qpgdate,
+        apl_endedatum  => $apl_endedatum->qpgdate,
+        apl_milestone  => $dbh->quote($apl_milestone ? 't' : 'f') },
+      { apl_beschreibung => $dbh->quote('') } );
+
+    $dbh->do( <<"EOF" );
+      update budgetplan
+         set bpl_betrag = 0,
+             bpl_personentage = 0
+       where bpl_pid = $projektid
+         and bpl_ppl = $projektplan
+         and bpl_tid = $tid
+         and bpl_aid = $apl_aid
+EOF
+
+    while( my ($datum, $value) = each(%bpl) )
+    {
+      my $personentage = $value->{personentage} || 0;
+      my $betrag = $value->{betrag} || $personentage * $tagessatz;
+      if ($betrag || $personentage)
+      {
+        $dbh->replace( 'budgetplan',
+          { bpl_pid => $projektid,
+            bpl_ppl => $projektplan,
+            bpl_tid => $tid,
+            bpl_aid => $apl_aid,
+            bpl_datum => new Contavia::Date($datum)->qpgdate },
+          { bpl_betrag => $betrag,
+            bpl_personentage => $personentage },
+          { bpl_sachkosten => 0,
+            bpl_investition => 0 } );
+      }
+    }
+
+    $dbh->commit;
+    $ARGS{aid} = undef;
+  }
+  elsif ($abbrechen)
+  {
+    $ARGS{aid} = undef;
+  }
+  elsif ($loeschen_ok)
+  {
+    $apl_aid = $aid unless $apl_aid;
+
+    my $atr = $dbh->selectrow_array( '
+      select count(*)
+        from auftrag
+       where atr_pid = ?
+         and atr_tid = ?
+         and atr_aid = ?', {}, $projektid, $tid, $apl_aid );
+
+    if ($atr)
+    {
+      fehler("Die Aufgabe $apl_aid kann nicht gelöscht werden, da Mitarbeiteraufträge exisitieren");
+    }
+
+    $dbh->do ( '
+      delete from budgetplan
+       where bpl_pid = ?
+         and bpl_ppl = ?
+         and bpl_tid = ?
+         and bpl_aid = ?', {}, $projektid, $projektplan, $tid, $apl_aid );
+
+    $dbh->do ( '
+      delete from aufgabenplan
+       where apl_pid = ?
+         and apl_ppl = ?
+         and apl_tid = ?
+         and apl_aid = ?', {}, $projektid, $projektplan, $tid, $apl_aid );
+
+    # lösche Aufgabe, wenn keine weiteren Aufgabenplansätze
+    $dbh->do ( '
+      delete from aufgabe
+       where auf_pid = ?
+         and auf_tid = ?
+         and auf_aid = ?
+         and not exists (
+           select 1
+             from aufgabenplan
+            where apl_pid = auf_pid
+              and apl_tid = auf_tid
+              and apl_aid = auf_aid)', {}, $projektid, $tid, $apl_aid );
+
+    $ARGS{aid} = undef;
+
+    $dbh->commit;
+  }
+
+  return \%ARGS;
+</%perl>

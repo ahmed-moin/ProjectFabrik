@@ -1,0 +1,40 @@
+<%args>
+$anmelden => undef
+$userid => undef
+$passwort => undef
+$dbh
+</%args>
+<%perl>
+
+if ($ARGS{anmelden})
+{
+  # Kennung und Passwort wurde eingegeben
+
+  my ($projekt_flag, $personal_flag, $admin_flag) =
+       $m->comp('/check_pw', uid => $userid,
+                             password => $passwort,
+                             dbh => $dbh);
+
+  unless ($admin_flag)
+  {
+    die '<fehler>Anmeldung fehlgeschlagen</fehler>';
+  }
+
+  $ARGS{sessid} = $m->comp('/gen_sess_id', uid => $userid, dbh => $dbh);
+
+  $dbh->do( <<"EOF" );
+     update benutzer
+       set ben_sessid = '$ARGS{sessid}'
+     where ben_uid = '$userid'
+EOF
+
+  $dbh->commit;
+
+  $ARGS{folgemaske} = 'projekte';
+  $ARGS{menu} = 'projekte';
+  $ARGS{uid} = $ARGS{userid};
+
+  return \%ARGS;
+}
+
+</%perl>

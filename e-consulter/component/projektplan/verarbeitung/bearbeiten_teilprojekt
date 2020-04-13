@@ -1,0 +1,69 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$speichern => undef
+$titel => undef
+$beschreibung => undef
+@tpz_zid => undef
+@tpz_ziel => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    if ($tid)
+    {
+      $dbh->update('teilprojekt',
+        { tpr_pid => $projektid,
+          tpr_tid => $tid },
+        { tpr_titel => $dbh->quote($titel) } );
+
+      $dbh->update('teilprojektplan',
+        { tpl_pid => $projektid,
+          tpl_tid => $tid,
+          tpl_ppl => $projektplan },
+        { tpl_beschreibung => $dbh->quote($beschreibung) } );
+    }
+    else
+    {
+      $tid = $dbh->selectrow_array( "
+        select max(tpr_tid) + 1
+          from teilprojekt
+         where tpr_pid = $projektid" ) || 1;
+
+      $dbh->insert('teilprojekt',
+        { tpr_pid => $projektid,
+          tpr_tid => $tid,
+          tpr_titel => $dbh->quote($titel),
+          tpr_status => 1 } );
+
+      $dbh->insert('teilprojektplan',
+        { tpl_pid => $projektid,
+          tpl_tid => $tid,
+          tpl_ppl => $projektplan,
+          tpl_beschreibung => $dbh->quote($beschreibung) } );
+    }
+
+    for (my $i = 0; $i < $#tpz_zid; ++$i)
+    {
+      my $tpz_zid = $tpz_zid[$i];
+      my $tpz_ziel = $tpz_ziel[$i];
+
+      $dbh->replace('teilprojektziel',
+        { tpz_pid  => $projektid,
+          tpz_ppl  => $projektplan,
+          tpz_tid  => $tid,
+          tpz_zid  => $tpz_zid, },
+        { tpz_ziel => $tpz_ziel } );
+    }
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'teilprojekte';
+  }
+
+  return \%ARGS;
+
+</%perl>

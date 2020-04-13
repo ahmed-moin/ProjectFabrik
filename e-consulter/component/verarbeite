@@ -1,0 +1,79 @@
+<%args>
+$tool   => undef
+$aktion => undef
+$maske  => undef
+$dbh
+$lang => 'de'
+</%args>
+<%perl>
+
+# Wenn wir eine Sess-Id haben, dann wollen wir auch eine User-Id
+if ($ARGS{sessid})
+{
+  my @row = $dbh->selectrow_array( <<"EOF" );
+    select ben_uid
+      from benutzer
+      where ben_sessid = '$ARGS{sessid}'
+EOF
+  $ARGS{uid} = $row[0];
+}
+else
+{
+  $ARGS{uid} = undef;
+}
+
+# setze Folgemaske auf aktuelle Maske, wenn nichts anderes
+# übergeben wurde
+$ARGS{folgemaske} = $maske unless $ARGS{folgemaske};
+my $ret;
+
+# Standardverarbeitung
+if ($tool && $m->comp_exists("/$tool/global"))
+{
+  $ret = $m->comp("/$tool/global", %ARGS);
+  %ARGS = %$ret if (ref($ret) eq 'HASH');
+}
+
+# Maske verarbeiten
+if ($maske)
+{
+  my $ret;
+  if ($tool && $m->comp_exists("/$tool/verarbeitung.$lang/$maske"))
+  {
+    $ret = $m->comp("/$tool/verarbeitung.$lang/$maske", %ARGS);
+  }
+  elsif($m->comp_exists("/verarbeitung.$lang/$maske"))
+  {
+    $ret = $m->comp("/verarbeitung/$maske", %ARGS);
+  }
+  elsif ($tool && $m->comp_exists("/$tool/verarbeitung/$maske"))
+  {
+    $ret = $m->comp("/$tool/verarbeitung/$maske", %ARGS);
+  }
+  elsif($m->comp_exists("/verarbeitung/$maske"))
+  {
+    $ret = $m->comp("/verarbeitung/$maske", %ARGS);
+  }
+
+  %ARGS = %$ret if (ref($ret) eq 'HASH');
+}
+
+# Aktion ausführen
+if ($aktion)
+{
+  my $ret;
+  if ($tool && $m->comp_exists("/$tool/aktion/$aktion"))
+  {
+    $ret = $m->comp("/$tool/aktion/$aktion", %ARGS);
+  }
+  elsif($m->comp_exists("/aktion/$aktion"))
+  {
+    $ret = $m->comp("/aktion/$aktion", %ARGS);
+  }
+
+  %ARGS = %$ret if (ref($ret) eq 'HASH');
+}
+
+return \%ARGS;
+
+</%perl>

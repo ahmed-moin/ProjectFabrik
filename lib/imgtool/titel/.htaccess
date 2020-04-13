@@ -1,0 +1,6 @@
+<Files titel>
+    SetEnv FONTFILE1 /usr/share/fonts/truetype/ariblk.ttf
+    SetEnv FONTSIZE1 22
+    SetEnv FONTFILE2 /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE2 10
+</Files>

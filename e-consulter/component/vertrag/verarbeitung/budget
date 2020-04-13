@@ -1,0 +1,130 @@
+<%args>
+$dbh
+$projektid
+$waehrung => undef
+$waehrung_neu => undef
+$projektplan => undef
+$speichern => undef
+$loeschen_ok => undef
+$tpr0 => undef
+$tpl_tid => undef
+$tpr_titel => undef
+$bud_personentage => undef
+$bud_betrag => undef
+$bud_sachkosten => undef
+$bud_investition => undef
+$tagessatz => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler( "Teilprojektbezeichnung nicht angegeben" ) unless $tpr_titel;
+
+    if ($ARGS{lang} eq 'de') {
+      $bud_personentage =~ s/,/\./;
+      $bud_betrag       =~ s/,/\./;
+      $bud_sachkosten   =~ s/,/\./;
+      $bud_investition  =~ s/,/\./;
+    }
+
+    if ($waehrung_neu)
+    {
+      $dbh->update('projekt',
+        { prj_id => $projektid },
+        { prj_waehrung => $dbh->quote($waehrung_neu) } );
+      $waehrung = $waehrung_neu;
+    }
+    else
+    {
+      $waehrung = $dbh->selectrow_array( "
+        select prj_waehrung
+          from projekt
+         where prj_id = $projektid" );
+    }
+
+    fehler( "keine Währung angegeben" ) if (!$waehrung && !$waehrung_neu);
+
+    if ($tpl_tid)
+    {
+      $dbh->update('teilprojekt',
+        { tpr_pid    => $projektid,
+          tpr_tid    => $tpl_tid },
+        { tpr_titel  => $dbh->quote($tpr_titel),
+          tpr_status => 1 } );
+
+    }
+    else
+    {
+      unless ($projektplan)
+      {
+        $dbh->insert('projektplan',
+          { ppl_pid    => $projektid,
+            ppl_nummer => 1,
+            ppl_datum  => Contavia::Date::current->qpgdate,
+            ppl_text   => '\'\'' } );
+
+        $projektplan = 1;
+      }
+
+      $tpl_tid = $dbh->selectrow_array("
+        select max(tpr_tid) + 1
+          from teilprojekt
+         where tpr_pid = $projektid" ) || 1;
+
+      $dbh->insert('teilprojekt',
+        { tpr_pid    => $projektid,
+          tpr_tid    => $tpl_tid,
+          tpr_titel  => $dbh->quote($tpr_titel),
+          tpr_status => 1 } );
+
+      $dbh->insert('teilprojektplan',
+        { tpl_pid    => $projektid,
+          tpl_tid    => $tpl_tid,
+          tpl_ppl    => $projektplan,
+          tpl_beschreibung => '\'\'' } );
+    }
+
+    if (!$bud_betrag && $bud_personentage && $tagessatz)
+    {
+      $bud_betrag = $bud_personentage * $tagessatz;
+    }
+
+    $dbh->replace('budget',
+      { bud_pid          => $projektid,
+        bud_ppl          => $projektplan,
+        bud_tid          => $tpl_tid },
+      { bud_betrag       => $bud_betrag       || 0,
+        bud_personentage => $bud_personentage || 0,
+        bud_sachkosten   => $bud_sachkosten   || 0,
+        bud_investition  => $bud_investition  || 0 } );
+
+    $dbh->commit;
+  }
+  elsif ($loeschen_ok)
+  {
+    $dbh->do('delete from teilprojektplan
+               where tpl_pid = ?
+                 and tpl_ppl = ?
+                 and tpl_tid = ?', {}, $projektid, $projektplan, $tpl_tid);
+    $dbh->do('delete from budget
+               where bud_pid = ?
+                 and bud_ppl = ?
+                 and bud_tid = ?', {}, $projektid, $projektplan, $tpl_tid);
+    $dbh->do('delete from teilprojekt
+               where tpr_pid = ?
+                 and tpr_tid = ?', {}, $projektid, $tpl_tid);
+    $dbh->commit;
+  }
+  elsif ($tpr0)
+  {
+    $dbh->insert( 'teilprojektplan',
+      { tpl_pid          => $projektid,
+        tpl_ppl          => $projektplan,
+        tpl_tid          => $tpr0,
+        tpl_beschreibung => '\'\'' } );
+  }
+
+</%perl>

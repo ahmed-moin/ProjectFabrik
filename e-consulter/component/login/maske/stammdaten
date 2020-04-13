@@ -1,0 +1,204 @@
+<%doc>
+ changed 2002-05-03 by Florian Doerfler, Contavia AG
+ 
+ Changed the <input> entry for 'ben_land' so that only
+ 3 chars can be entered. The field 'ben_land' in the DB is
+ only three chars long and because of the change in
+ PostgreSQL 7.2.x there would be raised an error when the
+ string is longer than the field length...
+ (original value was 15)
+</%doc>
+      
+<%args>
+@menu
+$uid
+$dbh
+</%args>
+<%perl>
+
+  $m->comp('/masketitel', titel => 'Stammdaten',
+                          maske => $ARGS{folgemaske},
+                          menu  => \@menu);
+
+  my @row = $dbh->selectrow_array( <<"EOF" );
+    select ben_anrede, ben_titel, ben_vorname, ben_nachname,
+           ben_strasse, ben_land, ben_plz, ben_ort,
+           ben_gebdat, ben_nationalitaet,
+           ben_telefon, ben_telefax, ben_handy, ben_email
+      from benutzer
+     where ben_uid = '$uid'
+EOF
+
+  die "<fehler>Daten zu $uid nicht gefunden</fehler>" unless (@row);
+
+  my ($anrede, $titel, $vorname, $nachname,
+      $strasse, $land, $plz, $ort,
+      $gebdat, $nationalitaet,
+      $telefon, $telefax, $handy, $email) = @row;
+
+  $nationalitaet =~ s {\s+$} {};
+
+</%perl>
+ <table>
+  <tr>
+    <td>
+     Anrede
+    </td>
+  </tr>
+  <tr>
+    <td>
+     <input type='radio' name='ben_anrede' value='Herr'
+       <% $anrede eq 'Herr' ? ' checked' : '' %>>Herr
+     <input type='radio' name='ben_anrede' value='Frau'
+       <% $anrede eq 'Frau' ? ' checked' : '' %>>Frau
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+     Titel
+    </td>
+  </tr>
+  <tr>
+    <td>
+     <input type='text' size='15' maxlength='20' name='ben_titel'
+            value='<% $titel %>'>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+      Vorname
+    </td>
+    <td>
+      Nachname
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <input type='text' size='30' maxlength='40' name='ben_vorname'
+             value='<% $vorname %>'>
+    </td>
+    <td>
+      <input type='text' size='30' maxlength='40' name='ben_nachname'
+             value='<% $nachname %>'>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+   <td>
+    Stra&szlig;e
+   </td>
+  </tr>
+  <tr>
+   <td>
+      <input type='text' size='30' maxlength='80' name='ben_strasse'
+             value='<% $strasse %>'>
+   </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+      Land
+    </td>
+    <td>
+      PLZ
+    </td>
+    <td>
+      Ort
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <input type='text' size='15' maxlength='3' name='ben_land'
+             value='<% $land %>'>
+    </td>
+    <td>
+      <input type='text' size='6' maxlength='6' name='ben_plz'
+             value='<% $plz %>'>
+    </td>
+    <td>
+      <input type='text' size='30' maxlength='40' name='ben_ort'
+             value='<% $ort %>'>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+     Geburtsdatum
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <& '/inputdatum', name => 'ben_gebdat', value => $gebdat &>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+      Nationalit&auml;t
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <input type='text' size='3' maxlength='3' name='ben_nationalitaet'
+             value='<% $nationalitaet %>'>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+    <td>
+      Telefon
+    </td>
+    <td>
+      Telefax
+    </td>
+    <td>
+      Handy
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <input type='text' size='15' maxlength='40' name='ben_telefon'
+             value='<% $telefon %>'>
+    </td>
+    <td>
+      <input type='text' size='15' maxlength='40' name='ben_telefax'
+             value='<% $telefax %>'>
+    </td>
+    <td>
+      <input type='text' size='15' maxlength='40' name='ben_handy'
+             value='<% $handy %>'>
+    </td>
+  </tr>
+ </table>
+
+ <table>
+  <tr>
+   <td>
+    e-mail
+   </td>
+  </tr>
+  <tr>
+   <td>
+      <input type='text' size='40' maxlength='80' name='ben_email'
+             value='<% $email %>'>
+   </td>
+  </tr>
+ </table>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,23 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'sachkosten_gesamt',
+             dlabel   => 'Gesamt',
+             menu     => 'sachkosten' },
+           { maske    => 'sachkosten_kumuliert',
+             dlabel   => 'Kumuliert',
+             menu     => 'sachkosten' },
+           { maske    => 'sachkosten_monat',
+             dlabel   => 'Monat',
+             menu     => 'sachkosten' },
+           { maske    => 'sachkosten_tabelle',
+             dlabel   => 'Tabelle',
+             menu     => 'sachkosten' },
+           @$menu_footer
+         ];
+
+</%perl>

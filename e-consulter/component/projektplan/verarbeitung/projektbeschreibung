@@ -1,0 +1,45 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$ppl_text => undef
+$prj_titel => undef
+$prj_kurztitel => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    fehler ('Kurztitel darf nicht mit einer Ziffer beginnen')
+      if $prj_kurztitel =~ /^[0-9]/;
+
+    my $k = $dbh->selectrow_array( "
+      select count(*)
+        from projekt
+       where prj_id <> $projektid
+         and prj_kurztitel = ?", {}, $prj_kurztitel );
+
+    fehler ('Kurztitel bereits vergeben') if $k;
+
+    $dbh->update( 'projekt',
+      { prj_id        => $projektid },
+      { prj_titel     => $dbh->quote($prj_titel),
+        prj_kurztitel => $dbh->quote($prj_kurztitel) } );
+
+    $dbh->update( 'projektplan',
+      { ppl_pid     => $projektid,
+        ppl_nummer  => $projektplan },
+      { ppl_text    => $dbh->quote($ppl_text) } );
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'projektziel';
+  }
+
+  return \%ARGS;
+
+</%perl>

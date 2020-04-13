@@ -1,0 +1,62 @@
+<%args>
+$dbh
+$qname => undef
+</%args>
+<script type="text/javascript" src="/js/qualedit.js"></script>
+<table border="0" cellspacing="0" cellpadding="0" style="margin-left:20px;" width="80%">
+ <& .crawl, dbh => $dbh, qual_id => '', depth => 0 &>\
+</table>
+<div id="qualform" class="x-hidden">
+    <table style="margin:10px;font-size:10pt;padding-top:5px;vertical-align:center;">
+      <tr><td>Qualifikationsname:</td><td><input type="text" name="qname" size="40"></td></tr>
+      <tr><td>&Uuml;bergeordnet:</td><td><select name="qparent" id="qparent" style="width:258px" disabled=""><option value="null"></option><& .fillCombo, dbh => $dbh &></select></td></tr>
+      <tr><td>Bewertbar:</td><td><input type="checkbox" name="qrate"></td></tr>
+    </table>
+    <input type="hidden" name="qid">
+    <input type="hidden" name="qdel">
+</div>
+<%def .crawl>
+  <%args>
+    $dbh
+    $qual_id
+    $depth
+  </%args>\
+  <%perl>
+    my $qual;
+
+    if ($depth == 0) {
+      $qual = $dbh->selectall_arrayref('SELECT * FROM qual WHERE qua_oberid is NULL ORDER BY qua_id');
+    } else {
+      $qual = $dbh->selectall_arrayref("SELECT * FROM qual WHERE qua_oberid='$qual_id' ORDER BY qua_id");
+    }
+  </%perl>\
+
+%   foreach (@$qual) {
+%     my ($id, $parent_id, $name, $ranked) = @$_;
+      <tr>
+        <td style="padding-left:<% $depth * 20 %>;border-bottom:dotted 1px #BBB">&nbsp;
+          <% $depth > 0  ? '<img src="/images/20x20ar.gif" alt="-&gt;">' : '' %>
+          <% $depth == 0 ? "<br><br><b>$name</b>" : $name %>
+        </td>
+        <td style="vertical-align:bottom;border-bottom:dotted 1px #BBB">
+          <a href="javascript:edit(<% $id %>,<% $parent_id || '0' %>,<% $ranked %>,'<% $name %>');"><img src="/images/edit.gif" alt="edit"></a>
+          <a href="javascript:de(<% $id %>,'<% $name %>');"><img src="/images/delete.gif" alt="del"></a>
+        </td>
+      </tr >
+      <& .crawl, dbh => $dbh, qual_id => $id, depth => $depth + 1 &>\
+%   }
+</%def>\
+
+<%def .fillCombo>
+  <%args>
+    $dbh
+  </%args>
+  <%perl>
+    my $res = $dbh->selectall_arrayref('SELECT qua_id, qua_bezeichnung FROM qual ORDER BY qua_bezeichnung');
+
+    foreach (@$res) {
+      my ($id, $name) = @$_;
+      $m->print("<option value=\"$id\">$name</option>");
+    }
+  </%perl>
+</%def>

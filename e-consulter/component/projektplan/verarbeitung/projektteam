@@ -1,0 +1,58 @@
+<%args>
+$dbh
+$projektid
+$uid
+$rol_uid => undef
+$rol_admin => undef
+$rol_kunde => undef
+$rol_mitarbeiter => undef
+$speichern => undef
+</%args>
+<%perl>
+  use Contavia qw(fehler);
+  use Contavia::Db qw(quote pgboolean);
+
+  if ($speichern) {
+    if ($uid eq $rol_uid && !$rol_admin) {
+      fehler('Sie können sich die Projektleiterrechte nicht selbst entziehen');
+    }
+
+    my $sth = $dbh->prepare( "
+     select ben_blacklisted, ben_blackreason
+       from benutzer
+      where ben_uid = ?" );
+
+    $sth->execute($rol_uid);
+    my @row = $sth->fetchrow_array();
+
+    fehler("Benutzer $rol_uid nicht vorhanden!") if ($#row == -1);
+    fehler("Benutzer auf der Blackliste ($row[1])!") if ($row[0]);
+
+    $dbh->replace('rolle',
+      { rol_uid         => quote($rol_uid),
+        rol_pid         => $projektid },
+      { rol_admin       => pgboolean($rol_admin),
+        rol_kunde       => pgboolean($rol_kunde),
+        rol_mitarbeiter => pgboolean($rol_mitarbeiter) },
+      { rol_rolid       => 0 } );
+
+    unless ($rol_admin || $rol_kunde || $rol_mitarbeiter) {
+      # wenn keine Rolle vorgesehen ist, dann löschen wir ihn komplett,
+      # es sei denn, er hat noch Aufträge
+      my $atr = $dbh->selectrow_array( "
+        select count(*)
+          from auftrag
+         where atr_pid = $projektid
+           and atr_uid = '$rol_uid'" );
+
+      unless ($atr) {
+        $dbh->do( "
+          delete from rolle
+           where rol_pid = $projektid
+             and rol_uid = '$rol_uid'" );
+      }
+    }
+
+    $dbh->commit;
+  }
+</%perl>

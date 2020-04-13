@@ -1,0 +1,24 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+<%perl>
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n> Einführung </i18n>', menu => \@menu, maske => $ARGS{folgemaske} &>
+
+<p> <i18n>
+Bitte bearbeiten Sie die folgende Aufgabe so zügig wie möglich, ohne lange zu überlegen. Bei der Bearbeitung der folgenden Fragen gibt es keine "richtigen" oder "falschen" Antworten oder Entscheidungen. </i18n></p>
+
+<p> <i18n>Folgende Aufgabe liegt vor Ihnen: </i18n></p>
+
+<ul>
+ <li> <i18n> Fragebogen </i18n> </li>
+%# <li> <i18n> Postkorb </i18n> </li>
+</ul>
+
+<p> <i18n> Die Bearbeitung des Fragebogens dauert ca. 15 Minuten. </i18n> </p>
+%#<p> <i18n> Die Bearbeitung der Postkorbübung dauert ca. 25 Minuten. </i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

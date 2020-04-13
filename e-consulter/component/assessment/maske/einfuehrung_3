@@ -1,0 +1,23 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+<%perl>
+
+</%perl>
+
+<& '/masketitel', titel => "<i18n> Einführung Fragebogen </i18n>",
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> Bitte beantworten Sie die folgenden Fragen so wahrheitsgemäß wie möglich. </i18n> </p>
+
+<p> <i18n> Bedenken Sie immer, dass es bei der Beantwortung keine "richtigen" oder falschen" Antworten gibt. Es geht jeweils um Ihre ganz persönliche, subjektive Selbsteinschätzung.</i18n> </p>
+
+<p> <i18n> Unser Fragebogen basiert auf dem von der psychologischen Forschung entwickelten sogenannten "Fünf-Faktoren-Modell", das die folgenden fünf Persönlichkeitsaspekte unterscheidet: Neurotizismus, Extraversion, Gewissenhaftigkeit, Motivation, Soziale Kompetenz. Zu allen fünf Aspekten finden Sie nähere Erläuterungen unter dem jeweiligen Menüpunkt.</i18n> </p>
+
+<p> <i18n> Insgesamt umfasst der Fragebogen 40 Aussagen, die sich zur Beschreibung Ihrer Persönlichkeit eignen könnten. Lesen Sie bitte jede Aussage aufmerksam durch und entscheiden Sie spontan, ob Sie der jeweiligen Aussage zustimmen oder nicht.</i18n> </p>
+
+<p> <i18n> Zur Beantwortung steht Ihnen eine Skala von starker Ablehnung (0%) bis starker Zustimmung (100%) zur Verfügung.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

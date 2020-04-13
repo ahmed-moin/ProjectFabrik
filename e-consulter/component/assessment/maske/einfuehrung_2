@@ -1,0 +1,18 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+<%perl>
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n> Der Fragebogen </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+
+<p> <i18n>
+Der Fragebogen zur "Persönlichen Selbsteinschätzung" besteht aus 40 Fragen. Nach Beendigung des Fragebogens erhalten Sie eine detaillierte Auswertung mit Erläuterungen und Vergleichsstichproben.
+</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

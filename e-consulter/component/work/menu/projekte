@@ -1,0 +1,25 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ($_->{aktion} eq 'projekte')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske   => 'projekte',
+             dlabel  => 'Anzeigen',
+             menu    => 'projekte' },
+           { maske   => 'projektbearbeiten',
+             dlabel  => 'Bearbeiten',
+             menu    => 'projekte' },
+           @$menu_footer
+         ];
+</%perl>

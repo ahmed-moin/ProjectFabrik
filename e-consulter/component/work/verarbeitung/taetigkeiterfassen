@@ -1,0 +1,52 @@
+<%args>
+$dbh
+$uid
+$projektid
+$tae_datum => undef
+$sel_nummer => undef
+$tae_auftrag => undef
+$tae_stunden => undef
+$tae_beschreibung => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    $tae_auftrag = $sel_nummer unless $tae_auftrag;
+
+    fehler ("<i18n>Auftragnummer nicht angegeben</i18n>") unless $tae_auftrag;
+
+    my $tae_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+      select max(tae_lfdnr) + 1
+        from taetigkeit
+       where tae_uid = '$uid'
+         and tae_auftrag = $tae_auftrag
+EOF
+
+    $tae_datum = $m->comp('/dbdate', datum => $tae_datum);
+
+    $dbh->do( <<"EOF" );
+      insert into taetigkeit (tae_uid, tae_auftrag, tae_datum, tae_lfdnr,
+        tae_stunden, tae_beschreibung, tae_erfasst)
+      values ('$uid', $tae_auftrag, '$tae_datum', $tae_lfdnr,
+        $tae_stunden, '$tae_beschreibung', CURRENT_DATE)
+EOF
+
+    $dbh->do( <<"EOF" );
+      update auftrag
+         set atr_status = 5
+       where atr_nummer = $tae_auftrag
+         and atr_status = 1
+EOF
+
+    $dbh->commit;
+  }
+
+  $ARGS{atr_nummer} = $sel_nummer;
+
+  return \%ARGS;
+
+</%perl>

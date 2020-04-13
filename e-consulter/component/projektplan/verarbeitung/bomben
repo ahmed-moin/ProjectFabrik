@@ -1,0 +1,48 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$loeschen => undef
+$hinzufuegen => undef
+$bmb => undef
+$mil => undef
+$tid => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($hinzufuegen)
+  {
+    fehler 'kein Milestone ausgewählt' unless $mil;
+
+    $mil =~ /(\d+)-(\d+)/;
+    my ($bmb_apl_tid, $bmb_apl_aid) = ($1, $2);
+
+    $dbh->insert('bombe',
+      { bmb_pid => $projektid,
+        bmb_ppl => $projektplan,
+        bmb_tid => $tid,
+        bmb_apl_tid => $bmb_apl_tid,
+        bmb_apl_aid => $bmb_apl_aid } );
+
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    fehler 'kein Milestone ausgewählt' unless $bmb;
+
+    $bmb =~ /(\d+)-(\d+)/;
+    my ($bmb_apl_tid, $bmb_apl_aid) = ($1, $2);
+    $dbh->do( "
+      delete from bombe
+       where bmb_pid = $projektid
+         and bmb_ppl = $projektplan
+         and bmb_tid = $tid
+         and bmb_apl_tid = $bmb_apl_tid
+         and bmb_apl_aid = $bmb_apl_aid" );
+
+    $dbh->commit;
+  }
+
+</%perl>

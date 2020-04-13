@@ -1,0 +1,104 @@
+<%args>
+$dbh
+$projektid => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  fehler('kein projekt ausgewählt') if $loeschen && ! $projektid;
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my $prj = $dbh->selectall_arrayref( "
+    select prj_id, prj_titel, prj_status,
+           ben_titel, ben_vorname, ben_nachname,
+           frm_firma
+      from projekt
+       left outer join rolle
+         on rol_pid = prj_id
+        and rol_kunde
+       left outer join benutzer
+         on ben_uid = rol_uid
+       left outer join firma
+         on frm_id = ben_frmid
+     where prj_status > 1
+       and not exists
+       ( select 1
+           from rolle
+          where rol_pid = prj_id
+            and rol_admin )
+     order by prj_id" );
+
+</%perl>
+<%cleanup>
+
+  $ARGS{projektid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>neue Projekte</h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+   ID
+  </th>
+  <th bgcolor='#ccccff'>
+   Titel
+  </th>
+  <th bgcolor='#ccccff'>
+   Status
+  </th>
+  <th bgcolor='#ccccff'>
+   Firma
+  </th>
+  <th bgcolor='#ccccff'>
+   Kunde
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$prj)
+  {
+    my ($prj_id, $prj_titel, $prj_status,
+        $ben_titel, $ben_vorname, $ben_nachname,
+        $frm_firma) = @$_;
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='projektid'
+          value='<%$prj_id%>'<%$prj_id == $projektid && ' checked'%>>
+  </td>
+  <td<%$loeschen && $projektid == $prj_id && ' bgcolor=\'#ffcccc\''%>>
+   <%$prj_id%>
+  </td>
+  <td<%$loeschen && $projektid == $prj_id && ' bgcolor=\'#ffcccc\''%>>
+   <%$prj_titel%>
+  </td>
+  <td<%$loeschen && $projektid == $prj_id && ' bgcolor=\'#ffcccc\''%>>
+   <%$prj_status{$prj_status}%>
+  </td>
+  <td<%$loeschen && $projektid == $prj_id && ' bgcolor=\'#ffcccc\''%>>
+   <%$frm_firma%>
+  </td>
+  <td<%$loeschen && $projektid == $prj_id && ' bgcolor=\'#ffcccc\''%>>
+   <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+<p class='button'>
+% if ($loeschen) {
+ <input type='hidden' name='projektid_loeschen' value='<%$projektid%>'>
+ <input type='submit' name='loeschen_ok' value='Projekt <%$projektid%> wirklich löschen'>
+% } else {
+ <input type='submit' name='oeffnen' value='öffnen'>
+ <input type='submit' name='loeschen' value='löschen'>
+% }
+</p>

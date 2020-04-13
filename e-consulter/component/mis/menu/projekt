@@ -1,0 +1,17 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space   => 20 },
+           { dlabel  => 'Zeitplan',
+             maske   => 'zeitplan',
+             menu    => 'projekt' },
+           { dlabel  => 'Realisierungsgrad',
+             maske   => 'realisierung',
+             menu    => 'projekt' },
+           @$menu_footer
+         ];
+
+</%perl>

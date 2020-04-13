@@ -1,0 +1,7 @@
+<%args>
+$nbok => undef
+</%args>
+<%perl>
+$ARGS{nb} = $nbok if $nbok;
+return \%ARGS;
+</%perl>

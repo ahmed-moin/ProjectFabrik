@@ -1,0 +1,148 @@
+<%args>
+@menu
+$uid
+$dbh
+$sel_ref_lfdnr => undef
+</%args>
+<%perl>
+
+  my $ref = $dbh->selectall_arrayref( <<"EOF" );
+    select ref_lfdnr, ref_firma, ref_projekt, ref_ansprechpartner,
+           ref_kontakt
+      from referenz
+     where ref_benuid = '$uid'
+     order by ref_lfdnr
+EOF
+
+  my @sel;
+
+</%perl>
+
+  <& '/masketitel', titel =>'<i18n>Referenzen</i18n>',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+  <table width='100%'>
+
+   <%perl>
+
+     foreach (@$ref) {
+       my ($ref_lfdnr, $ref_firma, $ref_projekt, $ref_ansprechpartner,
+           $ref_kontakt) = @$_;
+       if ($ref_lfdnr == $sel_ref_lfdnr)
+       {
+         @sel = @$_;
+         next;
+       }
+   </%perl>
+   <tr>
+    <td>
+     <input type='radio' name='auswahl' value='<%$ref_lfdnr%>'>
+    </td>
+    <th class='label'>
+     <i18n>Firma</i18n>
+    </th>
+    <td>
+     <%$ref_firma%>
+    </td>
+   </tr>
+
+   <tr>
+    <td>
+    </td>
+    <th class='label'>
+     <i18n>Projekt</i18n>
+    </th>
+    <td>
+     <%$ref_projekt%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+     <i18n>Ansprechpartner</i18n>
+    </th>
+    <td>
+     <%$ref_ansprechpartner%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+     <i18n>Telefon</i18n>
+    </th>
+    <td>
+     <%$ref_kontakt%>
+    </td>
+   </tr>
+
+   <tr>
+    <td colspan='3'>
+     <hr>
+    </td>
+   </tr>
+
+   <%perl>
+     }
+
+     my ($ref_lfdnr, $ref_firma, $ref_projekt, $ref_ansprechpartner,
+         $ref_kontakt) = @sel;
+   </%perl>
+
+   <tr>
+    <td>
+%    if ($ref_lfdnr) {
+     <input type='hidden' name='ref_lfdnr' value='<%$ref_lfdnr%>'>
+%    }
+    </td>
+    <th class='label'>
+     <i18n>Firma</i18n>
+    </th>
+    <td>
+     <input type='text' name='ref_firma' value='<%$ref_firma%>'
+            size='40' maxlength='80'>
+    </td>
+   </tr>
+
+   <tr>
+    <td>
+    </td>
+    <th class='label'>
+     <i18n>Projekt</i18n>
+    </th>
+    <td>
+     <input type='text' name='ref_projekt' value='<%$ref_projekt%>'
+            size='40' maxlength='255'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+     <i18n>Ansprechpartner</i18n>
+    </th>
+    <td>
+     <input type='text' name='ref_ansprechpartner'
+            value='<%$ref_ansprechpartner%>' size='40' maxlength='80'>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+     <i18n>Telefon</i18n>
+    </th>
+    <td>
+     <input type='text' name='ref_kontakt' value='<%$ref_kontakt%>'
+            size='40' maxlength='80'>
+    </td>
+   </tr>
+  </table>
+
+  <input type='submit' name='bearbeiten' value='<i18n>Auswahl bearbeiten</i18n>'>
+  <input type='submit' name='loeschen' value='<i18n>Auswahl l&ouml;schen</i18n>'>
+  <input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

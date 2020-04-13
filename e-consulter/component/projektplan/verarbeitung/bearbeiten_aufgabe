@@ -1,0 +1,43 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid
+$aid
+$speichern => undef
+$name => undef
+$startdatum => undef
+$endedatum => undef
+$dauer => undef
+$beschreibung => undef
+</%args>
+<%perl>
+  use Contavia::Date;
+  use Contavia::Db qw(quote replace);
+
+  if ($speichern)
+  {
+    replace($dbh, 'aufgabe',
+      { auf_pid => $projektid,
+        auf_tid => $tid,
+        auf_aid => $aid },
+      { auf_name => quote($name) } );
+
+    replace($dbh, 'aufgabenplan',
+      { apl_pid          => $projektid,
+        apl_tid          => $tid,
+        apl_aid          => $aid,
+        apl_ppl          => $projektplan },
+      { apl_startdatum   => new Contavia::Date($startdatum)->qpgdate,
+        apl_endedatum    => new Contavia::Date($endedatum)->qpgdate,
+        apl_dauer        => $dauer ? $dauer : undef,
+        apl_beschreibung => quote($beschreibung) } );
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'aufgaben';
+  }
+
+  return \%ARGS;
+
+</%perl>

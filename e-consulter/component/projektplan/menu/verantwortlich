@@ -1,0 +1,23 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'verantwortlich_gesamt',
+             dlabel   => 'Gesamtübersicht',
+             menu     => 'verantwortlich' },
+           { maske    => 'verantwortlich_uebersicht',
+             dlabel   => 'Teilprojekt',
+             menu     => 'verantwortlich' },
+           { maske    => 'verantwortlich_bearbeiten',
+             dlabel   => 'bearbeiten',
+             menu     => 'verantwortlich' },
+           { maske    => 'auftrag_freigeben',
+             dlabel   => 'Auftrag freigeben',
+             menu     => 'verantwortlich' },
+           @$menu_footer
+         ];
+
+</%perl>

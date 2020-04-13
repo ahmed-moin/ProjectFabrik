@@ -1,0 +1,57 @@
+<%flags>
+  inherit => undef
+</%flags>
+<%args>
+  $cond
+  $sessid
+</%args>
+<%init>
+  use EConsulter;
+
+  my $econsulter = new EConsulter;
+  my $dbh = $econsulter->connect();
+
+  my $conditions = {
+    all           => 'ben_password is not null and not ben_blacklisted',
+    admin         => 'ben_admin',
+    nfrei         => 'ben_password is null',
+    blacklisted   => 'ben_blacklisted',
+    mitarbeiter   => 'ben_status=1',
+    zmitarbeiter  => 'ben_status=-1',
+    kunden        => 'ben_kunde and ben_password is not null',
+    projektleiter => 'ben_projektleiter',
+  };
+</%init>
+<%perl>
+  my ($sth, $res);
+
+  $sth = $dbh->prepare('
+    SELECT ben_admin
+      FROM benutzer
+     WHERE ben_sessid=?');
+
+  $sth->execute($sessid);
+  return if (not $sth->fetchrow_array);
+
+  $sth = $dbh->prepare('
+    SELECT ben_titel,
+           ben_vorname,
+           ben_nachname,
+           ben_strasse,
+           ben_plz,
+           ben_ort,
+           ben_land,
+           ben_telefon,
+           ben_telefax,
+           ben_handy,
+           ben_email
+      FROM benutzer
+     WHERE '. $conditions->{$cond});
+
+  $sth->execute();
+  $res = $sth->fetchall_arrayref();
+</%perl>
+"Anrede","Vorname","Nachname","Straﬂe gesch‰ftlich","Postleitzahl gesch‰ftlich","Ort gesch‰ftlich","Land gesch‰ftlich","Telefon gesch‰ftlich","Fax gesch‰ftlich","Mobiltelefon","E-Mail-Adresse"<% "\r\n" %>\
+% foreach (@$res) {
+"<% $_->[0] %>","<% $_->[1] %>","<% $_->[2] %>","<% $_->[3] %>","<% $_->[4] %>","<% $_->[5] %>","<% $_->[6] %>","<% $_->[7] %>","<% $_->[8] %>","<% $_->[9] %>","<% $_->[10] %>"<% "\r\n" %>\
+% }

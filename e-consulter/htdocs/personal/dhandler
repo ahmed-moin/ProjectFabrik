@@ -1,0 +1,22 @@
+<%attr>
+  titel => 'Person'
+</%attr>
+<%init>
+  $m->dhandler_arg =~ /^([^-]+)-([^-]+)\.hms$/ || return 404;
+  my ($sessid, $uid) = ($1, $2);
+
+  my $dbh = $m->comp('/connect', db => 'projekt');
+
+</%init>
+<%perl>
+
+  my $ben_admin = $dbh->selectrow_array( <<"EOF" );
+   select ben_admin
+     from benutzer
+    where ben_sessid = '$sessid'
+EOF
+
+  return 403 unless $ben_admin;  # forbidden
+
+</%perl>
+<& '/personal/zusammenfassung', dbh => $dbh, uid => $uid, sessid => $sessid &>

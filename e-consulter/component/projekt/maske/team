@@ -1,0 +1,75 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+<%once>
+
+  my ($branchen, $eigenschaften);
+
+</%once>
+<%perl>
+
+  $branchen = $dbh->selectall_arrayref( <<"EOF" ) unless $branchen;
+    select bra_id, bra_bezeichnung
+      from branche
+     order by bra_bezeichnung
+EOF
+
+  $eigenschaften = $dbh->selectcol_arrayref( <<"EOF" ) unless $eigenschaften;
+    select pes_bezeichnung
+      from prjteameigenschaftstamm
+     order by pes_bezeichnung
+EOF
+
+  my ($prj_branche) =
+    $dbh->selectrow_array( <<"EOF" );
+    select prj_branche
+      from projekt
+     where prj_id=$projektid
+EOF
+
+  my $prj_eigenschaft = $dbh->selectcol_arrayref( <<"EOF" );
+    select prj_eigenschaft
+      from prjteameigenschaft
+     where prj_id = $projektid
+EOF
+
+  # die angezeigten Eigenschaften bestehen aus den Stammeigenschaften und ...
+  my @eigenschaften = (@$eigenschaften,
+    grep  # den Projekteigenschaften, die ...
+    {
+      my $e = $_;
+      ! grep { $_ eq $e } @$eigenschaften # ... nicht zu den Stammeigenschaften
+                                          #     gehören
+    } @$prj_eigenschaft );
+  
+
+</%perl>
+
+ <& '/masketitel', titel => 'Team',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p class='label'><i18n>Welche Branchenkenntnisse soll das Projektteam haben?</i18n></p>
+ <select name='prj_branche'>
+  <option>
+% foreach (@$branchen) {
+%   my ($bra_id, $bra_bezeichnung) = @$_;
+  <option value='<%$bra_id%>'<%$bra_id == $prj_branche ? ' selected' : ''%>><%$bra_bezeichnung%>
+% }
+ </select>
+
+ <br>
+ <br>
+
+ <p class='label'><i18n>Welche Eigenschaften soll das Projektteam haben?</i18n></p>
+% foreach my $eigenschaft (@eigenschaften) {
+ <input type='checkbox' name='prj_eigenschaft' value='<%$eigenschaft%>'<%
+   (grep { $_ eq $eigenschaft } @$prj_eigenschaft) ? ' checked' : ''%>><%$eigenschaft%><br>
+% }
+ <input type='text' name='prj_eigenschaft' size='60' maxlength='80'><br>
+ <input type='text' name='prj_eigenschaft' size='60' maxlength='80'><br>
+ <input type='text' name='prj_eigenschaft' size='60' maxlength='80'><br>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

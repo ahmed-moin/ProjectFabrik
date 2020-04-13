@@ -1,0 +1,90 @@
+<%args>
+$dbh
+$projektid
+$waehrung
+$sel_ang => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  $sel_ang = $ARGS{angebot} unless $sel_ang;
+
+  my $ang = $dbh->selectall_arrayref( <<"EOF" );
+   select ang_nummer, ang_datum, ang_freigabe,
+          ang_ablehnung, ang_gueltigbis, ang_auftragsdatum
+     from angebot
+    where ang_pid = $projektid
+    order by ang_nummer
+EOF
+
+  my %bud;
+  my $bud = $dbh->selectall_arrayref( <<"EOF" );
+   select bud_angebot, sum(bud_betrag), sum(bud_personentage)
+     from budget
+    where bud_pid = $projektid
+    group by bud_angebot
+EOF
+
+  foreach (@$bud) {
+    my ($bud_angebot, $bud_betrag, $bud_personentage) = @$_;
+    $bud{$bud_angebot} = [$bud_betrag, $bud_personentage];
+  }
+
+</%perl>
+
+<table border='1'>
+ <tr>
+  <th>
+  </th>
+  <th>
+   Nummer
+  </th>
+  <th>
+   Datum
+  </th>
+  <th>
+   Status
+  </th>
+  <th>
+   Summe (<%$waehrung%>)
+  </th>
+  <th>
+   Summe (PT)
+  </th>
+ </tr>
+
+% foreach (@$ang) {
+%   my ($ang_nummer, $ang_datum, $ang_freigabe,
+%       $ang_ablehnung, $ang_gueltigbis, $ang_auftragsdatum) = @$_;
+%   my ($bud_betrag, $bud_personentage) = $bud{$ang_nummer} ? @{$bud{$ang_nummer}} : (0, 0);
+ <tr>
+  <td>
+   <input type='radio' name='sel_ang' value='<%$ang_nummer%>'<%$sel_ang == $ang_nummer ? ' checked' : ''%>>
+  </td>
+  <td>
+   <%$ang_nummer%>
+  </td>
+  <td>
+   <%new Contavia::Date($ang_datum)->format%>
+  </td>
+  <td>
+   <% $ang_auftragsdatum ? 'beauftragt'
+    : $ang_ablehnung     ? 'abgelehnt'
+    : $ang_freigabe      ? 'angebot' : 'neu' %>
+  </td>
+  <td align='right'>
+   <%$bud_betrag%>
+  </td>
+  <td align='right'>
+   <%$bud_personentage%>
+  </td>
+ </tr>
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+ <input type='submit' name='neu' value='Neu'>
+ <input type='submit' name='loeschen' value='L&ouml;schen'>
+</p>

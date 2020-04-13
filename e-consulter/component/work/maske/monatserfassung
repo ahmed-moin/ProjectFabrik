@@ -1,0 +1,292 @@
+<%args>
+$dbh
+$uid
+$projektid
+$datum => undef
+$sel_nummer => undef
+</%args>
+<%once>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+</%once>
+<%perl>
+
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+  $datum = $datum ? new Contavia::Date($datum) : $current;
+  $datum->tag(1);
+  my $datum_bis = $datum->naechster_monat->voriger_tag;
+
+  # lese alle Aufträge
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+   select atr_nummer, atr_tid, tpr_titel, atr_aid, auf_name,
+          atr_tagessatz, atr_personentage, atr_status
+     from auftrag, teilprojekt, aufgabe
+    where atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+      and tpr_pid = atr_pid
+      and tpr_tid = atr_tid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+      and atr_status <= 5
+    order by atr_nummer
+EOF
+
+  # ermittele Startdatum
+  my $startdatum = new Contavia::Date($dbh->selectrow_array( <<"EOF" ));
+   select min(apl_startdatum)
+     from aufgabenplan, auftrag
+    where atr_uid = '$uid'
+      and apl_pid = atr_pid
+      and apl_tid = atr_tid
+      and apl_aid = atr_aid
+EOF
+  $startdatum->tag(1);
+
+  # ermittele bisher erfasste Stunden
+  my %tae = $dbh->select_hash(<<"EOF");
+   select tae_auftrag, sum(tae_stunden)
+     from taetigkeit, auftrag
+    where atr_nummer = tae_auftrag
+      and atr_uid = '$uid'
+    group by tae_auftrag
+EOF
+
+  # ermittele Stunden dieses Monats
+
+  # max(tae_beschreibung) garantiert, daß wir wenigstens eine Beschreibung
+  # bekommen, wenn es aufgrund von Tageserfassung mehrere Sätze gibt.
+  my %tae_monat = $dbh->select_hash("
+   select tae_auftrag,
+          sum(tae_stunden),
+          max(tae_beschreibung),
+          max(tae_freigabedatum)
+     from taetigkeit,
+          auftrag
+    where atr_nummer    = tae_auftrag
+      and atr_uid       = '$uid'
+      and tae_datum     between ? and ?
+    group by tae_auftrag", {}, $datum->qpgdate, $datum_bis->qpgdate);
+
+  my %realisierung = $dbh->select_hash(<<"EOF", {}, $datum->qpgdate);
+   select abr_nummer, abr_realisierung
+     from auftragbericht,
+          auftrag
+    where abr_nummer   = atr_nummer
+      and abr_datum    = ?
+      and atr_uid      = '$uid'
+      and atr_pid      = $projektid
+      and atr_freigabe is not null
+EOF
+
+  my %realisierung_vormonat = $dbh->select_hash(<<"EOF", {}, $datum->voriger_monat->qpgdate);
+   select abr_nummer, abr_realisierung
+     from auftragbericht,
+          auftrag
+    where abr_nummer   = atr_nummer
+      and abr_datum    = ?
+      and atr_uid      = '$uid'
+      and atr_pid      = $projektid
+      and atr_freigabe is not null
+EOF
+
+  my $vormonat = $current->voriger_monat;
+  $startdatum = $current if $vormonat->cmp($startdatum) < 0;
+
+</%perl>
+<%cleanup>
+
+  $ARGS{atr_nummer} = $sel_nummer;
+  return \%ARGS;
+
+</%cleanup>
+
+<table>
+ <tr>
+  <td>
+   <h1><i18n>Monatserfassung</i18n></h1>
+  </td>
+  <td>
+   <select name='datum' onChange='document.forms[0].submit()'>
+    <option>
+%   for (my $d = $startdatum; $d->cmp($current) <= 0; $d = $d->naechster_monat) {
+    <option value='<%$d->cgiformat%>'
+     <%$d->cmp($datum) == 0 && ' selected'%>> <%$d->monat%>/<%$d->jahr%>
+%   }
+   </select>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td rowspan='2' bgcolor='#ccccff'>
+  </td>
+  <th rowspan='2' bgcolor='#ccccff'>
+	<i18n>
+   Nr
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+	<i18n>
+   PT
+	</i18n>
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   <i18n>Ist</i18n><br><i18n>PT</i18n>
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   <i18n>Monat</i18n><br><i18n>PT</i18n>
+  </th>
+  <th rowspan='2' bgcolor='#ccccff'>
+   <i18n>Beschreibung</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Realisierungs<br>grad</i18n>
+   <i18n>Vormonat</i18n>
+  </th>
+ </tr>
+
+ <tr>
+  <th bgcolor='#ccccff'><i18n>Aufgabe</i18n></th>
+  <th bgcolor='#ccccff'>
+   <i18n>Realisierungs<br>grad</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  my %sum;
+  foreach (@$atr) {
+    my ($atr_nummer, $atr_tid, $tpr_titel, $atr_aid, $auf_name,
+        $atr_tagessatz, $atr_personentage, $atr_status) = @$_;
+    my $tae_stunden = $tae{$atr_nummer};
+    my ($tae_stunden_monat, $tae_beschreibung, $tae_freigabedatum)
+          = $tae_monat{$atr_nummer} && @{$tae_monat{$atr_nummer}};
+    $sum{auftrag}           += $atr_personentage;
+    $sum{tae_stunden}       += $tae_stunden;
+    $sum{tae_stunden_monat} += $tae_stunden_monat;
+    my $abr_realisierung          = $realisierung{$atr_nummer};
+    my $abr_realisierung_vormonat = $realisierung_vormonat{$atr_nummer};
+
+    $sel_nummer = undef if ($sel_nummer == $atr_nummer && $tae_freigabedatum);
+
+ </%perl>
+
+%   if ($sel_nummer == $atr_nummer) {
+ <tr>
+  <td rowspan='2' bgcolor='#cccccc'>
+  </td>
+  <td rowspan='2'>
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right' rowspan='2'>
+   <% formatnumber($atr_personentage, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right'<%$tae_stunden / 8 > $atr_personentage && ' bgcolor=\'#FFAAAA\''%> rowspan='2'>
+   <% formatnumber($tae_stunden / 8, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right' rowspan='2'>
+%  my $tmp = $tae_stunden_monat / 8; $tmp =~ s/\./,/ if ($ARGS{lang} eq 'de');
+   <input type='text' name='tae_pt' value='<% $tmp %>'
+          size='6'>
+   <& '/setfocus', name => 'tae_pt' &>
+  </td>
+  <td rowspan='2'>
+   <input type='text' name='tae_beschreibung' value='<%$tae_beschreibung%>'
+          size='20' maxlength='80'>
+  </td>
+  <td align='right'>
+   <% defined($abr_realisierung_vormonat) && "$abr_realisierung_vormonat%" %>
+  </td>
+ </tr>
+ <tr>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td alignt='right'>
+   <input type='text' name='abr_realisierung' value='<%$abr_realisierung%>' size='5'>%
+  </td>
+ </tr>
+
+% } else {
+ <tr>
+  <td rowspan='2'>
+% unless ($tae_freigabedatum) {
+   <input type='radio' name='sel_nummer' value='<%$atr_nummer%>'>
+% }
+  </td>
+  <td rowspan='2'>
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right' rowspan='2'>
+   <% formatnumber($atr_personentage, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right'<%$tae_stunden / 8 > $atr_personentage && ' bgcolor=\'#FFAAAA\''%> rowspan='2'>
+   <% formatnumber($tae_stunden / 8, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right' rowspan='2'>
+   <% formatnumber($tae_stunden_monat / 8, 2, $ARGS{lang}) %>
+  </td>
+  <td rowspan='2'>
+   <%$tae_beschreibung%>
+  </td>
+  <td align='right'>
+   <% defined($abr_realisierung_vormonat) && "$abr_realisierung_vormonat%" %>
+  </td>
+ </tr>
+ <tr>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td align='right'>
+   <% defined($abr_realisierung) && "$abr_realisierung%"%>
+  </td>
+ </tr>
+
+%   }  # if
+% } # foreach @$atr
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th class='label' colspan='2' bgcolor='#cccccc'>
+   <i18n>Summe</i18n>
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <% formatnumber($sum{auftrag}, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <% formatnumber($sum{tae_stunden}/8, 2, $ARGS{lang}) %>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <% formatnumber($sum{tae_stunden_monat}/8, 2, $ARGS{lang}) %>
+  </td>
+  <td colspan='2' bgcolor='#cccccc'>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+% if ($sel_nummer) {
+ <input type='submit' name='speichern' value='<i18n>speichern</i18n>'>
+ <input type='submit' name='freigeben' value='<i18n>speichern und freigeben</i18n>'>
+% } else {
+ <input type='submit' name='allesfreigeben' value='<i18n>alles freigeben</i18n>'>
+% }
+ <input type='submit' name='bearbeiten' value='<i18n>bearbeiten</i18n>'>
+</p>

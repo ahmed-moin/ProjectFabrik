@@ -1,0 +1,102 @@
+<%args>
+$dbh
+$uid
+$auswahl => undef
+$loeschen => undef
+$qra_qualid_new => undef
+$qra_qualid => undef
+</%args>
+<%perl>
+
+# neue Qualifikationen verarbeiten
+if ($qra_qualid_new)
+{
+  $qra_qualid_new = [$qra_qualid_new] unless ref ($qra_qualid_new);
+  my $sth = $dbh->prepare(<<"EOF");
+    insert into qualrank(qra_qualid, qra_benuid)
+      values (?, ?)
+EOF
+  foreach my $qra_qualid (@$qra_qualid_new)
+  {
+    next unless $qra_qualid;
+    $sth->execute($qra_qualid, $uid);
+  }
+}
+
+# eventuelle Änderungen speichern
+if ($qra_qualid)
+{
+  $qra_qualid = [$qra_qualid] unless ref($qra_qualid);
+  my $sth = $dbh->prepare(<<"EOF");
+    update qualrank
+       set qra_rank = ?,
+           qra_bemerkung = ?
+     where qra_qualid = ?
+       and qra_benuid = ?
+EOF
+  foreach my $qra_qualid (@$qra_qualid)
+  {
+    next unless $qra_qualid;
+    my $rank      = $ARGS{"qra_rank_$qra_qualid"};
+    my $bemerkung = $ARGS{"qra_bemerkung_$qra_qualid"};
+    $sth->execute($rank, $bemerkung, $qra_qualid, $uid);
+  }
+}
+
+# löschen
+if ($loeschen)
+{
+  die "<fehler><i18n>keine Qualifikation zum l&ouml;schen ausgew&auml;hlt</i18n></fehler>"
+    unless $auswahl;
+
+  $auswahl = [$auswahl] unless ref($auswahl);
+  my $sth = $dbh->prepare(<<"EOF");
+    delete from qualrank
+     where qra_benuid = ?
+       and qra_qualid = ?
+EOF
+
+  my $sth_sel = $dbh->prepare( "
+    select qua_id
+      from qual
+     where qua_oberid = ?" );
+
+  my $sth_del = $dbh->prepare( "
+    delete from qualrank
+     where qra_benuid = ?
+       and qra_qualid in
+         (select qua_id
+            from qual
+           where qua_oberid = ?)" );
+
+  foreach my $qra_qualid (@$auswahl)
+  {
+    next unless $qra_qualid;
+
+    del_unter($dbh, $sth_sel, $sth_del, $uid, $qra_qualid);
+
+    $sth->execute($uid, $qra_qualid);
+  }
+}
+
+$dbh->commit;
+
+</%perl>
+<%once>
+
+  # lösche rekursiv alle Qualifikationen, die der angegebenen untergeordnet sind
+  sub del_unter
+  {
+    my ($dbh, $sth_sel, $sth_del, $uid, $qualid, $count) = @_;
+
+    my @qualid = @{$dbh->selectcol_arrayref($sth_sel, {}, $qualid)};
+
+    foreach my $q (@qualid)
+    {
+      del_unter($dbh, $sth_sel, $sth_del, $uid, $q);
+    }
+
+    $sth_del->execute($uid, $qualid);
+  }
+
+</%once>

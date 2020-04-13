@@ -1,0 +1,93 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+</%args>
+<%perl>
+  use Contavia::Date;
+
+  # ermittele Teilprojekte zu dem Projektplan
+  my $tprs = $dbh->selectall_arrayref( <<"EOF" );
+    select tpr_tid, tpr_titel, tpr_status,
+           min(apl_startdatum), max(apl_endedatum)
+      from teilprojekt, aufgabenplan
+     where tpr_pid     = $projektid
+       and apl_ppl     = $projektplan
+       and tpr_pid     = apl_pid
+       and tpr_tid     = apl_tid
+     group by tpr_tid, tpr_titel, tpr_status
+     order by 4, 5, 1
+EOF
+
+  # ermittele Gesamtlaufzeit des Projektes
+  my ($start, $ende) = $dbh->selectrow_array( <<"EOF" );
+    select min(apl_startdatum), max(apl_endedatum)
+      from aufgabenplan
+     where apl_pid     = $projektid
+       and apl_ppl     = $projektplan
+EOF
+
+  $start = $start ? new Contavia::Date($start)
+         : $ende  ? new Contavia::Date($ende)
+         : Contavia::Date::current;
+  $ende  = $ende  ? new Contavia::Date($ende)
+         : ! $start->is_null ? new Contavia::Date($ende)
+         : Contavia::Date::current;
+
+</%perl>
+
+<table>
+ <tr>
+  <td colspan='2'>
+  </td>
+  <td>
+   <& '/dateline', start => [$start->monat, $start->jahr],
+                   end   => [$ende->monat, $ende->jahr],
+                   width => 30 &>
+  </td>
+ </tr>
+
+<%perl>
+  my $projektstart = $start->tag + $start->monat * 30 + $start->jahr * 360;
+  foreach (@$tprs) {
+    my ($tpr_tid, $tpr_titel, $tpr_status,
+           $apl_startdatum, $apl_endedatum) = @$_;
+    my ($starttage, $endetage);
+
+    # ermittele Start und Endezeitpunkt der Aufgabe als Tageszahl
+    if ($apl_startdatum)
+    {
+      $apl_startdatum = new Contavia::Date($apl_startdatum);
+      $starttage = $apl_startdatum->tag + $apl_startdatum->monat * 30
+        + $apl_startdatum->jahr * 360;
+    }
+    if ($apl_endedatum)
+    {
+      $apl_endedatum = new Contavia::Date($apl_endedatum);
+      $endetage = $apl_endedatum->tag + $apl_endedatum->monat * 30
+        + $apl_endedatum->jahr * 360;
+    }
+
+</%perl>
+ <tr>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+% if ($starttage && $endetage) {
+   <& '/bar', width => $starttage - $projektstart + 24, height => 10, color => [255, 255, 255] &><&
+      '/bar', width => $endetage - $starttage + 1, height => 10, color => [0, 0, 128] &>
+% } elsif ($starttage) {
+   <& '/bar', width => $starttage - $projektstart, height => 10, color => [255, 255, 255] &><img
+     src='/images/startpfeil.png'>
+% } elsif ($endetage) {
+   <& '/bar', width => $endetage - $projektstart - 10, height => 10, color => [255, 255, 255] &><img
+     src='/images/endepfeil.png'>
+% }
+  </td>
+ </tr>
+% }
+</table>

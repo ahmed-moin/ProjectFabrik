@@ -1,0 +1,152 @@
+#include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <strstream>
+#include "gd++.h"
+#include "cgi.h"
+#include "stdfontpen.h"
+#include "convert.h"
+
+using namespace std;
+
+class Label : public gd::Image
+{
+    struct lo
+    {
+      string    line;
+      gd::BRect rect;
+    };
+
+    gd::Color bgcolor;
+    gd::Color fontcolor;
+    int shift;
+
+  public:
+    Label()
+      : shift(0)
+        { }
+
+    Label(string txt, gd::Color bg, int shift = 0);
+
+    void SetBgcolor(gd::Color bg)
+    { bgcolor = bg; }
+    void SetFontcolor(gd::Color fc)
+    { fontcolor = fc; }
+    void SetShift(int s)
+    { shift = s; }
+
+    void Create(string txt);
+    void DrawFrame();
+};
+
+////////////////////////////////////////////////////////////////////////
+Label::Label(string txt, gd::Color bgcolor, int shift)
+{
+  SetBgcolor(bgcolor);
+  SetShift(shift);
+  Create(txt);
+}
+
+void Label::Create(string txt)
+{
+  int x = 0, y = 0;  // Grösse des Labels
+
+  string::iterator zeilenanfang = txt.begin();
+  vector<lo> lines;
+  for (string::iterator i = txt.begin(); 1; ++i)
+  {
+    if (i == txt.end() || *i == '\n')
+    {
+      // Zeilenende gefunden
+
+      struct lo lo;
+      lo.line = string(zeilenanfang, i);
+      lo.rect = gd::Stdfontpen::GetStringSize(lo.line);
+
+      // die Breite des Images wird durch die längste Zeile bestimmt
+      if ( lo.rect.GetWidth() > x )
+        x = lo.rect.GetWidth();
+      // die Höhe ergibt sich aus den Zeilen
+      y += lo.rect.GetHeight() + 2;
+      lines.push_back(lo);
+      zeilenanfang = i + 1;
+    }
+
+    if (i == txt.end())
+      break;
+  }
+
+  gd::Image::Create(x + 28, y + 5);
+
+  GetColor(bgcolor);  // Hintergrundfarbe alloziieren
+  gd::Stdfontpen pen(this, GetColor(fontcolor));
+  gd::Pen BluePen = GetPen(0, 0, 128);
+
+  y = gd::Stdfontpen::GetStringSize("Rg").GetHeight() / 2 + 1;
+  BluePen.Rectangle(8, y, 10, y + 2);
+  BluePen.Fill(9, y + 1);
+
+  y = -1;
+  for (vector<lo>::iterator i = lines.begin(); i != lines.end(); ++i)
+  {
+    y += (*i).rect.GetHeight() + 2;
+    pen.MoveTo(x + 19 - (*i).rect.GetWidth() + shift, y + shift)
+       .Write((*i).line);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+void Label::DrawFrame()
+{
+  int white = GetColor(255, 255, 255);
+  gd::Pen p = GetPen(white);
+  int X = GetWidth();
+  int Y = GetHeight();
+
+  p.Line(8, 0, 0, 0).LineTo(0, 6)       // links oben
+   .Line(7, 1, 1, 1).LineTo(1, 5)
+   .Line(X-9, 0, X-1, 0).LineTo(X-1, 6)  // rechts oben
+   .Line(X-2, 5, X-2, 1).LineTo(X-8, 1)
+   .Line(8, Y-1, 0, Y-1).LineTo(0, Y-7)  // links unten
+   .Line(7, Y-2, 1, Y-2).LineTo(1, Y-6)
+   .Line(X-1, Y-7, X-1, Y-1).LineTo(X-9, Y-1)  // rechts unten
+   .Line(X-2, Y-6, X-2, Y-2).LineTo(X-8, Y-2);
+}
+
+////////////////////////////////////////////////////////////////////////
+int main()
+{
+  try
+  {
+    CGI q;
+
+    string label;
+    label = q.paramcount() > 0 ? q.param(0) : q.param("text");
+
+    gd::Color fontcolor = q.param("fc", "000");
+    gd::Color bgcolor   = q.param("bg", "FFFFFF");
+    string frame     = q.param("f", "0");
+    int shift        = string2<int>(q.param("s", "0"));
+
+    Label image;
+    image.SetBgcolor(bgcolor);
+    image.SetFontcolor(fontcolor);
+    image.SetShift(shift);
+
+    image.Create(label);
+    if (frame.size() > 0 && frame[0] != '0')
+      image.DrawFrame();
+
+    cout << CGI::last_modified_header("image/png");
+    gdImagePng(image, cout.rdbuf());
+  }
+  catch(runtime_error e)
+  {
+    cerr << e.what() << endl;
+    return -1;
+  }
+
+ return 0;
+}

@@ -1,0 +1,283 @@
+<%args>
+$dbh
+$uid
+$projektid
+$datum_von => undef
+$atr_nummer => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $current = Contavia::Date::current;
+  my ($monat, $jahr) =
+       ($datum_von && $datum_von->[2]) ? ($datum_von->[1], $datum_von->[2])
+       : $datum_von ? ($datum_von->[0], $datum_von->[1])
+      : ($current->monat, $current->jahr);
+
+  $datum_von = new Contavia::Date(1, $monat, $jahr)->qpgdate;
+  my ($monat1, $jahr1) = $monat < 11 ? ($monat + 1, $jahr)
+                                     : (1, $jahr + 1);
+  my $datum_bis_plus1 = new Contavia::Date(1, $monat1, $jahr1)->qpgdate;
+
+  my $sql = <<"EOF";
+    select tae_auftrag, tae_datum, tae_lfdnr,
+           tae_stunden, tae_beschreibung,
+           tae_freigabedatum, tae_geprueft,
+           tpr_titel, auf_name
+      from taetigkeit, auftrag, teilprojekt, aufgabe
+     where tae_uid = '$uid'
+       and tae_datum >= $datum_von
+       and tae_datum < $datum_bis_plus1
+       and tae_auftrag = atr_nummer
+       and atr_pid = $projektid
+       and tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+       and auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+EOF
+  $sql .= <<"EOF" if ($atr_nummer);
+       and tae_auftrag = $atr_nummer
+EOF
+
+  $sql .= <<"EOF";
+     order by tae_datum
+EOF
+
+  my $tae = $dbh->selectall_arrayref($sql);
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+    select atr_nummer, tpr_titel, auf_name
+      from auftrag, teilprojekt, aufgabe
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+       and auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+EOF
+
+  my ($atr0, $tae_stunden_erfasst, $tae_stunden_freigegeben);
+
+  if ($atr_nummer)
+  {
+    $atr0 = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+      select atr_personentage
+        from auftrag
+       where atr_pid = $projektid
+         and atr_nummer = $atr_nummer
+EOF
+
+    $tae_stunden_erfasst = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+      select sum(tae_stunden)
+        from taetigkeit
+       where tae_auftrag = $atr_nummer
+EOF
+
+    $tae_stunden_freigegeben = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+      select sum(tae_stunden)
+        from taetigkeit
+       where tae_auftrag = $atr_nummer
+         and tae_freigabedatum is not null
+EOF
+  }
+  else
+  {
+    $atr0 = $dbh->selectrow_array( <<"EOF" );
+      select sum(atr_personentage)
+        from auftrag
+       where atr_pid = $projektid
+EOF
+
+    $tae_stunden_erfasst = $dbh->selectrow_array( <<"EOF" );
+      select sum(tae_stunden)
+        from taetigkeit
+       where tae_uid = '$uid'
+EOF
+
+    $tae_stunden_freigegeben = $dbh->selectrow_array( <<"EOF" );
+      select sum(tae_stunden)
+        from taetigkeit
+       where tae_uid = '$uid'
+         and tae_freigabedatum is not null
+EOF
+  }
+
+  my $tae_stunden_verfuegbar = ($atr0 * 8) - $tae_stunden_erfasst;
+
+</%perl>
+
+<& '/masketitel', titel => 'T&auml;tigkeit erfassen' &>
+
+<table>
+ <tr>
+  <td>
+	<i18n>
+   Monat
+	</i18n>
+  </td>
+  <td>
+   <input type='text' name='datum_von' value='<%$monat%>' size=2>/
+   <input type='text' name='datum_von' value='<%$jahr%>' size=4>
+   <input type='submit' value='Ausw&auml;hlen'>
+
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+	<i18n>
+   Auftrag
+	</i18n>
+  </td>
+  <td>
+   <select name='sel_nummer' onChange='document.forms[0].submit()'>
+    <option>
+% foreach (@$atr) {
+%   my ($n, $tpr_titel, $auf_name) = @$_;
+    <option value='<%$n%>'<%$atr_nummer == $n ? ' selected' : ''%>><%"$n / $tpr_titel / $auf_name"%>
+% }
+   </select>
+  </td>
+ </tr>
+</table>
+
+<hr>
+
+<table border='1'>
+ <tr>
+  <th>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   erfasst
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   freigegeben
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   verf&uuml;gbar
+	</i18n>
+  </th>
+ </tr>
+
+ <tr>
+  <td>
+   <%$atr0%><i18n> PT</i18n> / <%$atr0 * 8%> <i18n>Stunden</i18n>
+  </td>
+  <td>
+   <%$tae_stunden_erfasst / 8%> <i18n>PT</i18n> / <%$tae_stunden_erfasst%> <i18n>Stunden</i18n>
+  </td>
+  <td>
+   <%$tae_stunden_freigegeben / 8%> <i18n>PT</i18n> / <%$tae_stunden_freigegeben%> <i18n>Stunden</i18n>
+  </td>
+  <td>
+   <%$tae_stunden_verfuegbar / 8%><i18n> PT</i18n> / <%$tae_stunden_verfuegbar%> <i18n>Stunden</i18n>
+  </td>
+ </tr>
+</table>
+
+<hr>
+
+<table>
+ <tr>
+  <td>
+  </td>
+  <th>
+	<i18n>
+   Tag
+	</i18n>
+  </th>
+% unless ($atr_nummer) {
+  <th>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+% }
+  <th>
+	<i18n>
+   Stunden
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tae) {
+    my ($tae_auftrag, $tae_datum, $tae_lfdnr,
+        $tae_stunden, $tae_beschreibung,
+        $tae_freigabedatum, $tae_geprueft, $tpr_titel, $auf_name) = @$_;
+    my $datum = new Contavia::Date($tae_datum);
+    my $frei = !$tae_freigabedatum;
+ </%perl>
+ <tr>
+  <td>
+% if ($frei) {
+   <input type='radio' name='tae_nummer'
+          value='<%"$tae_auftrag,$tae_datum,$tae_lfdnr"%>'>
+% }
+  </td>
+  <td>
+   <%$datum->tag + 0%>
+  </td>
+% unless ($atr_nummer) {
+  <td>
+   <%"$tae_auftrag / $tpr_titel / $auf_name"%>
+  </td>
+% }
+  <td>
+   <%$tae_stunden%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='tae_datum' size=2>
+   <input type='hidden' name='tae_datum' value='<%$monat%>'>
+   <input type='hidden' name='tae_datum' value='<%$jahr%>'>
+   <script language="JavaScript" type="text/javascript">
+    document.forms[0].tae_datum.focus()
+   </script>
+  </td>
+% unless ($atr_nummer) {
+  <td>
+   <select name='tae_auftrag'>
+    <option>
+% foreach (@$atr) {
+%   my ($n, $tpr_titel, $auf_name) = @$_;
+    <option value='<%$n%>'><%"$n / $tpr_titel / $auf_name"%>
+% }
+   </select>
+  </td>
+% }
+  <td>
+   <input type='text' name='tae_stunden' size='4'>
+  </td>
+  <td>
+   <input type='text' name='tae_beschreibung' size='40' maxlength='80'>
+  </td>
+ </tr>
+</table>
+
+<input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+

@@ -1,0 +1,80 @@
+<%args>
+$dbh
+$projektid
+$bearbeiten => undef
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = new Contavia::Date($dbh->selectrow_array( <<"EOF"));
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid
+EOF
+  $anf_datum->tag(1);
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # lese ausgewählten Bericht
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  my $ber_text = $dbh->selectrow_array(
+       sprintf(<<"EOF", $sel_datum->qpgdate) ) || '';
+    select ber_text
+      from bericht
+     where ber_pid = $projektid
+       and ber_datum = %s
+EOF
+
+</%perl>
+
+<h1>Projektsummary</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <& '/select_monat', name     => 'sel_datum',
+                       von      => $anf_datum,
+                       bis      => $current,
+                       selected => $sel_datum &>
+  </td>
+ </tr>
+</table>
+
+% if ($bearbeiten) {
+%   $ber_text =~ s/\<br\>/\n/g;
+%   $ber_text =~ s/\</&lt;/g;
+%   $ber_text =~ s/\>/&gt;/g;
+
+<textarea name='ber_text' rows='15' cols='60'><%$ber_text%></textarea>
+<& '/setfocus', name => 'ber_text' &>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='abbrechen' value='abbrechen'>
+</p>
+
+<& '/htmlhelp' &>
+
+% } else {
+
+<table border='1' width='100%'>
+ <tr>
+  <td>
+   <%$ber_text%>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+
+% }

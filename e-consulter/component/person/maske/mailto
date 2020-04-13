@@ -1,0 +1,40 @@
+<%args>
+$user => undef
+</%args>
+
+<& '/masketitel', titel => 'E-Mail' &>
+
+<table>
+ <tr>
+  <th class='label'>
+   An
+  </th>
+  <td>
+   <%$user%>@e-consulter.de
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   CC
+  </th>
+  <td>
+   <input type='text' name='cc' size='50'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Betreff
+  </th>
+  <td>
+   <input type='text' name='subject' size='50'>
+  </td>
+ </tr>
+</table>
+
+<textarea name='body' rows='20' cols='80'></textarea>
+
+<p class='button'>
+ <input type='submit' name='send' value='Absenden'>
+</p>

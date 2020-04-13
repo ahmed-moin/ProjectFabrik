@@ -1,0 +1,25 @@
+<%args>
+$label1
+$label2
+$color1
+$color2
+</%args>
+<table>
+ <tr>
+  <td>
+   <%$label1%>
+  </td>
+  <td>
+   <& '/bar', width => 16, height => 10, color => $color1 &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <%$label2%>
+  </td>
+  <td>
+   <& '/bar', width => 16, height => 10, color => $color2&>
+  </td>
+ </tr>
+</table>

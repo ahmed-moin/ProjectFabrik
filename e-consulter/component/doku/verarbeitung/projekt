@@ -1,0 +1,125 @@
+<%args>
+$projektid
+$uid
+$dbh
+$folder
+$create     => undef
+$upload     => undef
+$foldername => undef
+$filename   => undef
+$comment    => undef
+$del        => undef
+</%args>
+<%once>
+my $path = "$ENV{MAINDIR}/daten/";
+my $l;
+</%once>
+<%perl>
+    if ((defined $create and $foldername =~ /.+/) or $foldername =~ /.+/) {
+	  eval {
+        $dbh->do(<<"EOF");
+		insert into folder
+		values (NEXTVAL('fol_id_seq'),
+                '$projektid',
+                '$foldername',
+                '$uid',
+                now(),
+                '$folder'
+               )
+EOF
+      };
+    }
+    elsif (defined $upload and $filename =~ /.+/) {
+      #use CGI;
+      #use CGI::Carp 'fatalsToBrowser';
+      #$CGI::POST_MAX = 50000000;
+      my $q  = new CGI;
+      my $fh = $q->upload("filename");
+
+      #
+      # only the crappy Internet Explorer sends the whole path (the
+      # local one from the client!!!) instead of only the file name.
+      # So we have to filter it... :\
+      #
+      ($filename) = $filename =~ /.*\\(.*)$/ if ($filename =~ /\\/g);
+      $path .= "/$projektid"; `mkdir $path` if (!-d $path);
+      $path .= "/$folder";    `mkdir $path` if (!-d $path);
+
+      return if (-e "$path/$filename");
+
+      open(FILE, ">$path/$filename") or die ("couldn't open file");
+      binmode FILE;
+
+      while ($l = <$fh>) {
+        print(FILE $l);
+      }
+
+      close(FILE);
+
+
+	  eval {
+        $dbh->do(<<"EOF");
+		insert into files
+		values (NEXTVAL('fil_id_seq'),
+		        '$folder',
+				'$projektid',
+				'$filename',
+				'$comment',
+				'$uid',
+				now()
+			   )
+EOF
+	  };
+	}
+	elsif (defined $del and $del =~ /\|/) {
+    my ($isAdmin) = $dbh->selectrow_array(<<"EOF");
+      select ben_admin
+        from benutzer
+       where ben_uid = '$uid'
+EOF
+
+    my ($isProjManager, $isClient, $isEmployee) = $dbh->selectrow_array(<<"EOF");
+      select rol_admin, rol_kunde, rol_mitarbeiter
+        from rolle
+       where rol_uid = '$uid'
+         and rol_pid = '$projektid'
+EOF
+
+	  my ($fn, $id, $f) = split(/\|/, $del);
+
+      if ($id =~ /^d\d+/) {
+        $id =~ s/d//;
+        eval {
+          $dbh->do(<<"EOF");
+          update folder
+             set fol_deleted  = '1',
+                 fol_del_by   = '$uid',
+                 fol_del_time = now()
+           where fol_prjid    = '$projektid'
+             and fol_id       = '$id'
+EOF
+      };
+	  }
+	  elsif ($id =~ /^f\d+/) {
+        $id =~ s/f//;
+        eval {
+          $dbh->do(<<"EOF");
+          update files
+             set fil_deleted  = '1',
+                 fil_del_by   = '$uid',
+                 fil_del_time = now()
+           where fil_prjid    = '$projektid'
+             and fil_folid    = '$f'
+             and fil_id       = '$id'
+EOF
+
+          $path = "$path/$projektid/$folder";
+          my $newfn = $fn ."_$uid"."_$id";
+
+          `mkdir $path/deleted` if (!-d "$path/deleted");
+          `mv "$path/$fn" "$path/deleted/$newfn"`;
+        };
+	  }
+	}
+</%perl>
+

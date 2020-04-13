@@ -1,0 +1,57 @@
+<%args>
+$dbh
+$ass_uid => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  my $count = $dbh->selectrow_array( "
+    select count(*)
+      from assfrage
+     where fra_lang='de'" );
+
+  my $ant = $dbh->selectall_arrayref( "
+    select ant_uid, count(*)
+      from assantwort
+     where ant_antwort is not null
+     group by ant_uid
+     having count(*) = $count" );
+
+  my $zeit = $dbh->selectrow_array( "
+    select max(ant_antwortzeit) - min(ant_fragezeit)
+      from assantwort
+     where ant_uid = '$ass_uid'" ) if $ass_uid;
+
+</%perl>
+
+<h1>Assessment Ergebnisse</h1>
+
+<& '/select', name => 'ass_uid',
+              values => [ map { [$_->[0], $_->[0]] } @$ant ],
+              selected => $ass_uid &>
+
+% if ($ass_uid) {
+
+<br>
+
+<& '/assergebnis', dbh => $dbh, uid => $ass_uid &>
+
+Zeit: <%$zeit%>
+
+%   if ($loeschen) {
+
+<b>Sollen die Ergebnisse für User <%$ass_uid%> wirklich gelöscht werden?</b>
+
+<p class='button'>
+ <input type='submit' name='loeschen_ok' value='wirklich Löschen'>
+</p>
+
+%   } else {
+
+<p class='button'>
+ <input type='submit' name='loeschen' value='Löschen'>
+</p>
+
+%   }
+
+% }

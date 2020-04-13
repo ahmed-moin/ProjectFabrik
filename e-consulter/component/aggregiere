@@ -1,0 +1,60 @@
+<%doc>
+  $tpr ist eine Referenz auf ein Hash. In diesem sind die Teilprojekte,
+  die aggregiert sind durch die Aggregationen zu ersetzen.
+  Zu diesen müssen auch die Werte berechnet werden. Dabei müssen
+  die Werte zu den Teilprojekten, die aggregiert sind, nicht gelöscht werden.
+  Die Werte werden als Array von Hashreferenzen von Teilprojekt-Wert-
+  Zuordnungen übergeben.
+</%doc>
+<%args>
+  $dbh
+  $projektid
+  $projektplan
+  $tpr
+  @werte
+  $avg => 0
+</%args>
+<%perl>
+   my $tpa = $dbh->selectall_arrayref( <<"EOF" );
+    select tpl_tid, tpl_taid, tpa_titel
+      from teilprojektplan, teilprojektagg
+     where tpl_pid  = $projektid
+       and tpl_ppl  = $projektplan
+       and tpa_pid = tpl_pid
+       and tpa_ppl = tpl_ppl
+       and tpa_taid = tpl_taid
+EOF
+
+   my %count;
+   foreach (@$tpa)
+   {
+     my ($tpl_tid, $tpl_taid, $tpa_titel) = @$_;
+     # Das Teilprojekt $tpl_tid geht jetzt vollständig in $tpl_taid auf.
+     # Die Schlüssel der aggregierten Teilprojekte $tpl_taid werden mit
+     # dem Präfix 'A' versehen.
+
+     my $taid = "A$tpl_taid";
+
+     $tpr->{$taid} = $tpa_titel;
+     $tpr->{$tpl_tid} = undef;
+     $count{$taid}++;
+
+     foreach my $werte (@werte)
+     {
+       $werte->{$taid} += $werte->{$tpl_tid};
+       $werte->{$tpl_tid} = 0;
+     }
+   }
+
+   if ($avg)
+   {
+     while (my ($taid, $count) = each (%count))
+     {
+       foreach my $werte (@werte)
+       {
+         $werte->{$taid} /= $count;
+       }
+     }
+   }
+
+</%perl>

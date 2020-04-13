@@ -1,0 +1,162 @@
+<%args>
+$dbh
+$projektid
+$tid => undef
+$aid => undef
+$kos_art
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $tpl = $dbh->selectall_arrayref( "
+   select tpr_tid, tpr_titel
+     from teilprojekt
+    where tpr_pid = $projektid
+    order by tpr_tid" );
+
+  my $auf = $dbh->selectall_arrayref( "
+   select auf_aid, auf_name
+     from aufgabe
+    where auf_pid = $projektid
+      and auf_tid = $tid
+    order by auf_aid" ) if $tid;
+
+  my $kos = $dbh->selectall_arrayref( "
+   select kos_datum, kos_lfdnr,
+          kos_betrag, kos_bbetrag, kos_beschreibung,
+          kos_freigabe
+     from kosten, aufgabe, auftrag
+    where kos_auftrag = atr_nummer
+      and kos_art = $kos_art
+      and atr_pid = $projektid
+      and atr_tid = $tid
+      and atr_aid = $aid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+    order by kos_datum" ) if $tid && $aid;
+
+  $ARGS{tid} = undef;
+  $ARGS{aid} = undef;
+
+</%perl>
+
+<table>
+ <tr>
+  <th>
+   Teilprojekt
+  </th>
+  <td>
+   <& '/select', name => 'tid', values => $tpl, showkey => 1, selected => $tid, width => 400 &>
+  </td>
+ </tr>
+
+% if ($tid) {
+ <tr>
+  <th>
+   Aufgabe
+  </th>
+  <td>
+   <& '/select', name => 'aid', values => $auf, showkey => 1, selected => $aid, width => 400 &>
+  </td>
+ </tr>
+% }
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+   Datum
+  </th>
+  <th bgcolor='#ccccff'>
+   Beschreibung
+  </th>
+  <th bgcolor='#ccccff'>
+   Betrag
+  </th>
+  <th bgcolor='#ccccff'>
+   BBetrag
+  </th>
+  <th bgcolor='#ccccff'>
+   Freigabe
+  </th>
+ </tr>
+
+% foreach (@$kos) {
+%   my ($kos_datum, $kos_lfdnr,
+%       $kos_betrag, $kos_bbetrag, $kos_beschreibung,
+%       $kos_freigabe) = @$_;
+ <tr>
+  <td bgcolor='#ccccff'>
+   <input type='radio' name='kos' value='<%$kos_lfdnr%>'>
+  </td>
+  <td>
+   <%new Contavia::Date($kos_datum)->preformat%>
+  </td>
+  <td>
+   <%$kos_beschreibung%>
+  </td>
+  <td align='right'>
+   <%$kos_betrag%>
+  </td>
+  <td align='right'>
+   <%$kos_bbetrag%>
+  </td>
+  <td align='center'>
+   <%$kos_freigabe && 'X'%>
+  </td>
+ </tr>
+
+% }
+
+% if ($aid) {
+<& '.edit' &>
+% }
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+
+<%perl>
+return \%ARGS;
+</%perl>
+
+<%def .edit>
+<%args>
+@values => ()
+</%args>
+<%perl>
+
+  my ($kos_datum, $kos_lfdnr,
+      $kos_betrag, $kos_bbetrag, $kos_beschreibung,
+      $kos_freigabe) = @values;
+
+</%perl>
+
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'kos_datum', value => $kos_datum &>
+  </td>
+  <td>
+   <input type='text' name='kos_beschreibung' size='40' maxlength='80'
+          value='<%$kos_beschreibung%>'>
+  </td>
+  <td>
+   <input type='text' name='kos_betrag' size='8' value='<%$kos_betrag%>'>
+  </td>
+  <td>
+   <input type='text' name='kos_bbetrag' size='8' value='<%$kos_bbetrag%>'>
+  </td>
+  <td align='center'>
+   <input type='checkbox' name='kos_freigabe'<%$kos_freigabe && ' checked'%>>
+  </td>
+ </tr>
+</%def>

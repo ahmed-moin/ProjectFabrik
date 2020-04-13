@@ -1,0 +1,43 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  my $tae = $dbh->selectrow_array( "
+    select 1
+     where exists (
+       select 1
+         from taetigkeit
+          join auftrag
+            on tae_auftrag = atr_nummer
+        where atr_pid = $projektid
+          and tae_freigabedatum is not null
+          and tae_geprueft is null)");
+
+  my $kos = $dbh->selectrow_array( "
+    select 1
+     where exists (
+       select 1
+         from kosten
+          join auftrag
+            on kos_auftrag = atr_nummer
+        where atr_pid = $projektid
+          and kos_freigabe is not null
+          and kos_geprueft is null)" );
+
+</%perl>
+<h1>TODO - Freigabe prüfen</h1>
+
+% if ($tae || $kos) {
+  <ul>
+%   if ($tae) {
+   <li> es sind zu prüfende Tätigkeiten vorhanden </li>
+%   }
+%   if ($kos) {
+   <li> es sind zu prüfende Aufwendungen vorhanden </li>
+%   }
+  </ul>
+% } else {
+  keine  zu prüfenden Tätigkeiten oder Aufwendungen vorhanden
+% }

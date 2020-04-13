@@ -1,0 +1,35 @@
+<%args>
+@menu
+$uid
+$dbh
+$projektid
+$ang_nummer => undef
+</%args>
+<%perl>
+
+  my $ang_auftragsdatum = $dbh->selectrow_array( <<"EOF" ) if $ang_nummer;
+    select ang_auftragsdatum
+      from angebot
+     where ang_pid = $projektid
+       and ang_nummer = $ang_nummer
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Angebot annehmen</i18n>' &>
+
+% if ($ang_auftragsdatum) {
+
+<p class='button'>
+ <input type='submit' name='annehmen' value='<i18n>Annehmen</i18n>'>
+</p>
+
+% } else {
+  <p>
+   <i18n> Vielen Dank f&uuml;r Ihren Auftrag.</i18n>
+  </p>
+
+  <p>
+    <i18n>Wir werden uns mit Ihnen sobald wie m&ouml;glich in Verbindung setzen.</i18n>
+  </p>
+% }

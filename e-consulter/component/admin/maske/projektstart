@@ -1,0 +1,72 @@
+<%args>
+$dbh
+$projektid => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  fehler("kein Projekt ausgewählt") unless $projektid;
+
+  my $prj_titel = $dbh->selectrow_array( "
+    select prj_titel
+      from projekt
+     where prj_id = $projektid" );
+
+  my $ben = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+     where ben_projektleiter
+     order by 1" );
+
+</%perl>
+
+<h1>Projektstart</h1>
+
+<h2> Projekttitel: <%$prj_titel%> </h2>
+
+<table>
+ <tr>
+  <td> Projektleiter: </td>
+  <td> <& '/select', name => 'ben_uid',
+              values =>
+              [
+                map
+                {
+                  my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                  [ $ben_uid, "$ben_uid: $ben_nachname, $ben_vorname" ]
+                } @$ben
+              ],
+              submit => 0 &> </td>
+ </tr>
+ <tr>
+  <td>
+    Kurztitel
+  </td>
+  <td>
+   <input type='text' name='prj_kurztitel' size='12' maxlength='12'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Währung
+  </td>
+  <td>
+   <input type='text' name='waehrung' value='EUR' size='8'>
+  </td>
+ </tr>
+</table>
+
+<p>
+</p>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+</p>
+
+<h2> Erläuterung </h2>
+
+<p>
+Sobald ein Projektleiter bestimmt ist, kann dieser das Projekt im Projektplantool planen.
+</p>

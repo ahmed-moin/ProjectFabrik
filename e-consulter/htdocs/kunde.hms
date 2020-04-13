@@ -1,0 +1,42 @@
+<%attr>
+  titel_img => '/cgi-bin/titel?e-consulter&amp;Hauptmen%FC'
+  barcolor  => [255, 255, 0]
+</%attr>
+
+ <img src='/images/fotohome.gif' alt="e-consulter">
+
+%#######################################################################
+
+<%def .label>
+<%args>
+  $link
+  $text
+</%args>
+<%perl>
+
+ $text =~ s/\s/%20/g;
+ my $img = "/cgi-bin/bluelabel?$text&amp;fc=000080";
+
+</%perl>
+  <a href='<%$link%>'><img src='<%$img%>' border='0'
+       onMouseover = "this.src='<%$img%>&amp;bg=EEE'"
+       onMouseout  = "this.src='<%$img%>'"
+       onMousedown = "this.src='<%$img%>&amp;bg=EEE&s=1'"
+       onMouseup   = "this.src='<%$img%>'"></a><br>
+</%def>
+
+<%method getmenu>
+<%perl>
+  return ( { href   => 'projekt.hms',
+             label => 'Projekttool' },
+           { href   => 'mis.hms',
+             label => "Management\nInformation\nSystem" },
+           { href   => 'profiles.hms',
+             label => 'Profile' },
+
+           { space  => 20 },
+           { href   => 'https://www.e-consulter.de',
+             label  => 'SSL-Verschlüsselung' },
+         );
+</%perl>
+</%method>

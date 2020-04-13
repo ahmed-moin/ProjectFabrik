@@ -1,0 +1,59 @@
+<%args>
+$dbh
+$projektid
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = new Contavia::Date($dbh->selectrow_array( <<"EOF"));
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid
+EOF
+  $anf_datum->tag(1);
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # lese ausgewählten Bericht
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  my $ber_text = $dbh->selectrow_array(
+       sprintf(<<"EOF", $sel_datum->qpgdate) ) || '';
+    select ber_text
+      from bericht
+     where ber_pid = $projektid
+       and ber_datum = %s
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Bericht' &>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <select name='sel_datum' onChange='document.forms[0].submit()'>
+% for (my $dat = $anf_datum;
+%      $dat->cmp($current) <= 0;
+%      $dat = $dat->naechster_monat) {
+    <option value='<%$dat->format%>'<%$dat->cmp($sel_datum) == 0 ? ' selected' : ''%>> <%$dat->monat%>/<%$dat->jahr%>
+% }
+   </select>
+  </td>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td>
+   <%$ber_text%>
+  </td>
+ </tr>
+</table>

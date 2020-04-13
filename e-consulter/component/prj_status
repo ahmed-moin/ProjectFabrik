@@ -1,0 +1,25 @@
+<%args>
+$lang => ''
+</%args>
+<%perl>
+
+  my %prj_status = $lang eq 'en' ?
+  (
+    1 => 'definition',
+    2 => 'request',
+    3 => 'offer',
+    4 => 'planning',
+    5 => 'realization',
+    6 => 'completed'
+  ) :
+  (
+    1 => '<i18n>Definition</i18n>',
+    2 => '<i18n>Anfrage</i18n>',
+    3 => '<i18n>Angebot</i18n>',
+    4 => '<i18n>Planung</i18n>',
+    5 => '<i18n>Durchführung</i18n>',
+    6 => '<i18n>abgeschlossen</i18n>'
+  );
+
+  return \%prj_status;
+</%perl>

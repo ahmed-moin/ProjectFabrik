@@ -1,0 +1,112 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+my %tpr_status = %{$m->comp('/tpr_status')};
+
+my $tpr = $dbh->selectall_arrayref( "
+  select tpr_tid, tpr_titel
+    from teilprojekt
+   where tpr_pid = $projektid
+     and not exists
+       (select 1
+          from teilprojektplan
+         where tpl_pid = $projektid
+           and tpl_tid = tpr_tid
+           and tpl_ppl = $projektplan)" );
+
+my $tpl = $dbh->selectall_arrayref( "
+  select tpl_tid, tpr_titel, tpr_verantwortlich, ben_vorname, ben_nachname,
+         tpl_start, tpl_ende, tpr_status
+    from teilprojekt
+     join teilprojektplan
+       on tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+     left outer join benutzer
+       on tpr_verantwortlich = ben_uid
+   where tpr_pid = $projektid
+     and tpl_ppl = $projektplan
+    order by tpl_tid" );
+
+</%perl>
+
+<h1> Teilprojekte Übersicht </h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff' width='5%'>
+  </th>
+  <th colspan='2' bgcolor='#ccccff' width='80%'>
+   Titel
+  </th>
+  <th bgcolor='#ccccff' width='10%'>
+   Verantwortlich
+  </th>
+  <th bgcolor='#ccccff'>
+   Start
+  </th>
+  <th bgcolor='#ccccff'>
+   Ende
+  </th>
+  <th bgcolor='#ccccff'>
+   Status
+  </th>
+ </tr>
+
+% foreach (@$tpl) {
+%   my ($tpl_tid, $tpr_titel, $tpr_verantwortlich,
+%       $ben_vorname, $ben_nachname, $tpl_start, $tpl_ende, $tpr_status) = @$_;
+ <tr>
+  <td>
+   <input type='radio' name='sel_tid' value='<%$tpl_tid%>'
+    <%$tid == $tpl_tid ? ' checked' : ''%>>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$tpr_verantwortlich && "$tpr_verantwortlich: $ben_vorname $ben_nachname"%>
+  </td>
+  <td>
+   <%new Contavia::Date($tpl_start)->preformat%>
+  </td>
+  <td>
+   <%new Contavia::Date($tpl_ende)->preformat%>
+  </td>
+  <td>
+   <%$tpr_status{$tpr_status}%>
+  </td>
+ </tr>
+% }
+</table>
+
+% if (@$tpr) {
+  <select name='tpr'>
+   <option>
+% foreach (@$tpr) {
+%   my ($tpr_tid, $tpr_titel) = @$_;
+   <option value='<%$tpr_tid%>'><%$tpr_titel%>
+% }
+  </select>
+
+  <input type='submit' name='zuordnen' value='hinzufügen'>
+% }
+
+<p class='button'>
+% if ($loeschen) {
+ <input type='submit' name='loeschen_ok' value='wirklich löschen'>
+ <input type='submit' name='loeschen_nok' value='nicht löschen'>
+% } else {
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='neu' value='neu'>
+ <input type='submit' name='loeschen' value='löschen'>
+% }
+</p>

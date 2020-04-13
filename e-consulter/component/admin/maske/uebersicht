@@ -1,0 +1,13 @@
+<%args>
+$dbh
+$projektid => undef
+</%args>
+<%perl>
+
+  fehler("kein Projekt ausgewählt") unless $projektid;
+
+</%perl>
+
+<h1>Zusammenfassung</h1>
+
+<& '/zusammenfassung', dbh => $dbh, projektid => $projektid &>

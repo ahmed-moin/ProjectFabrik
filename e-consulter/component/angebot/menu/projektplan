@@ -1,0 +1,30 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ( $_->{aktion} eq 'projektplan'
+      || $_->{menu}   eq 'projektplan'
+      || $_->{maske}  eq 'projektplan')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske  => 'projektplanuebersicht',
+             dlabel => 'Projektplan&uuml;bersicht',
+             menu   => 'projektplan' },
+           { maske  => 'teilprojekte',
+             dlabel => 'Teilprojekte',
+             menu   => 'projektplan' },
+           { maske  => 'aufgaben',
+             dlabel => 'Aufgaben',
+             menu   => 'projektplan' },
+           @$menu_footer
+         ];
+</%perl>

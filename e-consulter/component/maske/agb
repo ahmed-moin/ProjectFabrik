@@ -1,0 +1,107 @@
+<%args>
+@menu
+</%args>
+
+<& /masketitel, titel => 'Allgemeine Gesch&auml;ftsbedingungen',
+                maske => $ARGS{folgemaske},
+                menu  => \@menu &>
+
+<p>der Projektfabrik GmbH, Fuchstanzstra&szlig;e 20, D-61462 K&ouml;nigstein</p>
+
+
+<h2>1 Allgemeines </h2>
+
+<p>1.1 Alle Angebote, Lieferungen und Leistungen unsererseits erfolgen ausschließlich zu den nachstehenden Bedingungen, soweit keine ausdrückliche anderweitige Vereinbarung getroffen ist. Diese Bedingungen gelten auch für künftige Geschäfte, selbst wenn diese mit dem jeweiligen Vertragspartner nicht nochmals ausdrücklich vereinbart werden. </p>
+
+<p>1.2  Der Geltung von Geschäftsbedingungen oder abweichenden Gegenbestätigungen des Kunden oder Vertragspartners widersprechen wir. Sie sind für uns nur verbindlich, wenn wir diese abweichenden Bedingungen insgesamt oder im Einzelfall schriftlich anerkannt haben. </p>
+
+
+<h2>2 Zahlungsbedingungen und Preise </h2>
+
+<p>2.1  Unsere Lieferungen und Leistungen erfolgen zu den Preisen, die im schriftlichen Angebot oder in der schriftlichen Auftragsbestätigung von uns genannt sind. Diese Preise verstehen sich bei Warenlieferungen ab Lager, ohne Verpackung und Versandkosten und in allen Fällen gegenüber Gewerbetreibenden im Zweifel zuzüglich der jeweils gültigen gesetzlichen Mehrwertsteuer. </p>
+
+<p>2.2  In besonderen Fällen und soweit dies für den Kunden nicht unzumutbar ist, behalten wir uns das Recht vor, den Preis angemessen zu erhöhen, wenn nach Abschluss des Vertrages Preiserhöhungen unseres Zulieferers oder sonstige, erhebliche und außergewöhnliche Kostensteigerungen erfolgen, die nicht vorhersehbar waren. Im Falle der Unzumutbarkeit, ist der Kunde unter Ausschluss aller sonstigen Ansprüche berechtigt, binnen zwei Wochen nach Zugang der Erhöhungsmitteilung vom Vertrag zurückzutreten. </p>
+
+<p>2.3  Soweit nicht anders vereinbart, sind unsere Forderungen ohne jeden Abzug mit Rechnungsstellung zur Zahlung fällig. </p>
+
+<p>2.4  Im Falle des Zahlungsverzuges und auch in anderen Fällen, die uns zur Geltendmachung von Zinsen berechtigen, sind als Zinssatz fünf Prozent über dem jeweiligen Basiszinssatz der Europäischen Zentralbank zu zahlen, soweit wir keinen höheren Schaden erleiden. Wir sind berechtigt, für die zweite und weitere Mahnung jeweils eine pauschale Mahngebühr in Höhe von 10,-- DM in Rechnung zu stellen. Andere Ansprüche aus dem Rechtsgrund des Verzuges bleiben hiervon unberührt.</p>
+
+<p>2.5  Gegenüber unseren Forderungen ist eine Aufrechnung nur mit unbestrittenen oder rechtskräftig festgestellten Gegenforderungen zulässig. Ein Zurückbehaltungsrecht darf nur hinsichtlich der Gegenleistung ausgeübt werden, die unserer Lieferung oder Leistung gegenübersteht. </p>
+
+<p>2.6 Im Falle des Zahlungsverzuges, der Zahlungseinstellung oder einer sonstigen Vermögens-verschlechterung des Kunden sind wir berechtigt, eventuell gewährte Zahlungsziele zu widerrufen und unsere gesamten Forderungen gegen den Kunden sofort fällig zu stellen, soweit nicht unverzüglich Sicherheit geleistet wird. Wir sind weiter berechtigt, weiter vorgesehene Lieferungen und Leistungen bis zum Rechnungsausgleich auszusetzen, es sei denn der Kunde leistet unverzüglich Sicherheit. Auch ausdrücklich vereinbarte Lieferfristen oder Fertigstellungstermine verlängern sich für uns in jedem Fall um den Zeitraum des Zahlungsverzuges. Die Geltendmachung anderer gesetzlicher Rechte bleibt hiervon unberührt.</p>
+
+
+<h2>3 Lieferzeit, Lieferverzug </h2>
+
+<p>3.1 Vereinbarte Lieferzeiten gelten als eingehalten, wenn die Lieferung versandbereit steht oder zum Versand gegeben bzw. bei Dienstleistungen Erbringungsbereitschaft angezeigt ist. Unterlassene Mitwirkungshandlungen des Kunden schließen jeden Verzug unserer Seite aus. </p>
+
+<p>3.2 Für mögliche Überschreitungen der vereinbarten Lieferzeit oder sonstige Verzögerungen bei Dienstleistungen haften wir nur im Falle grober Fahrlässigkeit oder bei Vorsatz. Soweit Lieferverzögerungen auf die Nichteinhaltung von mit unseren Zulieferern vereinbarten Fristen zurückzuführen sind, sind wir unter Ausschluss jedweden Ersatzanspruches berechtigt, dem Kunden unsere Ansprüche gegen den Zulieferer abzutreten. </p>
+
+<p>3.3 Ein Verzugsschaden ist der Höhe nach auf den bei Vertragsschluss vorhersehbaren und üblicher Weise entstehenden Schaden begrenzt. Ersatzansprüche wegen Folgeschäden sind ausgeschlossen. </p>
+
+
+<h2>4 Mitwirkungshandlungen </h2>
+
+<p>Die Einhaltung unserer vertraglichen Lieferpflichten oder Fertigstellungstermine - sollten diese von der Mitwirkung des Kunden abhängen - setzten voraus, dass diese Mitwirkungshandlungen erbracht sind, und zwar vollständig, fehlerfrei und rechtzeitig. Bei Nichteinhaltung dieser Verpflichtung haften wir für keinerlei Rechtsfolgen. Unsere Liefertermine oder Leistungszeiten verschieben sich entsprechend. Vereinbarte Zahlungstermine werden hierdurch nicht hinausgeschoben. Wir sind in diesem Fall auch berechtigt, eventuellen Mehraufwand zu den üblichen Stunden- und Spesensätzen in Rechnung zu stellen. Wesentliche Abweichungen oder Änderungen des vereinbarten Liefer- oder Leistungsumfanges machen einen Zusatzauftrag erforderlich.</p>
+
+
+<h2>5 Gefahrübergang </h2>
+
+<p>Ein Versand von Waren erfolgt ab Lager. Die Gefahr geht mit der Übergabe an den Transporteur auf den Kunden über. Dies gilt auch dann, wenn Teillieferungen erfolgen und/oder wir weitere Leistungen übernommen haben oder die Lieferung einschließlich Montage erfolgt. In jedem Fall sind wir zu Teillieferungen berechtigt. Für Transportschäden haften wir nicht. </p>
+
+
+<h2>6 Installation </h2>
+
+<p>Ist zur Inbetriebnahme eines Liefergegenstandes eine Installation erforderlich, ist dies nur Gegenstand der Lieferverpflichtung, soweit wir ausdrücklich mit der Installation beauftragt sind. Nehmen wir die Installation auf Wunsch des Kunden vor, ohne ursprünglich hierzu verpflichtet zu sein, erfolgt dies zu den üblichen Stunden- und Spesensätzen. </p>
+
+
+<h2>7 Eigentumsvorbehalt, Vorbehalt des Verwendungs- und Verwertungsrechts</h2>
+
+<p>7.1 Wir behalten uns das Eigentum an der gelieferten Ware und alle urheberrechtlichen oder ähnliche Ansprüche sowie das Verwendungs- oder Verwertungsrecht bei Beratungs- und Leistungsergebnissen bis zum vollständigen Ausgleich aller unserer Forderungen und bis zur Erfüllung aller, auch künftiger (Saldo-)Forderungen vor. Ware, an der dem Verkäufer (Mit-)Eigentum zusteht, steht unter gleichem Vorbehalt. Bei Teilzahlungen geben wir diese Sicherheit auf Verlangen nach unserer Wahl hinsichtlich des Gegenstandes frei, soweit der Gesamtwert der unter diesem Eigentumsvorbehalt oder dem sonstigen Vorbehalt stehenden Waren, Gegenstände oder Dienstleistungsergebnisse die Forderungen um mehr als 20% übersteigt.</p>
+
+<p>7.2 Beim Zugriff Dritter auf Vorbehaltsware oder sonstige Leistungsergebnisse ist der Kunde verpflichtet, unverzüglich auf unser Eigentum bzw. unseren Verwertungsvorbehalt hinzuweisen und uns unter Überlassung aller zur Rechtsverfolgung notwendigen Unterlagen schriftlich hiervon zu benachrichtigen. </p>
+
+<p>7.3 Diese sofortige Unterrichtungspflicht des Kunden besteht auch, wenn die Zwangsverwaltung und/oder Zwangsversteigerung eines Grundstückes droht, auf dem sich der Kaufgegenstand befindet. Ersatz oder Abwehransprüche, welche dem Kunden durch Zugriff Dritter entstehen, werden mit Vertragsschluss in Höhe des Wertes der gelieferten Ware oder erbrachten Dienstleistungen an uns abgetreten, soweit dies gesetzlich zulässig ist. Der Kunde trägt die Kosten für alle Maßnahmen zur Behebung derartiger Eingriffe. </p>
+
+<p>7.4 Im Falle des Zahlungsverzuges ist der Kunde nach Aufforderung durch uns verpflichtet, die Vorbehaltsware oder sonstige Leistungsergebnisse herauszugeben. Die Geltendmachung dieses Herausgabeanspruches und/oder die Inbesitznahme von Vorbehaltsgut gilt nicht als Rücktritt vom Vertrag.</p>
+
+<p>7.5 Der Kunde ist berechtigt, Ware und auch sonstige Arbeitsergebnisse, die unter diesem Eigentumsvorbehalt oder einem Verwendungs- oder Verwertungsvorbehalt stehen, im üblichen Geschäftsverkehr unter Eigentumsvorbehalt weiter zu veräußern, es sei denn, er befindet sich in Zahlungsverzug. Forderungen des Kunden aus dem Weiterverkauf der Vorbehaltsware oder sonstiger Arbeitsergebnisse an Dritte werden mit Vertragsschluss vom Kunden an uns abgetreten. Der Kunde ist widerruflich ermächtigt und verpflichtet, die abgetretene Forderung einzuziehen. Im Falle des Zahlungsverzuges oder wesentlicher sonstiger Vertragsstörungen sind wir berechtigt, diese Abtretung dem Abnehmer des Kunden anzuzeigen und die Forderung selbst einzuziehen. Der Kunde ist verpflichtet, uns mit Eintritt des Verzuges ohne Aufforderung Einzelheiten zur Weiterveräußerung mitzuteilen. Ohne unsere schriftliche Genehmigung ist der Kunde nicht berechtigt, Forderungen aus einem Weiterverkauf der unter unserem Eigentumsvorbehalt oder einem Verwertungsvorbehalt stehenden Ware oder Leistung an Dritte weiter abzutreten oder zu verkaufen (Factoring). </p>
+
+<p>7.6 Befinden sich unter unserem Eigentumsvorbehalt stehende Waren auf Lager des Kunden, ist dieser verpflichtet, diese Waren gesondert zu lagern und zu kennzeichnen. </p>
+
+
+<h2>8 Gewährleistung und Haftung </h2>
+
+<p>8.1 Wir leisten nach Maßgabe der nachfolgenden Bestimmungen und innerhalb der gesetzlichen Gewährleistungsfrist von sechs Monaten die Gewähr dafür, dass die von uns gelieferten Produkte zum Zeitpunkt des Gefahrübergangs frei von Material- oder Fabrikationsfehlern sind. Bei der Lieferung von Software übernehmen wir lediglich die Gewähr für die physikalische Unversehrtheit der Ware, es sei denn, die Erstellung von Software ist ausdrücklich Vertragsgegenstand. Ist die Herstellung von Software Vertragsgegenstand, beträgt die Gewährleistungsfrist sechs Monate ab dem Tage der ersten Installation. Weitere Gewährleistungsansprüche sind ausgeschlossen. Sollten uns aus Selbstbelieferung gegenüber unserem Vorlieferanten weitere Gewährleistungsansprüche zustehen, werden wir diese befreiend ohne Einschränkung an den Kunden abtreten. </p>
+
+<p>8.2 Der Kunde ist verpflichtet, die Ware und sonstige Arbeitsergebnisse unverzüglich zu untersuchen und eventuell vorhandene Mängel unverzüglich schriftlich zu rügen. </p>
+
+<p>8.3 Wir sind berechtigt, vorhandene Mängel nach unserer Wahl nachzubessern oder Ersatz zu liefern. Mehrfache Nachbesserung ist zulässig. Vor jeder Fehlerbeseitigung ist der Kunde verpflichtet, Programme und Daten in üblicher Form zu sichern. Beim Austausch oder der Fehlerbeseitigung an Maschinen, insbesondere Hardware-Produkten, ist der Kunde verpflichtet, Programme, Daten, Datenträger sowie Änderungen und Anbauten zu entnehmen. Soweit erforderlich, ist der Kunde verpflichtet, alle zur Fehlerbeseitigung etwa notwendigen peripheren Anschlüsse aufrechtzuerhalten und zur Verfügung zu stellen. Bleibt eine Nachbesserung auch nach Wiederholung erfolglos, ist der Kunde zur Minderung des Kaufpreises oder zum Rücktritt vom Vertrag berechtigt. Alle sonstigen Ansprüche wegen Mängelgewährleistung, also insbesondere solche wegen Mangelfolgeschäden, sind ausgeschlossen, soweit der Mangel von uns nicht grob fahrlässig oder vorsätzlich herbeigeführt ist oder wir ausdrücklich Zusicherungen gegeben haben, die den Kunden vor derartigen Schäden schützen sollen.</p>
+
+<p>8.4 Unsere Gewährleistung endet in jedem Fall, auch vor Ablauf der Frist wenn der Kunde Produkte unsachgemäß behandelt, verändert oder entgegen den einzelnen Bedienungs- oder Installations-vorschriften installiert, betreibt oder pflegt.</p>
+
+<p>8.5 Ohne ausdrückliche schriftliche Erklärung haften wir nicht für die Verträglichkeit unterschiedlicher EDV- oder Software-Komponenten untereinander, es sei denn, dies ist ausdrücklich Vertrags-gegenstand. In diesem Fall beträgt die Gewährleistungsfrist sechs Monate ab dem Tage der Installation.</p>
+
+
+<h2>9 Ersatzansprüche </h2>
+
+<p>9.1 Schadenersatzansprüche, auch solche aus Verschulden beim Vertragsschluss oder aus Schlecht-erfüllung einschließlich solcher, die nicht an dem Liefergegenstand selbst entstehen, sind ausgeschlossen, soweit uns nicht Vorsatz oder grobe Fahrlässigkeit zur Last fällt oder wir eine besondere Eigenschaft ausdrücklich zugesichert haben. </p>
+
+<p>9.2 Alle Ersatzansprüche sind unverzüglich schriftlich geltend zu machen. </p>
+
+
+<h2>10 Gewerbliche Schutz- und Urheberrechte </h2>
+
+<p>10.1 Sollten bei Ausführung eines Auftrages gewerbliche Schutzrechte, Urheberrechte oder sonstige Rechte Dritter verletzt werden, haften wir hierfür nicht, es sei denn, dass die Rechtsverletzung ausschließlich durch uns grob fahrlässig oder vorsätzlich verursacht und wir ausschließlich und allein die Art der Tätigkeit oder des Liefergegenstandes bestimmt haben. In allen sonstigen Fällen stellt der Kunde uns von allen Ansprüchen Dritter frei. Er ist gleichwohl verpflichtet, uns unverzüglich über eventuell insoweit erhobener Ansprüche in Kenntnis zu setzen. Auch wir sind zur unverzüglichen Information des Kunden aus derartigen Sachverhalten verpflichtet. </p>
+
+<p>10.2 Bei der Lieferung von Software ist der Kunde verpflichtet, sicherzustellen, dass die Verletzung von Urheber- oder sonstigen Schutzrechten Dritter auszuschließen ist. Kopien dürfen nur zu Archivzwecken, als Ersatz oder zur Fehlersuche hergestellt werden. Soweit Originale oder die Software selbst einen Vermerk über Urheberrechte Dritter enthält, ist dieser Vermerk auch auf vom Kunden für eigene Zwecke und im vorgenannten Umfang selbst gefertigten Kopien anzubringen. </p>
+
+
+<h2>11 Allgemeine Bestimmungen, Gerichtsstand </h2>
+
+<p>Änderungen und/oder Ergänzungen dieser Bedingungen müssen schriftlich vereinbart werden, wenn sie rechtswirksam sein sollen. Für Kaufleute ist Frankfurt am Main Erfüllungsort und ausschließlicher Gerichtsstand für alle sich aus dem Vertragsverhältnis unmittelbar oder mittelbar ergebenden Streitigkeiten. Alle vertraglichen Vereinbarungen und hieraus resultierenden Ansprüche oder Verpflichtungen unterliegen dem Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts oder sonstiger Abkommen. Sollte eine oder mehrere Bestimmungen dieser Vereinbarungen oder auch des Individualvertrages unwirksam sein oder werden, soll hiervon die Wirksamkeit des Vertrages im übrigen unberührt bleiben. An Stelle der unwirksamen Bedingung oder auch fehlenden Regelung soll eine Bestimmung treten, die dem wirtschaftlich ursprünglich verfolgten Zweck in zulässiger Weise am nächsten kommt.</p>
+<p>Allgemeine Geschäftsbedingungen der Projektfabrik GmbH</p>
+
+<address>Rev. 10.06.2003</address>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

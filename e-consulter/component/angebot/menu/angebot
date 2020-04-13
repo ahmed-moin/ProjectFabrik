@@ -1,0 +1,27 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ( $_->{aktion} eq 'angebot'
+      || $_->{menu}   eq 'angebot'
+      || $_->{maske}  eq 'angebot')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske  => 'angebot',
+             dlabel => 'Angebot',
+             menu   => 'angebot' },
+           { maske  => 'budget',
+             dlabel => 'Budget',
+             menu   => 'angebot' },
+           @$menu_footer
+         ];
+</%perl>

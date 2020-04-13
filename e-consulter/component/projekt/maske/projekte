@@ -1,0 +1,70 @@
+<%args>
+$dbh
+@menu
+$uid
+$projektid => undef
+</%args>
+<%perl>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my $prj = $dbh->selectall_arrayref ( <<"EOF" );
+   select prj_id, prj_titel, prj_status
+     from projekt, rolle
+    where prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_kunde
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projekte',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+% unless (@$prj) {
+
+  <input type='submit' name='neu' value='Neu' style='width:3cm'>
+
+% } else {
+
+  <table>
+   <tr>
+    <th>
+    </th>
+    <th>
+	<i18n>
+     Projekt
+	</i18n>
+    </th>
+    <th>
+	<i18n>
+     Status
+	</i18n>
+    </th>
+   </tr>
+%   foreach (@$prj) {
+%     my ($prj_id, $prj_titel, $prj_status) = @$_;
+   <tr>
+    <td>
+     <input type='radio' name='projekt' value='<%$prj_id%>'>
+    </td>
+    <td>
+     <%$prj_titel%>
+    </td>
+    <td>
+     <%$prj_status{$prj_status}%>
+    </td>
+   </tr>
+%   }
+  </table>
+
+  <p class='button'>
+    <input type='submit' name='oeffnen' value='<i18n>&Ouml;ffnen</i18n>' style='width:3cm'>
+    <input type='submit' name='neu' value='<i18n>Neu</i18n>' style='width:3cm'>
+    <input type='submit' name='loeschen' value='<i18n>L&ouml;schen</i18n>' style='width:3cm'>
+  </p>
+
+% }
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,116 @@
+<%args>
+$dbh
+$projektid
+$angebot
+$neu => undef
+$sel_ang => undef
+$speichern => undef
+$freigeben => undef
+$freigebenok => undef
+$loeschen => undef
+$text => undef
+$gueltigbis => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Db qw(replace quote);
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    my $datum = Contavia::Date::current;
+    if ($gueltigbis)
+    {
+      $gueltigbis = new Contavia::Date($gueltigbis);
+      fehler "g&uuml;ltig-bis-Datum zu alt"
+        if $gueltigbis->cmp($datum) < 0;
+    }
+    replace ($dbh, 'angebot',
+      { ang_pid    => $projektid,
+        ang_nummer => $angebot },
+      { ang_text   => quote($text),
+        ang_gueltigbis => new Contavia::Date($gueltigbis)->qpgdate },
+      { ang_datum  => Contavia::Date::current->qpgdate } );
+  }
+  elsif ($freigeben)
+  {
+    my $ang_gueltigbis = $dbh->selectrow_array( <<"EOF" );
+      select ang_gueltigbis
+        from angebot
+       where ang_pid = $projektid
+         and ang_nummer = $angebot
+EOF
+    fehler("das Angebot hat kein g&uuml;ltig-bis-Datum") unless $ang_gueltigbis;
+
+    my $bud_betrag = $dbh->selectrow_array( <<"EOF" );
+      select count(bud_betrag)
+        from budget
+       where bud_pid     = $projektid
+         and bud_angebot = $angebot
+EOF
+
+    fehler "Ein Angebot ohne Budget kann nicht freigegeben werden"
+      unless $bud_betrag;
+  }
+  elsif ($freigebenok)
+  {
+    replace ($dbh, 'angebot',
+      { ang_pid      => $projektid,
+        ang_nummer   => $angebot },
+      { ang_text     => quote($text),
+        ang_freigabe => Contavia::Date::current->qpgdate },
+      { ang_datum    => Contavia::Date::current->qpgdate } );
+
+    $dbh->do( <<"EOF" );
+      update projekt
+         set prj_status = 3
+       where prj_id = $projektid
+         and prj_status = 2
+EOF
+  }
+  elsif ($neu)
+  {
+    $ARGS{sel_ang} = $ARGS{angebot} = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(ang_nummer) + 1
+       from angebot
+      where ang_pid = $projektid
+EOF
+  }
+  elsif ($loeschen)
+  {
+    $angebot = $sel_ang unless $angebot;
+    fehler("kein angebot ausgew&auml;hlt") unless $angebot;
+
+    my $ang_auftragsdatum = $dbh->selectrow_array( <<"EOF" );
+     select ang_auftragsdatum
+       from angebot
+      where ang_pid = $projektid
+        and ang_nummer = $angebot
+EOF
+
+    fehler("ein Auftrag kann nicht gel&ouml;scht werden")
+      if ($ang_auftragsdatum);
+
+    $dbh->do( <<"EOF" );
+     delete from budget
+      where bud_pid = $projektid
+        and bud_angebot = $angebot
+EOF
+
+    $dbh->do( <<"EOF" );
+     delete from angebot
+      where ang_pid = $projektid
+        and ang_nummer = $angebot
+EOF
+
+    $ARGS{angebot} = $ARGS{sel_ang} = undef;
+  }
+  elsif ($sel_ang && $sel_ang != $ARGS{angebot} )
+  {
+    $ARGS{angebot} = $sel_ang;
+  }
+
+  $dbh->commit;
+  return \%ARGS;
+</%perl>

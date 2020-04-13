@@ -1,0 +1,92 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$speichern => undef
+$loeschen => undef
+$tpa_taid => undef
+$tpa_titel => undef
+@tpl_tid => ()
+$sel_taid => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    if ($tpa_taid)
+    {
+      # bestehendes aggregierte Teilprojekt aktualisieren
+      $dbh->replace ('teilprojektagg',
+        { tpa_pid => $projektid,
+          tpa_ppl => $projektplan,
+          tpa_taid => $tpa_taid },
+        { tpa_titel => $dbh->quote($tpa_titel) } );
+
+      # zunächst alle Zuordnungen löschen
+      $dbh->do( <<"EOF" );
+       update teilprojektplan
+          set tpl_taid = null
+        where tpl_pid  = $projektid
+          and tpl_ppl  = $projektplan
+          and tpl_taid = $tpa_taid
+EOF
+
+      # ... und ausgewählte wieder eintragen
+      foreach my $tpl_tid (@tpl_tid)
+      {
+        $dbh->update ('teilprojektplan',
+          { tpl_pid  => $projektid,
+            tpl_ppl  => $projektplan,
+            tpl_tid  => $tpl_tid },
+          { tpl_taid => $tpa_taid } );
+      }
+    }
+    else
+    {
+      # neues aggregierte Teilprojekt anlegen
+      $tpa_taid = $dbh->selectrow_array( <<"EOF" ) || 1;
+        select max(tpa_taid) + 1
+          from teilprojektagg
+         where tpa_pid = $projektid
+           and tpa_ppl = $projektplan
+EOF
+
+      $dbh->insert ('teilprojektagg',
+        { tpa_pid   => $projektid,
+          tpa_ppl   => $projektplan,
+          tpa_taid  => $tpa_taid,
+          tpa_titel => $dbh->quote($tpa_titel) } );
+
+      $ARGS{sel_taid} = $tpa_taid;
+    }
+
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    $tpa_taid = $sel_taid unless $tpa_taid;
+    fehler ("kein aggregiertes Teilprojekt ausgewählt") unless $tpa_taid;
+
+    $dbh->do( <<"EOF" );
+     update teilprojektplan
+        set tpl_taid = null
+      where tpl_pid  = $projektid
+        and tpl_ppl  = $projektplan
+        and tpl_taid = $tpa_taid
+EOF
+
+    $dbh->do( <<"EOF" );
+     delete from teilprojektagg
+      where tpa_pid = $projektid
+        and tpa_ppl = $projektplan
+        and tpa_taid = $tpa_taid
+EOF
+
+    $dbh->commit;
+  }
+
+  return \%ARGS;
+
+</%perl>

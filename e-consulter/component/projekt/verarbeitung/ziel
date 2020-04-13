@@ -1,0 +1,68 @@
+<%args>
+$dbh
+$projektid
+$prj_ziel => undef
+$prj_ziel_text => undef
+$prj_ziel_text_neu => undef
+$prj_ziel_value_neu => undef
+$prj_start => undef
+$prj_ende => undef
+</%args>
+<%once>
+  my $sth_delprjziel;
+</%once>
+<%perl>
+
+die "<fehler><i18n>Ein benutzerdefiniertes Ziel wird nur gespeichert, wenn eine Wertung eingegeben wird</i18n></fehler>"
+    if ($prj_ziel_text_neu && !$prj_ziel_value_neu);
+
+$sth_delprjziel = $dbh->prepare( <<"EOF" ) unless $sth_delprjziel;
+  delete from prjziel
+   where prj_id   = ?
+     and prj_ziel = ?
+EOF
+
+use Contavia::Db qw(insert update replace quote);
+use Contavia::Date;
+
+$prj_start = new Contavia::Date($prj_start);
+$prj_ende  = new Contavia::Date($prj_ende);
+
+update( $dbh, 'projekt',
+  { prj_id    => $projektid },
+  { prj_ziel  => quote($prj_ziel),
+    prj_start => $prj_start->qpgdate(),
+    prj_ende  => $prj_ende->qpgdate() } );
+
+if ($prj_ziel_text)
+{
+  $prj_ziel_text = [$prj_ziel_text] unless ref($prj_ziel_text);
+  my $zeile = 0;
+  foreach (@$prj_ziel_text)
+  {
+    my $value = $ARGS{"prj_ziel_value_$zeile"};
+    if ($value > 0)
+    {
+      replace( $dbh, 'prjziel',
+        { prj_id     => $projektid,
+          prj_ziel   => quote($_) },
+        { prj_zielreihenfolge => $value } );
+    }
+    else
+    {
+      $sth_delprjziel->execute($projektid, $_);
+    }
+    ++$zeile;
+  }
+
+}
+
+insert( $dbh, 'prjziel',
+  { prj_id     => $projektid,
+    prj_ziel   => quote($prj_ziel_text_neu),
+    prj_zielreihenfolge => $prj_ziel_value_neu } ) if $prj_ziel_value_neu;
+
+
+$dbh->commit;
+
+</%perl>

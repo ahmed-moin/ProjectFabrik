@@ -1,0 +1,11 @@
+<%once>
+  my $tpr_status = {
+    1  => 'geplant',
+    2  => 'in arbeit',
+    3  => 'erledigt',
+    -1 => 'zurückgestellt',
+  };
+</%once>
+<%perl>
+  return $tpr_status;
+</%perl>

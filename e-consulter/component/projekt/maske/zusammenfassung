@@ -1,0 +1,13 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+
+ <& '/masketitel', titel => '<i18n>Zusammenfassung</i18n>',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <& '/zusammenfassung', dbh => $dbh, projektid => $projektid &>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

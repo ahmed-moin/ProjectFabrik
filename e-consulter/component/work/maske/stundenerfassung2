@@ -1,0 +1,234 @@
+<%args>
+$dbh
+$projektid
+$uid
+$sel_nummer => undef
+$datum => undef
+</%args>
+<%once>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+  my $sth_tae;
+
+</%once>
+<%perl>
+
+  $datum = $datum ? new Contavia::Date($datum) : Contavia::Date::current;
+  $datum->tag(1);
+  my $endedatum = $datum->naechster_monat->voriger_tag;
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+   select atr_nummer, atr_tid, tpr_titel, atr_aid, auf_name,
+          atr_tagessatz, atr_personentage, atr_status
+     from auftrag, teilprojekt, aufgabe
+    where atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+      and atr_status <= 5
+      and tpr_pid = atr_pid
+      and tpr_tid = atr_tid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+    order by atr_nummer
+EOF
+
+  my $atr_personentage = $dbh->selectrow_array( <<"EOF" ) if $sel_nummer;
+   select atr_personentage
+     from auftrag
+    where atr_nummer = $sel_nummer
+EOF
+
+  my $tae_stunden = $dbh->selectrow_array( <<"EOF" ) if $sel_nummer;
+   select sum(tae_stunden)
+     from taetigkeit
+    where tae_auftrag = $sel_nummer;
+EOF
+
+#  my $sth_tae = $dbh->prepare( <<"EOF" ) unless $sth_tae;
+#   select tae_auftrag, tae_
+#    where atr_nummer = ?
+#EOF
+
+  my $tae = $dbh->selectall_arrayref( <<"EOF", {}, $datum->qpgdate, $endedatum->qpgdate );
+   select tae_auftrag, tae_datum, tae_lfdnr, tae_freigabedatum,
+          tae_stunden, tae_beschreibung
+     from taetigkeit, auftrag
+    where tae_datum_bis is null
+      and tae_datum between ? and ?
+      and atr_nummer = tae_auftrag
+      and atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+    order by tae_datum, tae_auftrag, tae_lfdnr
+EOF
+
+  my $current = Contavia::Date::current;
+  my $startdatum = new Contavia::Date($dbh->selectrow_array( <<"EOF" ));
+   select min(apl_startdatum)
+     from aufgabenplan, auftrag
+    where atr_uid = '$uid'
+      and apl_pid = atr_pid
+      and apl_tid = atr_tid
+      and apl_aid = atr_aid
+EOF
+  $startdatum->tag(1);
+
+</%perl>
+
+<table>
+ <tr>
+  <td>
+   <& '/masketitel', titel => '<i18n>Stundenerfassung</i18n>' &>
+  </td>
+  <td>
+   <select name='datum' onChange='document.forms[0].submit()'>
+    <option>
+%   for (my $d = $startdatum; $d->cmp($current) <= 0; $d = $d->naechster_monat) {
+    <option value='<%$d->cgiformat%>'
+     <%$d->cmp($datum) == 0 && ' selected'%>> <%$d->monat%>/<%$d->jahr%>
+%   }
+   </select>
+  </td>
+ </tr>
+</table>
+
+<table border='1'>
+ <tr>
+  <th>
+	<i18n>
+   Nr
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Aufgabe
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   PT Auftrag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   PT ist
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   PT Monat
+	</i18n>
+  </th>
+ </tr>
+
+% foreach (@$atr) {
+%   my ($atr_nummer, $atr_tid, $tpr_titel, $atr_aid, $auf_name,
+%       $atr_tagessatz, $atr_personentage, $atr_status) = @$_;
+ <tr>
+  <td>
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td>
+   <%$atr_personentage%>
+  </td>
+ </tr>
+% }
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <td>
+  </td>
+  <th>
+	<i18n>
+   Tag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Stunden
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+ </tr>
+
+% foreach (@$tae) {
+%   my ($tae_auftrag, $tae_datum, $tae_lfdnr, $tae_freigabedatum,
+%       $tae_stunden, $tae_beschreibung) = @$_;
+ <tr>
+  <td>
+% unless ($tae_freigabedatum) {
+   <input type='radio' name='pos'>
+% }
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($tae_datum)->tag%>
+  </td>
+  <td align='right'>
+   <%formatnumber($tae_stunden, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%$tae_auftrag%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+ </tr>
+
+% } # foreach
+ <tr>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='tag' size='2'>
+   <& '/setfocus', name => 'tag' &>
+  </td>
+  <td>
+   <input type='text' name='stunden' size='4'>
+  </td>
+  <td>
+   <select name='auftrag'>
+    <option>
+% foreach (@$atr) {
+%   my ($atr_nummer, $atr_tid, $tpr_titel, $atr_aid, $auf_name) = @$_;
+    <option value='<%$atr_nummer%>'<%$atr_nummer == $sel_nummer && ' selected'%>>
+      <%$atr_nummer%>
+% }
+   </select>
+  </td>
+  <td>
+   <input type='text' name='beschreibung' size='40'>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+% if ($sel_nummer) {
+ <input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+ <input type='submit' name='freigeben' value='<i18n>Speichern und Freigeben</i18n>'>
+% }
+ <input type='submit' name='bearbeiten' value='<i18n>Bearbeiten</i18n>'>
+</p>

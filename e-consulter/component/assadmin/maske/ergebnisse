@@ -1,0 +1,49 @@
+<%args>
+$dbh
+$ass_uid => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  my $count = $dbh->selectrow_array( "
+    select count(*)
+      from  assfrage" );
+
+  my $ant = $dbh->selectall_arrayref( "
+    select ant_uid, count(*)
+      from assantwort
+     where ant_antwort is not null
+     group by ant_uid
+     having count(*) = $count" );
+
+</%perl>
+
+<h1>Ergebnisse</h1>
+
+<& '/select', name => 'ass_uid',
+              values => [ map { [$_->[0], $_->[0]] } @$ant ],
+              selected => $ass_uid &>
+
+% if ($ass_uid) {
+
+<br>
+
+<& '/assergebnis', dbh => $dbh, uid => $ass_uid &>
+
+%   if ($loeschen) {
+
+<b>Sollen die Ergebnisse für User <%$ass_uid%> wirklich gelöscht werden?</b>
+
+<p class='button'>
+ <input type='submit' name='loeschen_ok' value='wirklich Löschen'>
+</p>
+
+%   } else {
+
+<p class='button'>
+ <input type='submit' name='loeschen' value='Löschen'>
+</p>
+
+%   }
+
+% }

@@ -1,0 +1,7 @@
+<%args>
+@werte1
+@werte2
+</%args>
+% my $werte1 = join('&', @werte1);
+% my $werte2 = join('&', @werte2);
+<img src='/cgi-bin/asschart?<%$werte1%>&<%$werte2%>'>

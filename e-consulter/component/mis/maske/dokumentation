@@ -1,0 +1,17 @@
+<%args>
+$dbh
+$uid
+$projektid
+$sessid
+$folder => 0
+$uplink => 0
+</%args>
+
+%#<h1>Projektdokumentation</h1>
+
+<& '/doku/maske/projekt', dbh       => $dbh,
+                     uid       => $uid,
+                     projektid => $projektid,
+                     sessid    => $sessid,
+                     folder    => $folder,
+                     uplink    => $uplink &>

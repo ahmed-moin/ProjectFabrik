@@ -1,0 +1,44 @@
+<%args>
+$dbh
+$freischalten => undef
+$requid => undef
+$userid => undef
+</%args>
+<%once>
+
+  sub gen_password
+  {
+    my $ord_a = ord('a');
+
+    return chr( $ord_a + int(rand(26)))
+         . chr( $ord_a + int(rand(26)))
+         . sprintf("%03d", int(rand(1000)));
+  }
+
+</%once>
+<%perl>
+
+  if ($freischalten)
+  {
+    my $password = gen_password;
+
+    $requid = $requid->[0] if ref($requid);
+
+    my $count = $dbh->do( "
+     update benutzer
+        set ben_password = '$password'
+      where ben_uid = '$userid'
+        and ben_reqid = '$requid'
+        and ben_password is null" );
+
+    die "<fehler>ungültige Freischaltung für Benutzer $userid Request-ID $requid ($count)</fehler>"
+      if ($count == 0);
+
+    $ARGS{folgemaske} = 'sendpw';
+    $ARGS{password} = $password;
+
+    $dbh->commit;
+    return \%ARGS;
+  }
+
+</%perl>

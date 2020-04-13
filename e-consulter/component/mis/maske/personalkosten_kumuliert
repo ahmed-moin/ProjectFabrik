@@ -1,0 +1,12 @@
+<%args>
+$waehrung
+</%args>
+
+<h1><i18n>Personalkosten</i18n> - <%$waehrung%></h1>
+
+<& 'budgetaufwand_kumuliert', %ARGS,
+                              art    => 1,
+                              color1 => [0, 0, 128],
+                              color2 => [0, 128, 0],
+                              label1 => 'Budget',
+                              label2 => 'Ist', &>

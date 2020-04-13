@@ -1,0 +1,17 @@
+<%args>
+$dbh
+$projektid
+$suchen => undef
+</%args>
+
+<& '/masketitel', titel => 'Personalsuche' &>
+
+% if ($suchen) {
+
+  <& 'personalsuche_suche', %ARGS &>
+
+% } else {
+
+  <& 'personalsuche_maske', dbh => $dbh, projektid => $projektid &>
+
+% }

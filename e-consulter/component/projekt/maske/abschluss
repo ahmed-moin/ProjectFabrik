@@ -1,0 +1,21 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+
+ <& '/masketitel', titel => '<i18n>Abschluss</i18n>',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <h3><i18n>Das ist Ihre Projektanforderung:</i18n></h3>
+
+ <& '/zusammenfassung', dbh => $dbh, projektid => $projektid &>
+
+ <p><i18n>Vielen Dank f&uuml;r Ihr Vertrauen. Bitte pr&uuml;fen Sie Ihre gemachten Angaben. Wenn Sie Ihre Angaben senden, werden wir Ihr Projekt unsererseits prüfen und uns mit Ihnen in Verbindung setzen.</i18n> </p>
+
+ <p class='button'>
+ <input type='submit' name='absenden' value='<i18n>Absenden</i18n>'>
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

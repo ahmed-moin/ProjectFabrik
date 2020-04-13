@@ -1,0 +1,120 @@
+<%args>
+$dbh
+$uid
+$projektid
+$speichern => undef
+$datum => undef
+$atr_nummer => undef
+$tae_pt => undef
+$tae_beschreibung => undef
+$sel_nummer => undef
+$freigeben => undef
+$allesfreigeben => undef
+$abr_realisierung => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(replace quote);
+  use Contavia::Date;
+
+  if ($speichern || $freigeben)
+  {
+    fehler('<i18n>Realisierungsgrad muﬂ zwischen 0 und 100% liegen</i18n>')
+      if (defined($abr_realisierung)
+          && ($abr_realisierung < 0 || $abr_realisierung > 100));
+
+    $datum = new Contavia::Date($datum);
+    my $datum_bis = $datum->naechster_monat->voriger_tag;
+
+    $tae_pt =~ s/,/\./ if ($ARGS{lang} eq 'de');
+
+    # lˆsche alle T‰tigkeiten diesen Monats, die noch nicht freigegeben wurden
+    $dbh->do( "
+      delete from taetigkeit
+       where tae_auftrag = $atr_nummer
+         and tae_datum between ? and ?
+         and tae_freigabedatum is null", {},
+           $datum->qpgdate, $datum_bis->qpgdate );
+
+    # ermittele, wieviel Personentage jetzt noch ¸brig sind und ziehe diese
+    # von den erfassten Stunden ab
+    $tae_pt -= $dbh->selectrow_array( "
+      select sum(tae_stunden) / 8
+        from taetigkeit
+       where tae_auftrag = $atr_nummer
+         and tae_datum between ? and ?", {},
+           $datum->qpgdate, $datum_bis->qpgdate );
+
+    # ermittele freie laufende Nummer
+    my $tae_lfdnr = $dbh->selectrow_array("
+      select max(tae_lfdnr) + 1
+        from taetigkeit
+       where tae_auftrag = $atr_nummer") || 1;
+
+    # schreibe erfaﬂte Personentage
+    $dbh->insert ('taetigkeit',
+      { tae_uid           => quote($uid),
+        tae_datum         => $datum->qpgdate,
+        tae_lfdnr         => $tae_lfdnr,
+        tae_datum_bis     => $datum_bis->qpgdate,
+        tae_auftrag       => $atr_nummer,
+        tae_stunden       => $tae_pt * 8,
+        tae_beschreibung  => quote($tae_beschreibung),
+        tae_erfasst       => Contavia::Date::current->qpgdate,
+        tae_freigabedatum => $freigeben && Contavia::Date::current->qpgdate } )
+          if ($tae_pt || $tae_beschreibung);
+
+    replace ($dbh, 'auftragbericht',
+      { abr_nummer       => $atr_nummer,
+        abr_datum        => $datum->qpgdate },
+      { abr_realisierung => $abr_realisierung },
+      { abr_text         => '\'\'' } )             if $abr_realisierung;
+
+    if ($abr_realisierung == 100)
+    {
+      my $s = $dbh->selectrow_array( "
+        select sum(tae_stunden)
+          from taetigkeit
+         where tae_auftrag = $atr_nummer
+           and tae_freigabedatum is not null" );
+
+      $dbh->update('auftrag',
+        { atr_nummer => $atr_nummer },
+        { atr_status => 6 } ) if $s == 0;
+    }
+
+    $ARGS{sel_nummer} = $dbh->selectrow_array( <<"EOF" ) unless $sel_nummer;
+     select min(atr_nummer)
+       from auftrag
+      where atr_pid    = $projektid
+        and atr_freigabe is not null
+        and atr_uid    = '$uid'
+        and atr_nummer > $atr_nummer
+EOF
+
+    $dbh->commit;
+  }
+  elsif ($allesfreigeben)
+  {
+    my $current = Contavia::Date::current;
+    $datum = new Contavia::Date($datum);
+    $datum->tag(1);
+    my $datum_bis = $datum->naechster_monat->voriger_tag;
+
+    $dbh->do( <<"EOF", {}, $current->qpgdate, $datum->qpgdate, $datum_bis->qpgdate );
+     update taetigkeit
+        set tae_freigabedatum = ?
+      where tae_auftrag in (
+         select atr_nummer
+           from auftrag
+          where atr_uid = '$uid')
+        and tae_datum between ? and ?
+EOF
+    $dbh->commit;
+  }
+
+  $ARGS{atr_nummer} = $ARGS{sel_nummer} if $ARGS{sel_nummer};
+
+  return \%ARGS;
+
+</%perl>

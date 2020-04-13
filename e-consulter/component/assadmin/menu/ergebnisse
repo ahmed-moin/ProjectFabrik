@@ -1,0 +1,17 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'ergebnisse',
+             dlabel   => 'einzeln',
+             menu     => 'ergebnisse' },
+           { maske    => 'ergebnisse_tab',
+             dlabel   => 'Tabelle',
+             menu     => 'ergebnisse' },
+           @$menu_footer
+         ];
+
+</%perl>

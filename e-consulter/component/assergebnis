@@ -1,0 +1,75 @@
+<%args>
+$dbh
+$uid
+</%args>
+<%perl>
+
+  my (%auswert, %stdauswert);
+
+  my $auswert = $dbh->selectall_arrayref( "
+  select akt_kid, akt_name, fra_positiv, ant_antwort
+    from assantwort, assfrage, asskategorie
+   where akt_kid = fra_kid
+     and fra_fid = ant_fid
+     and ant_uid = '$uid'" );
+
+  foreach (@$auswert)
+  {
+    my ($akt_kid, $akt_name, $fra_positiv, $ant_antwort) = @$_;
+    $auswert{$akt_kid} = { name  => $akt_name,
+                           sum   => 0,
+                           count => 0 } unless $auswert{$akt_kid};
+    $auswert{$akt_kid}->{sum} += $fra_positiv ? $ant_antwort : 10-$ant_antwort;
+    $auswert{$akt_kid}->{count}++;
+  }
+
+  my $anrede = $dbh->selectrow_array( "
+   select ben_anrede
+     from benutzer
+    where ben_uid = '$uid'");
+
+  %stdauswert = $anrede =~ /frau/i ?
+    ( s => 49.75,
+      r => 58.4,
+      v => 63.25,
+      b => 68.4,
+      g => 68.96552 )
+    :
+    ( s => 41.5,
+      r => 59.7,
+      v => 64,
+      b => 71.4,
+      g => 66.25 );
+
+  my (@werte1, @werte2);
+  foreach (qw(s r v b g))
+  {
+    push @werte1, $auswert{$_}->{sum} / $auswert{$_}->{count} * 10;
+    push @werte2, $stdauswert{$_};
+  }
+</%perl>
+
+<& '/asschart', werte1 => \@werte1, werte2 => \@werte2 &>
+
+<br>
+<br>
+<br>
+
+<table>
+ <tr>
+  <td>
+   <img src='/images/asslegende1.png'>
+  </td>
+  <td>
+   Ihr Ergebnis
+  </td>
+ </tr>
+ <tr>
+  <td>
+   <img src='/images/asslegende2.png'>
+  </td>
+  <td>
+   Referenz
+  </td>
+ </tr>
+</table>

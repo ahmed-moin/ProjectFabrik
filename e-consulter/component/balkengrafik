@@ -1,0 +1,143 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$werte1
+$werte2
+$color1
+$color2
+$unit
+$lang => ''
+</%args>
+<%perl>
+
+  use Contavia::Db qw(select_hash);
+
+  $projektplan = $m->comp('/get_projektplan', %ARGS) unless $projektplan;
+
+  # lese alle Teilprojekte
+  my %tpr = select_hash( $dbh, <<"EOF" );
+    select tpr_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan
+EOF
+
+  $m->comp( '/aggregiere', dbh => $dbh,
+        projektid   => $projektid,
+        projektplan => $projektplan,
+        tpr         => \%tpr,
+        werte       => [$werte1, $werte2] );
+
+  my ($max, $sum1, $sum2) = (0, 0, 0);
+
+  foreach my $tid (keys(%tpr))
+  {
+    next unless $tpr{$tid};
+    $max = $werte1->{$tid} if $werte1->{$tid} > $max;
+    $max = $werte2->{$tid} if $werte2->{$tid} > $max;
+    $sum1 += $werte1->{$tid};
+    $sum2 += $werte2->{$tid};
+  }
+
+  my $maxsum = $sum1 > $sum2 ? $sum1 : $sum2;
+
+  $max    = 10 if $max < 10;
+  $maxsum = 10 if $maxsum < 10;
+
+  # Die Maximalwerte werden nur für die Skalierung benötigt. Daher
+  # können wir diese ein wenig korrigieren, damit die Balken ein wenig
+  # schöner werden.
+  $max    *= 0.9;
+  $maxsum *= 0.9;
+
+  my $scale = $m->comp('/hscale',
+                       output => 0,
+                       maxvalue => $max,
+                       width => 300);
+
+</%perl>
+
+<table>
+ <tr>
+  <th class='label'>
+   <%$lang eq 'en' ? 'Subprojects' : 'Teilprojekte' %>
+  </th>
+ </tr>
+
+ <%perl>
+  foreach my $tid (keys %tpr) {
+    my $titel = $tpr{$tid};
+    next unless $titel;
+    my $wert1 = $werte1->{$tid} || 0;
+    my $wert2 = $werte2->{$tid} || 0;
+ </%perl>
+ <tr>
+  <td class='klein'> <%$titel%> </td>
+  <td class='klein'>
+   <%perl>
+    my $width1 = $wert1 * $scale;
+    $width1 = $width1 > 0 && $width1 < 1 ? 1 : int($width1);
+    my $width2 = $wert2 * $scale;
+    $width2 = $width2 > 0 && $width2 < 1 ? 1 : int($width2);
+
+    $m->comp('/bar2', width1 => $width1,
+                      width2 => $width2,
+                      height => 10,
+                      color1 => $color1,
+                      color2 => $color2,
+                      alt    => "$wert1/$wert2");
+   </%perl>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => $max, width => 300, unit => $unit &>
+  </td>
+ </tr>
+
+ <%perl>
+  $scale = $m->comp('/hscale',
+                    output => 0,
+                    maxvalue => $maxsum,
+                    width => 300);
+ </%perl>
+
+ <tr>
+  <th class='ksumme'>
+   <%$lang eq 'en' ? 'Total' : 'Gesamt' %>
+  </th>
+ </tr>
+ <tr>
+  <td>
+   
+  </td>
+  <td>
+   <%perl>
+    my $width1 = int($sum1 * $scale) || 0;
+    my $width2 = int($sum2 * $scale) || 0;
+    $m->comp('/bar2', width1 => $width1,
+                      width2 => $width2,
+                      height => 10,
+                      color1 => $color1,
+                      color2 => $color2,
+                      alt => "$sum1/$sum2");
+   </%perl>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => $maxsum, width => 300, unit => $unit &>
+  </td>
+ </tr>
+</table>
+

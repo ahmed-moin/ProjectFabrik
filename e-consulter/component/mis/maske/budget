@@ -1,0 +1,414 @@
+<%once>
+  use Contavia::Date;
+</%once>
+%# --------------------------------------------------------------------------
+%#  Kosten
+%# --------------------------------------------------------------------------
+
+<%method kosten_gesamt>
+ <%args>
+  $projektid
+  $dbh
+  $stand
+ </%args>
+ <%perl>
+
+  my %kos;
+  $stand = new Contavia::Date($stand);
+  $stand->tag(1);
+  my $endedatum  = $stand->naechster_monat->voriger_tag->qpgdate;
+
+  # lese Arbeitskosten zu den Teilprojekten
+  my $sth_kos = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(tae_stunden * atr_btagessatz / 8)
+      from taetigkeit, auftrag
+     where tae_auftrag = atr_nummer
+       and atr_pid     = $projektid
+       and tae_geprueft is not null
+       and tae_datum  <= $endedatum
+     group by atr_tid
+EOF
+  $sth_kos->execute();
+  while (my $row = $sth_kos->fetch)
+  {
+    $kos{$row->[0]} = $row->[1];
+  }
+
+  # lese sonstige Kosten
+  my $sth_kos2 = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(kos_bbetrag)
+      from kosten
+             join auftrag
+               on kos_auftrag = atr_nummer
+     where atr_pid = $projektid
+       and kos_datum <= $endedatum
+       and kos_geprueft is not null
+     group by atr_tid
+EOF
+  $sth_kos2->execute();
+  while (my $row = $sth_kos2->fetch)
+  {
+    $kos{$row->[0]} += $row->[1];
+  }
+
+  return %kos;
+ </%perl>
+</%method>
+
+<%method kosten_bereich>
+ <%args>
+  $projektid
+  $dbh
+  $stand
+  $startdatum
+  $endedatum
+ </%args>
+ <%perl>
+  my %kos;
+
+  $stand = new Contavia::Date($stand);
+
+  # lese Arbeitskosten zu den Teilprojekten
+  my $sth_kos = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(tae_stunden * atr_btagessatz / 8)
+      from taetigkeit, auftrag
+     where tae_auftrag = atr_nummer
+       and atr_pid     = $projektid
+       and tae_geprueft is not null
+       and tae_datum between $startdatum and $endedatum
+     group by atr_tid
+EOF
+  $sth_kos->execute();
+  while (my $row = $sth_kos->fetch)
+  {
+    $kos{$row->[0]} = $row->[1];
+  }
+
+  # lese sonstige Kosten
+  my $sth_kos2 = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(kos_bbetrag)
+      from kosten
+             join auftrag
+               on kos_auftrag = atr_nummer
+     where atr_pid = $projektid
+       and kos_datum between $startdatum and $endedatum
+       and kos_geprueft is not null
+     group by atr_tid
+EOF
+  $sth_kos2->execute();
+  while (my $row = $sth_kos2->fetch)
+  {
+    $kos{$row->[0]} += $row->[1];
+  }
+
+  return %kos;
+ </%perl>
+</%method>
+
+<%method kosten_monat>
+ <%args>
+  $projektid
+  $dbh
+  $stand
+ </%args>
+ <%perl>
+  my $self = $m->current_comp;
+  my %kos;
+
+  $stand = new Contavia::Date($stand);
+  $stand->tag(1);
+  my $startdatum = $stand->qpgdate;
+  my $endedatum  = $stand->naechster_monat->voriger_tag->qpgdate;
+
+  # lese Arbeitskosten zu den Teilprojekten
+  my $sth_tae = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(tae_stunden * atr_btagessatz / 8)
+      from taetigkeit, auftrag
+     where tae_auftrag = atr_nummer
+       and atr_pid     = $projektid
+       and tae_geprueft is not null
+       and tae_datum between $startdatum and $endedatum
+     group by atr_tid
+EOF
+  $sth_tae->execute();
+  while (my $row = $sth_tae->fetch)
+  {
+    $kos{$row->[0]} = $row->[1];
+  }
+
+  # lese sonstige Kosten
+  my $sth_kos2 = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(kos_bbetrag)
+      from kosten
+             join auftrag
+               on kos_auftrag = atr_nummer
+     where atr_pid = $projektid
+       and kos_datum between $startdatum and $endedatum
+       and kos_geprueft is not null
+     group by atr_tid
+EOF
+  $sth_kos2->execute();
+  while (my $row = $sth_kos2->fetch)
+  {
+    $kos{$row->[0]} += $row->[1];
+  }
+
+  return %kos;
+ </%perl>
+</%method>
+
+%# --------------------------------------------------------------------------
+%#  Budget
+%# --------------------------------------------------------------------------
+
+<%method budget>
+ <%args>
+  $projektid
+  $dbh
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bud_tid, sum(bud_betrag)
+    from budget, projektplan
+   where bud_pid = $projektid
+
+     and bud_pid     = ppl_pid
+     and bud_ppl     = ppl_nummer
+
+     and ppl_auftrag is not null
+     and ppl_auftrag = (select min(ppl_auftrag)
+        from projektplan
+       where ppl_pid = bud_pid
+         and ppl_auftrag is not null)
+   group by bud_tid
+EOF
+
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+
+ </%perl>
+</%method>
+
+<%method budget_review>
+ <%args>
+  $projektid
+  $dbh
+  $stand
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  my $datum = new Contavia::Date($stand)->qpgdate;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bud_tid, sum(bud_betrag)
+    from budget, projektplan
+   where bud_pid     = $projektid
+     and ppl_pid     = bud_pid
+     and ppl_nummer  = bud_ppl
+     and ppl_auftrag <= $datum
+   group by bud_tid
+EOF
+
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+
+ </%perl>
+</%method>
+
+<%method budget_review_n>
+ <%args>
+  $projektid
+  $dbh
+  $stand
+ </%args>
+ <%perl>
+
+  my $datum = new Contavia::Date($stand)->qpgdate;
+
+  # lese anzahl der Aufträge bis zum Berichtsdatum
+  my $n = $dbh->selectrow_array(<<"EOF");
+  select count(*)
+    from projektplan
+   where ppl_pid = $projektid
+     and ppl_auftrag <= $datum
+EOF
+
+  return $n - 1;
+
+ </%perl>
+</%method>
+
+<%method budget_gesamt>
+ <%args>
+  $projektid
+  $projektplan
+  $dbh
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bpl_tid, sum(bpl_betrag)
+    from budgetplan
+   where bpl_pid = $projektid
+     and bpl_ppl = $projektplan
+   group by bpl_tid
+EOF
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+
+ </%perl>
+</%method>
+
+<%method budget_kumuliert>
+ <%args>
+  $dbh
+  $projektid
+  $projektplan
+  $stand
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  $stand = new Contavia::Date($stand);
+  $stand->tag(1);
+  my $endedatum  = $stand->naechster_monat->voriger_tag->qpgdate;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bpl_tid, sum(bpl_betrag)
+    from budgetplan
+   where bpl_pid = $projektid
+     and bpl_ppl = $projektplan
+     and bpl_datum <= $endedatum
+   group by bpl_tid
+EOF
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+
+ </%perl>
+</%method>
+
+<%method budget_bereich>
+ <%args>
+  $projektid
+  $projektplan
+  $dbh
+  $startdatum
+  $endedatum
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bpl_tid, sum(bpl_personentage * atr_btagessatz / 8)
+    from budgetplan
+   where bpl_pid = $projektid
+     and bpl_ppl = $projektplan
+     and bpl_datum between $startdatum and $endedatum
+   group by bpl_tid
+EOF
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+
+ </%perl>
+</%method>
+
+<%method budget_monat>
+ <%args>
+  $projektid
+  $projektplan
+  $dbh
+  $stand
+ </%args>
+ <%perl>
+
+  my %budget;
+
+  $stand = new Contavia::Date($stand);
+  $stand->tag(1);
+  my $startdatum = $stand->qpgdate;
+  my $endedatum  = $stand->naechster_monat->voriger_tag->qpgdate;
+
+  # lese Geldbudget zu den Teilprojekten
+  my $sth_bud = $dbh->prepare(<<"EOF");
+  select bpl_tid, sum(bpl_betrag)
+    from budgetplan
+   where bpl_pid = $projektid
+     and bpl_ppl = $projektplan
+     and bpl_datum between $startdatum and $endedatum
+   group by bpl_tid
+EOF
+  $sth_bud->execute();
+  while (my $row = $sth_bud->fetch)
+  {
+    $budget{$row->[0]} = $row->[1];
+  }
+
+  return %budget;
+ </%perl>
+</%method>
+
+<%method legende>
+ <%args>
+  $lang => ''
+ </%args>
+ <table>
+  <tr>
+   <td>
+	<i18n>
+    Budget-review
+	</i18n>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [0, 0, 128] &>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+    <%$lang eq 'en' ? 'actual state' : 'Ist'%>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [0, 192, 0] &>
+   </td>
+  </tr>
+ </table>
+</%method>

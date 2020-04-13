@@ -1,0 +1,45 @@
+<%args>
+$dbh
+$projektid => undef
+$speichern => undef
+$ben_uid => undef
+$waehrung => undef
+$prj_kurztitel => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler 'kein Benutzer ausgewählt' unless $ben_uid;
+    fehler 'kein Kurztitel angegeben' unless $prj_kurztitel;
+
+    my $k = $dbh->selectrow_array( "
+      select count(*)
+        from projekt
+       where prj_id <> $projektid
+         and prj_kurztitel = ?", {}, $prj_kurztitel );
+
+    fehler 'Kurztitel bereits vergeben' if $k;
+
+    $dbh->update('projekt',
+      { prj_id        => $projektid },
+      { prj_waehrung  => $dbh->quote($waehrung),
+        prj_kurztitel => $dbh->quote($prj_kurztitel) } );
+
+    $dbh->replace('rolle',
+      { rol_uid         => $dbh->quote($ben_uid),
+        rol_pid         => $projektid },
+      { rol_rolid       => 0,
+        rol_admin       => $dbh->quote('t') },
+      { rol_kunde       => $dbh->quote('f'),
+        rol_mitarbeiter => $dbh->quote('f') } );
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'projekte';
+    return \%ARGS;
+  }
+
+</%perl>

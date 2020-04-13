@@ -1,0 +1,105 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+$bearbeiten => undef
+$speichern => undef
+$loeschen => undef
+$loeschen_ok => undef
+
+$atr_nummer => undef
+$sel_nummer => undef
+$atr_uid => undef
+$atr_tagessatz => 0
+$atr_btagessatz => 0
+$atr_personentage => 0
+$atr_sachkosten => 0
+$atr_investition => 0
+</%args>
+<%once>
+
+  use Contavia qw(fehler);
+  use Contavia::Db qw(update insert quote);
+  use Contavia::Date;
+
+</%once>
+<%perl>
+
+  if ($speichern)
+  {
+    fehler("Verantwortlicher nicht angegeben") unless $atr_uid;
+    fehler("interner Tagessatz fehlt")         if !$atr_tagessatz  && $atr_personentage != 0;
+    fehler("externer Tagessatz fehlt")         if !$atr_btagessatz && $atr_personentage != 0;
+
+    fehler("Personentage, Sachkosten und Investition dürfen nicht alle 0 sein")
+      unless ($atr_personentage || $atr_sachkosten || $atr_investition);
+
+    $atr_tagessatz   = 0  unless $atr_tagessatz;
+    $atr_btagessatz  = 0 unless $atr_btagessatz;
+    $atr_sachkosten  = 0 unless $atr_sachkosten;
+    $atr_investition = 0 unless $atr_investition;
+
+    if ($atr_nummer)
+    {
+      $dbh->update('auftrag',
+        { atr_nummer       => $atr_nummer },
+        { atr_uid          => quote($atr_uid),
+          atr_tagessatz    => $atr_tagessatz,
+          atr_btagessatz   => $atr_btagessatz,
+          atr_personentage => $atr_personentage,
+          atr_sachkosten   => $atr_sachkosten,
+          atr_investition  => $atr_investition } );
+    }
+    else
+    {
+      $atr_nummer = $dbh->selectrow_array( <<"EOF" ) || 1;
+       select max(atr_nummer) + 1
+         from auftrag
+EOF
+
+      $dbh->insert('auftrag',
+        { atr_nummer       => $atr_nummer,
+          atr_pid          => $projektid,
+          atr_tid          => $tid,
+          atr_aid          => $aid,
+          atr_datum        => Contavia::Date::current->qpgdate,
+          atr_uid          => quote($atr_uid),
+          atr_tagessatz    => $atr_tagessatz,
+          atr_btagessatz   => $atr_btagessatz,
+          atr_personentage => $atr_personentage,
+          atr_sachkosten   => $atr_sachkosten,
+          atr_investition  => $atr_investition } );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    $atr_nummer = $sel_nummer unless $atr_nummer;
+    fehler('kein Auftrag ausgewählt') unless $atr_nummer;
+
+    my $atr_freigabe = $dbh->selectrow_array( '
+     select atr_freigabe
+       from auftrag
+      where atr_nummer = ?', {}, $atr_nummer);
+
+    fehler('Auftrag ist bereits freigegeben') if ($atr_freigabe);
+  }
+  elsif ($loeschen_ok)
+  {
+    $atr_nummer = $sel_nummer unless $atr_nummer;
+    fehler('kein Auftrag ausgewählt') unless $atr_nummer;
+
+    $dbh->do( <<"EOF" );
+     delete from auftrag
+      where atr_nummer = $atr_nummer
+        and atr_freigabe is null
+EOF
+    $dbh->commit;
+  }
+
+  return \%ARGS;
+
+</%perl>

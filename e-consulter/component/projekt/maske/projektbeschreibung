@@ -1,0 +1,86 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+<%once>
+
+  my $bereiche;
+
+</%once>
+<%perl>
+
+  $bereiche = $dbh->selectcol_arrayref( <<"EOF" ) unless $bereiche;
+    select pbs_bezeichnung from prjbereichstamm
+EOF
+
+  my ($prj_kurzbeschreibung, $prj_statusquo, $prj_verbesserung,
+      $prj_aufmerksam, $prj_eigenleistung) =
+        $dbh->selectrow_array( <<"EOF" );
+    select prj_kurzbeschreibung, prj_statusquo, prj_verbesserung,
+      prj_aufmerksam, prj_eigenleistung
+      from projekt
+     where prj_id=$projektid
+EOF
+
+  my $prj_bereich = $dbh->selectcol_arrayref( <<"EOF" );
+    select prj_bereich
+      from prjbereich
+     where prj_id = $projektid
+EOF
+
+  # Die angezeigten Bereiche bestehen aus den Stammbereichen und ...
+  my @bereiche = (@$bereiche,
+    grep   # den Projektbereichen, die ...
+    {
+      my $pb = $_;
+      ! grep { $_ eq $pb } @$bereiche  # ... nicht in den Stammbereichen
+                                       #     zu finden sind
+    } @$prj_bereich );
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projektbeschreibung',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p class="label"><i18n>Bitte beschreiben Sie die Aufgabenstellung des Projektes</i18n></p>
+ <textarea name="prj_kurzbeschreibung" rows="15" cols="60"><%$prj_kurzbeschreibung%></textarea>
+ <br><br>
+ <p class="label"><i18n>Bitte geben Sie uns aus Ihrer Sicht wichtige Hintergrundinformationen und beschreiben Sie den Status Quo</i18n></p>
+ <textarea name="prj_statusquo" rows="15" cols="60"><%$prj_statusquo%></textarea>
+ <br><br>
+ <p class="label"><i18n>In welchem Bereich bewegt sich das Projekt?</i18n></p>
+
+% my $col = 0;
+ <table>
+  <tr>
+% foreach my $bereich (@bereiche) {
+   <td>
+    <input type="checkbox" name="prj_bereich" value="<%$bereich%>"<%
+      (grep { $bereich eq $_ } @$prj_bereich) ? ' checked' : ''%>><%$bereich%>
+   </td>
+%   if (++$col % 4 == 0) {
+  </tr>
+  <tr>
+%     $col = 0;
+%   } # if
+% } # foreach
+  </tr>
+  <tr>
+   <td>
+    <input type="text" name="prj_bereich" size="15" maxlength="80">
+   </td>
+   <td>
+    <input type="text" name="prj_bereich" size="15" maxlength="80">
+   </td>
+   <td>
+    <input type="text" name="prj_bereich" size="15" maxlength="80">
+   </td>
+   <td>
+    <input type="text" name="prj_bereich" size="15" maxlength="80">
+   </td>
+  </tr>
+ </table>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

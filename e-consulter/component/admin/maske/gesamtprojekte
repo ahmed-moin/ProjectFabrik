@@ -1,0 +1,140 @@
+<%args>
+$dbh
+$sessid
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+
+  my $prj = $dbh->selectall_arrayref( "
+      select prj_id, prj_titel, prj_waehrung
+        from projekt
+       order by 1" );
+
+  my %tpr = $dbh->select_hash( "
+      select tpr_pid, count(tpr_tid)
+        from teilprojekt
+       group by tpr_pid" );
+
+  my %auf = $dbh->select_hash( "
+      select auf_pid, count(auf_aid)
+        from aufgabe
+       group by auf_pid" );
+
+  my $sth_admin = $dbh->prepare( "
+    select rol_uid, ben_vorname, ben_nachname, ben_email
+      from rolle
+       join benutzer
+         on ben_uid = rol_uid
+     where rol_pid = ?
+       and rol_admin" );
+
+  my %bud_plan = $dbh->select_hash( "
+    select bud_pid, sum(bud_betrag + bud_sachkosten)
+      from budget
+       join projektplan
+         on ppl_pid = bud_pid
+        and ppl_nummer = bud_ppl
+     where ppl_ablehnung is null
+     group by bud_pid" );
+
+  my %bud_genehmigt = $dbh->select_hash( "
+    select bud_pid, sum(bud_betrag + bud_sachkosten)
+      from budget
+       join projektplan
+         on ppl_pid = bud_pid
+        and ppl_nummer = bud_ppl
+     where ppl_auftrag is not null
+     group by bud_pid" );
+
+  my %sum;
+
+</%perl>
+<h1>Gesamtprojekte</h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+   Nr
+  </th>
+  <th bgcolor='#ccccff'>
+   Titel
+  </th>
+  <th bgcolor='#ccccff'>
+   Admin
+  </th>
+  <th bgcolor='#ccccff'>
+   Tpr
+  </th>
+  <th bgcolor='#ccccff'>
+   Auf
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget geplant
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget Auftrag
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$prj)
+  {
+    my ($prj_id, $prj_titel, $prj_waehrung) = @$_;
+
+    my $tpr           = $tpr{$prj_id};
+    my $auf           = $auf{$prj_id};
+    my $bud_plan      = $bud_plan{$prj_id};
+    my $bud_genehmigt = $bud_genehmigt{$prj_id};
+
+    $sum{tpr}       += $tpr;
+    $sum{auf}       += $auf;
+
+    my $admin = $dbh->selectall_arrayref( $sth_admin, {}, $prj_id );
+
+ </%perl>
+
+ <tr>
+  <td>
+   <%$prj_id%>
+  </td>
+  <td>
+   <%$prj_titel%>
+  </td>
+  <td>
+% foreach (@$admin) {
+%   my ($rol_uid, $ben_vorname, $ben_nachname, $ben_email) = @$_;
+   <a href='/person/<%$sessid%>/<%$rol_uid%>/kontakt.hms'
+      target=_blank><%$rol_uid%></a><br>
+% }
+  </td>
+  <td align='right'>
+   <%$tpr%>
+  </td>
+  <td align='right'>
+   <%$auf%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_plan, 0, $ARGS{lang})%> <%$prj_waehrung%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_genehmigt, 0, $ARGS{lang})%> <%$prj_waehrung%>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <td bgcolor='#cccccc' colspan='3'>
+   &nbsp;
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%$sum{tpr}%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%$sum{auf}%>
+  </td>
+  <td bgcolor='#cccccc' colspan='2'>
+   &nbsp;
+  </td>
+ </tr>
+</table>

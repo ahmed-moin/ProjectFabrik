@@ -1,0 +1,27 @@
+<%args>
+$dbh
+$uid
+$bem_bewertung => undef
+$bem_fehl => undef
+$bem_ausgepraegt => undef
+$bem_kurz => undef
+$bem_bemerkung => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(replace quote);
+
+  $bem_bewertung = -1 unless defined $bem_bewertung;
+
+  replace(
+    $dbh, 'bemerkung',
+    { bem_uid         => quote($uid) },
+    { bem_bewertung   => $bem_bewertung,
+      bem_fehl        => quote($bem_fehl),
+      bem_ausgepraegt => quote($bem_ausgepraegt),
+      bem_kurz        => quote($bem_kurz),
+      bem_bemerkung   => quote($bem_bemerkung) } );
+
+  $dbh->commit;
+
+</%perl>

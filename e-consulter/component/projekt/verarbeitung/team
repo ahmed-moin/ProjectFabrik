@@ -1,0 +1,36 @@
+<%args>
+$dbh
+$projektid
+$prj_branche => undef
+$prj_eigenschaft => []
+</%args>
+<%once>
+  my $sth_ins;
+</%once>
+<%perl>
+
+use Contavia::Db qw(insert update replace quote);
+
+$sth_ins = $dbh->prepare( <<"EOF" ) unless $sth_ins;
+  insert into prjteameigenschaft (prj_id, prj_eigenschaft)
+  values (?, ?)
+EOF
+
+replace( $dbh, 'projekt',
+  { prj_id       => $projektid },
+  { prj_branche  => $prj_branche ? $prj_branche : 'null'} );
+
+$dbh->do( <<"EOF" );
+  delete from prjteameigenschaft
+   where prj_id = $projektid
+EOF
+
+$prj_eigenschaft = [$prj_eigenschaft] unless ref($prj_eigenschaft);
+foreach (@$prj_eigenschaft)
+{
+  $sth_ins->execute($projektid, $_) if $_;
+}
+
+$dbh->commit;
+
+</%perl>

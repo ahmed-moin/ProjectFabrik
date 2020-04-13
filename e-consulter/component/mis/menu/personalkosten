@@ -1,0 +1,23 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'personalkosten_gesamt',
+             dlabel   => 'Gesamt',
+             menu     => 'personalkosten' },
+           { maske    => 'personalkosten_kumuliert',
+             dlabel   => 'Kumuliert',
+             menu     => 'personalkosten' },
+           { maske    => 'personalkosten_monat',
+             dlabel   => 'Monat',
+             menu     => 'personalkosten' },
+           { maske    => 'personalkosten_tabelle',
+             dlabel   => 'Tabelle',
+             menu     => 'personalkosten' },
+           @$menu_footer
+         ];
+
+</%perl>

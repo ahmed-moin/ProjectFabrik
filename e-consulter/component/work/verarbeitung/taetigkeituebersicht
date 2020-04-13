@@ -1,0 +1,12 @@
+<%args>
+$sel_nummer = undef
+</%args>
+<%perl>
+
+  if ($sel_nummer)
+  {
+    $ARGS{atr_nummer} = $sel_nummer if $sel_nummer;
+    return \%ARGS;
+  }
+
+</%perl>

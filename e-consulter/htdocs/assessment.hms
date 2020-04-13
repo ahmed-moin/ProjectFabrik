@@ -1,0 +1,78 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Assessmentcenter
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Januar 2001
+
+  Beschreibung
+    Assessment Center
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Januar 2001
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%attr>
+
+  tool      => 'assessment'
+  titel     => "Assessment\nCenter"
+  barcolor  => [255, 170, 0]
+  titel_img => '/images/titel/assess.gif'
+  icon      => '/images/icon/assessment.gif'
+  foto      => '/images/131-31.png'
+  defmaske  => 'login'
+
+</%attr>
+
+<%method getmenu>
+<%perl>
+  my @menu;
+
+  if ($ARGS{sessid} )
+  {
+    @menu =
+    ( { maske  => 'willkommen',
+        label  => 'Willkommen' },
+      { maske  => 'einfuehrung_1',
+        label  => 'Einführung 1' },
+      { maske  => 'einfuehrung_2',
+        label  => 'Einführung 2' },
+      { maske  => 'einfuehrung_3',
+        label  => 'Einführung 3' },
+      { maske  => 'einfuehrung_4',
+        label  => 'Einführung 4' },
+      { maske  => 'fragebogen',
+        label  => 'Fragebogen' },
+      { maske  => 'ergebnis',
+        label  => 'Ergebnis' },
+      { space  => 40 },
+      { maske  => 'erlaeuterung',
+        label  => 'Erläuterung' },
+      { maske  => 'neurotizismus',
+        dlabel  => 'Neurotizismus' },
+      { maske  => 'extraversion',
+        dlabel  => 'Extraversion' },
+      { maske  => 'gewissenhaftigkeit',
+        dlabel  => 'Gewissenhaftigkeit' },
+      { maske  => 'motivation',
+        dlabel  => 'Motivation' },
+      { maske  => 'soziale_kompetenz',
+        dlabel  => 'soziale Kompetenz' },
+      { space  => 80 },
+      { aktion => 'abmelden',
+        label  => 'Abmelden' },
+    );
+
+  }
+  else
+  {
+    @menu = ( { maske => 'login',
+                label => 'Login' }
+            );
+
+    $ARGS{folgemaske} = 'login';
+  }
+
+  return @menu;
+</%perl>
+</%method>

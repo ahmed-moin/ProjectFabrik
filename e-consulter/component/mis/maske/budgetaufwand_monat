@@ -1,0 +1,66 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$stand
+$art
+$color1
+$color2
+$label1
+$label2
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $startdatum = new Contavia::Date($stand);
+  $startdatum->tag(1);
+  my $endedatum = $startdatum->naechster_monat->voriger_tag->qpgdate;
+  $startdatum = $startdatum->qpgdate;
+
+  my $artcond = ref($art) ? sprintf('in (%s)', join(', ', @$art))
+                          : "= $art";
+
+  # ermittele Monatsbudget
+  my %budget = $dbh->select_hash( "\
+    select tid, sum(budget)
+      from vbudget
+     where pid = $projektid
+       and ppl = $projektplan
+       and art $artcond
+       and datum between $startdatum and $endedatum
+       and freigabe is not null
+     group by tid" );
+
+  # ermittele Monatsaufwand
+  my %aufwand = $dbh->select_hash( "\
+    select tid, sum(baufwand)
+      from vaufwand
+     where pid = $projektid
+       and art $artcond
+       and datum between $startdatum and $endedatum
+       and freigabe is not null
+     group by tid" );
+
+</%perl>
+
+<table>
+ <tr>
+  <& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<& '/balkengrafik', dbh         => $dbh,
+                    projektid   => $projektid,
+                    projektplan => $projektplan,
+                    werte1      => \%budget,
+                    werte2      => \%aufwand, 
+                    color1      => $color1,
+                    color2      => $color2,
+                    unit        => $waehrung &>
+
+<& '/legende', label1 => $label1,
+               label2 => $label2,
+               color1 => $color1,
+               color2 => $color2 &>

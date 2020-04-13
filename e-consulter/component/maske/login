@@ -1,0 +1,18 @@
+<%init>
+    return if ($ARGS{sessid});
+</%init>
+
+<h1>Login</h1>
+
+  <p class='label'> <i18n> Kennung </i18n> </p>
+  <input type='text' name='userid'>
+
+  <p class='label'> <i18n> Passwort </i18n> </p>
+  <input type='password' name='passwort'>
+
+  <p class='label'> </p>
+  <input type='submit' name='anmelden' value=' <i18n> Anmelden </i18n>'>
+
+  <script language="JavaScript" type="text/javascript">
+     document.forms[0].userid.focus()
+  </script>

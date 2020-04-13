@@ -1,0 +1,31 @@
+<%args>
+$dbh
+$projektid
+$rol_uid => undef
+$aufnehmen => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(quote);
+
+  if ($aufnehmen)
+  {
+    fehler("keine Person ausgewählt") unless $rol_uid;
+
+    $rol_uid = [$rol_uid] unless ref($rol_uid);
+
+    foreach my $uid (@$rol_uid)
+    {
+      $dbh->replace('rolle',
+        { rol_uid         => quote($uid),
+          rol_pid         => $projektid },
+        { rol_mitarbeiter => $dbh->bool(1) },
+        { rol_rolid       => 0,
+          rol_admin       => $dbh->bool(0),
+          rol_kunde       => $dbh->bool(0) } );
+    }
+
+    $dbh->commit;
+  }
+
+</%perl>

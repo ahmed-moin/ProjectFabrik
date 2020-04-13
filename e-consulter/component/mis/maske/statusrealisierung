@@ -1,0 +1,55 @@
+<%args>
+$projektid
+$dbh
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $ppl = $m->comp('/get_projektplan', %ARGS);
+
+  my $tprs = $dbh->selectall_arrayref(<<"EOF");
+    select tpr_tid, tpr_titel, tpr_status, tpe_realisierung
+      from teilprojekt, teilprojektziel, teilprojektrealisierung
+     where tpr_pid = $projektid
+       and tpz_pid = tpr_pid
+       and tpz_ppl = $ppl
+       and tpz_tid = tpr_tid
+       and tpz_zid = 0
+       and tpe_pid = tpz_pid
+       and tpe_zid = tpz_zid
+       and tpe_tid = tpz_tid
+     order by tpr_tid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Status - Realisierungsgrad' &>
+
+<p> <i18n>Stand</i18n>: <%Contavia::Date::current->format()%> </p>
+
+<table>
+% foreach my $tpr (@$tprs) {
+%   my ($tid, $titel, $status, $realisierung) = @$tpr;
+ <tr>
+  <td> <%$titel%> </td>
+  <td>
+   <%perl>
+    $m->comp('/bar', width => int(2 * $realisierung), height => 15,
+                     color => [0, 0, 128],
+                     alt => "$realisierung%") if $realisierung > 0;
+    $m->comp('/bar', width => int(2 * (100 - $realisierung)), height => 15,
+                     color => [224, 224, 224],
+                     alt => "$realisierung%") if $realisierung < 100;
+   </%perl>
+  </td>
+ </tr>
+% }
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/scale', width => 200, end => 100, unit => '%', step_n => 25, arrow => 0 &>
+  </td>
+ </tr>
+</table>

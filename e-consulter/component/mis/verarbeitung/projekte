@@ -1,0 +1,24 @@
+<%args>
+$neu => undef
+$oeffnen => undef
+$schliessen => undef
+$projekt => undef
+</%args>
+<%perl>
+  use Contavia::Date;
+
+  if ($oeffnen)
+  {
+    unless ( $projekt )
+    {
+      die '<fehler><i18n>kein Projekt ausgew&auml;hlt</i18n></fehler>';
+    }
+    $ARGS{projektid}   = $ARGS{projekt};
+    $ARGS{projektplan} = $m->comp('/get_projektplan', %ARGS);
+    $ARGS{folgemaske}  = 'zeitplan';
+    $ARGS{menu}        = 'projekt';
+  }
+
+  return \%ARGS;
+
+</%perl>

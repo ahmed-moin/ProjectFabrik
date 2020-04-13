@@ -1,0 +1,14 @@
+<%args>
+$dbh
+$ben_uid => undef
+$anzeigen => undef
+</%args>
+<%perl>
+
+  if ($anzeigen)
+  {
+    $ARGS{folgemaske} = 'benutzerpruefen_einzeln';
+    return \%ARGS;
+  }
+
+</%perl>

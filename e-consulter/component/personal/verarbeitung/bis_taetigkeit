@@ -1,0 +1,93 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+$bta_lfdnr => undef
+$bta_branche => undef
+$bta_position => undef
+$bta_aufgabe => undef
+$bta_firma => undef
+$bta_bemerkung => undef
+$bta_datvon_monat => undef
+$bta_datvon_jahr => undef
+$bta_datbis_monat => undef
+$bta_datbis_jahr => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia::Date;
+use Contavia qw(fehler);
+
+$auswahl = $bta_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($bta_branche || $bta_position || $bta_aufgabe || $bta_firma || $bta_bemerkung)
+{
+  my $no_month = 'f';
+
+  ($bta_datvon_monat = 1, $no_month = 't') if (not $bta_datvon_monat);
+  ($bta_datbis_monat = 1, $no_month = 't') if (not $bta_datbis_monat and $bta_datbis_jahr);
+  my $bta_datvon = new Contavia::Date(1, $bta_datvon_monat, $bta_datvon_jahr);
+  my $bta_datbis = new Contavia::Date(1, $bta_datbis_monat, $bta_datbis_jahr);
+  if ($bta_lfdnr)
+  {
+    update( $dbh, 'bistaet',
+            { bta_benuid      => quote($uid),
+              bta_lfdnr       => $bta_lfdnr },
+            { bta_branche     => $bta_branche || 'NULL',
+              bta_position    => $bta_position || 'NULL',
+              bta_aufgabe     => $bta_aufgabe || 'NULL',
+              bta_firma       => quote($bta_firma),
+              bta_bemerkung   => quote($bta_bemerkung),
+              bta_datvon      => $bta_datvon->qpgdate(),
+              bta_datbis      => $bta_datbis->qpgdate(),
+              bta_nomonth     => quote($no_month) } );
+  }
+  else
+  {
+    $bta_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(bta_lfdnr) + 1
+       from bistaet
+      where bta_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'bistaet',
+            { bta_benuid      => quote($uid),
+              bta_lfdnr       => $bta_lfdnr,
+              bta_branche     => $bta_branche || 'NULL',
+              bta_position    => $bta_position || 'NULL',
+              bta_aufgabe     => $bta_aufgabe || 'NULL',
+              bta_firma       => quote($bta_firma),
+              bta_bemerkung   => quote($bta_bemerkung),
+              bta_datvon      => $bta_datvon->qpgdate(),
+              bta_datbis      => $bta_datbis->qpgdate(),
+              bta_nomonth     => quote($no_month) } );
+  }
+
+  $ARGS{sel_bta_lfdnr} = undef;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from bistaet
+    where bta_benuid = '$uid'
+      and bta_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_bta_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

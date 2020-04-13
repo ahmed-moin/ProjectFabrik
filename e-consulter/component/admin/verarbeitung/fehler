@@ -1,0 +1,25 @@
+<%args>
+$dbh
+$err_ref => undef
+$err_kommentar => undef
+$loeschen => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    $dbh->update( 'fehler',
+      { err_ref => $err_ref },
+      { err_kommentar => $dbh->quote($err_kommentar) } );
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    $dbh->do( "delete from fehler where err_ref = ?", {}, $err_ref);
+    $dbh->commit;
+    $ARGS{err_ref} = undef;
+    return \%ARGS;
+  }
+
+</%perl>

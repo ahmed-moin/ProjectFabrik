@@ -1,0 +1,27 @@
+<%args>
+$dbh
+$qua_bezeichnung => undef
+$qua_oberid => undef
+$qua_rank => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    fehler("Bezeichnung fehlt") if !$qua_bezeichnung || $qua_bezeichnung =~ /^\s*$/;
+
+    my $qua_id = $dbh->selectrow_array( "
+      select max(qua_id) + 1
+        from qual" ) || 1;
+
+    $dbh->insert( 'qual',
+      { qua_id => $qua_id,
+        qua_oberid => $qua_oberid || 'NULL',
+        qua_bezeichnung => $dbh->quote($qua_bezeichnung),
+        qua_rank => $qua_rank ? '\'t\'' : '\'f\'' } );
+
+    $dbh->commit;
+  }
+
+</%perl>

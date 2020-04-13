@@ -1,0 +1,17 @@
+<%args>
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n> Neurotizismus </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> Die Dimension Neurotizismus erfasst individuelle Unterschiede bezüglich der emotionalen Stabilität bzw. emotionalen Instabilität einer Person.</i18n> </p>
+
+<p> <i18n> Menschen mit niedrigen Neurotizismuswerten beschreiben sich eher als ruhig, ausgeglichen und sorgenfrei. Sie sind emotional stabil und lassen sich daher auch in Stresssituationen nicht so schnell aus der Fassung bringen. </i18n> </p>
+
+<p> <i18n> Menschen mit hohen Neurotizismuswerten beschreiben sich eher als ängstlich, traurig und unsicher. Menschen mit dieser persönlichen Ausprägung geben außerdem häufig an, leichter aus dem emotionalen Gleichgewicht gebracht zu werden. Stressige Situationen, problembehaftete Aufgabenstellungen oder Entscheidungen in Zeiten der Unsicherheit werden meist als bedrohlich und beängstigend empfunden.</i18n> </p>
+
+<p> <i18n> Menschen mit hohen Neurotizismuswerten wählen aus diesen Gründen eher Tätigkeiten, die weniger zeitkritisch und stressbehaftet sind bzw. die weniger kritische Herausforderungen stellen.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

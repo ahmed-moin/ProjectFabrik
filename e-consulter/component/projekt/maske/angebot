@@ -1,0 +1,136 @@
+<%args>
+$dbh
+$projektid
+$waehrung
+$angebot_angenommen => undef
+$ablehnen => undef
+</%args>
+<%perl>
+
+  #use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+  $ARGS{projektplan} = $dbh->selectrow_array( "
+   select max(ppl_nummer)
+     from projektplan
+    where ppl_pid = $projektid
+      and ppl_angebotdatum is not null" );
+
+  if ($ablehnen)
+  {
+    $m->comp('.ablehnen', %ARGS);
+  }
+  elsif ($angebot_angenommen)
+  {
+    $m->comp('.angenommen', %ARGS);
+  }
+  else
+  {
+    $m->comp('.anzeigen', %ARGS);
+  }
+
+</%perl>
+
+<%def .ablehnen>
+<%args>
+$dbh
+$projektplan
+</%args>
+<%perl>
+  my %grund = (
+    1 => '<i18n>Angebot zu teuer</i18n>',
+    2 => '<i18n>Anforderung falsch interpretiert</i18n>',
+    3 => '<i18n>interne Priorisierung hat sich verändert</i18n>',
+    4 => '<i18n>Projekt zurückgestellt</i18n>',
+    5 => '<i18n>für einen anderen Anbieter entschiedenen</i18n>' );
+
+  my %vorgehen = (
+    1 => '<i18n>Kontaktaufnahme per Telefon</i18n>',
+    2 => '<i18n>Kontaktaufnahme per E-Mail</i18n>',
+    3 => '<i18n>Kontaktaufnahme per Fax</i18n>',
+    4 => '<i18n>Termin zu einem persönlichen Gespräch</i18n>',
+    5 => '<i18n>keine weitere Kontaktaufnahme</i18n>' );
+</%perl>
+
+<h1><i18n>Angebot ablehnen</i18n></h1>
+
+   <i18n>Wir würden uns freuen, wenn Sie uns Ihre Gründe für Ihre
+   Ablehnung mitteilen könnten</i18n> <br>
+
+% while ( my ($key, $value) = each (%grund) ) {
+   <input type='checkbox' name='grund' value='<%$key%>'> <%$value%><br>
+% }
+
+   <hr>
+
+  <i18n> Wie möchten Sie weiter vorgehen?</i18n> <br>
+% while ( my ($key, $value) = each (%vorgehen) ) {
+   <input type='radio' name='vorgehen' value='<%$key%>'> <%$value %><br>
+% }
+
+   <hr>
+
+   <i18n>weitere Bemerkungen</i18n> <br>
+
+   <textarea name='begruendung' rows='10' cols='60'></textarea>
+
+<p class='button'>
+ <input type='submit' name='ablehnen_nok' value='<i18n>nicht ablehnen</i18n>'>
+ <input type='submit' name='ablehnen_definition' value='<i18n>ablehnen und zur Definition</i18n>'>
+ <input type='submit' name='ablehnen_anfrage' value='<i18n>ablehnen und neue Anfrage</i18n>'>
+</p>
+
+<input type='hidden' name='projektplan' value='<%$projektplan%>'>
+</%def>
+
+<%def .angenommen>
+  <h1><i18n>Angebot</i18n></h1>
+
+  <p>
+	<i18n>
+    Vielen Dank für Ihren Auftrag.
+	</i18n>
+  </p>
+
+  <p>
+	<i18n>
+    Wir werden uns mit Ihnen sobald wie möglich in Verbindung setzen.
+	</i18n>
+  </p>
+</%def>
+
+<%def .anzeigen>
+<%args>
+$dbh
+$projektid
+$projektplan
+$auftrag => undef
+</%args>
+<%perl>
+
+  my $ppl_auftrag = $dbh->selectrow_array( "
+    select ppl_auftrag
+      from projektplan
+     where ppl_pid    = $projektid
+       and ppl_nummer = $projektplan" );
+
+</%perl>
+<h1><i18n>Angebot</i18n></h1>
+
+<& '/angebot_anzeigen', projektplan => $projektplan, %ARGS &>
+
+%   unless ($ppl_auftrag) {
+    <p class='button'>
+%     if ($auftrag) {
+     <input type='submit' name='auftrag_ok' value='<i18n>wirklich beauftragen</i18n>'>
+     <input type='submit' name='auftrag_nok' value='<i18n>nicht beauftragen</i18n>'>
+%     } else {
+     <input type='submit' name='auftrag' value='<i18n>beauftragen</i18n>'>
+     <input type='submit' name='ablehnen' value='<i18n>ablehnen</i18n>'>
+%     }
+    </p>
+
+    <input type='hidden' name='projektplan' value='<%$projektplan%>'>
+
+%   }
+</%def>

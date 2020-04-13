@@ -1,0 +1,5 @@
+<%perl>
+  $ARGS{seite} = 1;
+  $ARGS{folgemaske} = 'frage';
+  return \%ARGS;
+</%perl>

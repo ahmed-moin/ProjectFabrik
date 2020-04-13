@@ -1,0 +1,53 @@
+<%args>
+$menu_head
+$menu_footer
+$projektid
+$dbh
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ($_->{menu} eq 'status')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  my $ziel = $dbh->selectall_arrayref( <<"EOF" );
+    select prz_titel, prz_kostenvergleich
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid <> 0
+EOF
+
+  my @zmenu;
+  my $n = 0;
+  foreach (@$ziel)
+  {
+    my ($prz_titel, $prz_kostenvergleich) = @$_;
+    ++$n;
+    push @zmenu, { maske  => "statusziel${n}",
+                   dlabel => $prz_titel,
+                   menu   => 'status' };
+    push @zmenu, { maske  => "statusziel${n}_kosten",
+                   dlabel => "Kosten/$prz_titel",
+                   menu   => 'status' } if ($prz_kostenvergleich);
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'realisierung',
+             dlabel   => 'Realisierungsgrad',
+             menu     => 'status' },
+           { maske    => 'personentage',
+             dlabel   => 'Personentage',
+             menu     => 'status' },
+           { maske    => 'budgetstatus',
+             dlabel   => 'Budget',
+             menu     => 'status' },
+           @zmenu,
+           @$menu_footer
+         ];
+
+</%perl>

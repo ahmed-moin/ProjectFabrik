@@ -1,0 +1,25 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ($_->{menu} eq 'taetigkeit')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske   => 'monatserfassung',
+             dlabel  => 'Monatserfassung',
+             menu    => 'taetigkeit' },
+           { maske   => 'stundenerfassung',
+             dlabel  => 'Stundenerfassung',
+             menu    => 'taetigkeit' },
+           @$menu_footer
+         ];
+</%perl>

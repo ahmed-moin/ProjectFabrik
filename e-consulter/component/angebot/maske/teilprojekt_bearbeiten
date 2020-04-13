@@ -1,0 +1,78 @@
+<%args>
+$dbh
+$projektid
+$angebot
+$bearbeiten => undef
+$neu => undef
+$tid => undef
+$prj_waehrung
+</%args>
+<%perl>
+
+  my ($tpr_titel, $bud_betrag, $bud_personentage);
+
+  if ($neu)
+  {
+    $tid = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(tpr_tid) + 1
+       from teilprojekt
+      where tpr_pid = $projektid
+EOF
+  }
+  else
+  {
+    $tpr_titel = $dbh->selectrow_array( <<"EOF" );
+     select tpr_titel
+       from teilprojekt
+      where tpr_pid = $projektid
+        and tpr_tid = $tid
+EOF
+
+    ($bud_betrag, $bud_personentage) = $dbh->selectrow_array( <<"EOF" );
+     select bud_betrag, bud_personentage
+       from budget
+      where bud_pid = $projektid
+        and bud_tid = $tid
+        and bud_angebot = $angebot
+EOF
+  }
+
+</%perl>
+
+<table>
+ <tr>
+  <th>
+   Titel
+  </th>
+  <td>
+   <input type='hidden' name='tid' value='<%$tid%>'>
+   <input type='hidden' name='titel_old' value='<%$tpr_titel%>'>
+   <input type='text' name='titel' value='<%$tpr_titel%>'>
+  </td>
+ </tr>
+
+ <tr>
+  <th>
+   Budget (<%$prj_waehrung%>)
+  </th>
+  <td>
+   <input type='hidden' name='betrag_old' value='<%$bud_betrag%>'>
+   <input type='text' name='betrag' value='<%$bud_betrag%>'>
+  </td>
+ </tr>
+
+ <tr>
+  <th>
+   Budget (PT)
+  </th>
+  <td>
+   <input type='hidden' name='personentage_old' value='<%$bud_personentage%>'>
+   <input type='text' name='personentage' value='<%$bud_personentage%>'>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='verwerfen' value='nicht Speichern'>
+</p>

@@ -1,0 +1,36 @@
+<%args>
+$dbh
+$projektid
+$uid
+$prj_reaktionsart => undef
+$prj_telefon => undef
+$prj_email => undef
+$prj_telefax => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(replace quote);
+use Contavia qw(fehler);
+
+fehler ("<i18n>bitte geben Sie die Reaktionsart an</i18n>") unless $prj_reaktionsart;
+
+my ($ben_telefon, $ben_telefax, $ben_email) =
+      $dbh->selectrow_array( <<"EOF" );
+      select ben_telefon, ben_telefax, ben_email
+        from benutzer
+       where ben_uid = '$uid'
+EOF
+
+my %repl;
+
+$repl{prj_reaktionsart} = $prj_reaktionsart || 'null';
+$repl{prj_telefon} = $ben_telefon eq $prj_telefon ? 'null' : quote($prj_telefon);
+$repl{prj_telefax} = $ben_telefax eq $prj_telefax ? 'null' : quote($prj_telefax);
+$repl{prj_email}   = $ben_email   eq $prj_email   ? 'null' : quote($prj_email);
+
+replace( $dbh, 'projekt',
+  { prj_id           => $projektid }, \%repl );
+
+$dbh->commit;
+
+</%perl>

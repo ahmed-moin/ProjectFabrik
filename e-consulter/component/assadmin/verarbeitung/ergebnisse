@@ -1,0 +1,18 @@
+<%args>
+$dbh
+$ass_uid => undef
+$loeschen_ok => undef
+</%args>
+<%perl>
+
+  if ($loeschen_ok)
+  {
+    $dbh->do("delete from assantwort where ant_uid = '$ass_uid'");
+    $dbh->commit;
+
+    $ARGS{ass_uid} = undef;
+
+    return \%ARGS;
+  }
+
+</%perl>

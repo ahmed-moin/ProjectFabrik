@@ -1,0 +1,74 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(fehler);
+  use HTML::Entities;
+
+  fehler('kein Projektplan ausgewählt') unless $projektplan;
+
+  # lese Daten zum Projektplan
+  my ($prj_titel, $prj_kurztitel, $ppl_nummer, $ppl_datum, $ppl_text)
+    = $dbh->selectrow_array( <<"EOF" );
+    select prj_titel, prj_kurztitel, ppl_nummer, ppl_datum, ppl_text
+      from projekt, projektplan
+     where prj_id = $projektid
+       and prj_id = ppl_pid
+       and ppl_nummer = $projektplan
+EOF
+
+</%perl>
+
+<h1> Projektbeschreibung </h1>
+
+<table>
+ <tr>
+  <th class='summe'>
+   Titel
+  </th>
+  <td>
+   <input type='text' name='prj_titel' value='<%$prj_titel%>'
+          size='30' maxlength='40'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Kurztitel
+  </th>
+  <td>
+   <input type='text' name='prj_kurztitel' value='<%$prj_kurztitel%>'
+          size='12' maxlength='12'>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Projektplan
+  </th>
+  <td>
+   <%$projektplan%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='summe'>
+   Beschreibung Projektplan
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+%  $ppl_text = encode_entities($ppl_text);
+   <textarea name='ppl_text' rows='10' cols='60'><%$ppl_text%></textarea>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>

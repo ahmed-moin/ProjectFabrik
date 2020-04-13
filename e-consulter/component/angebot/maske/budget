@@ -1,0 +1,166 @@
+<%args>
+$dbh
+$projektid
+$angebot => undef
+$waehrung
+</%args>
+<%perl>
+
+  use Contavia::Db qw(select_hash);
+
+  die "<fehler>kein Angebot ausgew&auml;hlt</fehler>" unless $angebot;
+
+  my $ppl = $m->comp('/get_projektplan', %ARGS, aktuellneu => 1);
+
+  my $ang_freigabe = $dbh->selectrow_array( <<"EOF" );
+   select ang_freigabe
+     from angebot
+    where ang_pid = $projektid
+      and ang_nummer = $angebot
+EOF
+
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+   select tpr_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpr_pid = $projektid
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+      and tpl_version = $ppl
+    order by tpr_tid
+EOF
+
+  my $bud = $dbh->selectall_arrayref( <<"EOF" );
+   select bud_tid, bud_betrag, bud_personentage
+     from budget
+    where bud_pid = $projektid
+      and bud_angebot = $angebot
+EOF
+  my %bud;
+  foreach (@$bud) {
+    my ($bud_tid, $bud_betrag, $bud_personentage) = @$_;
+    $bud{$bud_tid} = [$bud_betrag, $bud_personentage];
+  }
+
+
+  # beauftrages Budget lesen (Budget review)
+  my %bud_rev = select_hash($dbh, <<"EOF" );
+   select bud_tid, sum(bud_betrag), sum(bud_personentage)
+     from budget, angebot
+    where bud_pid = $projektid
+      and bud_pid = ang_pid
+      and bud_angebot = ang_nummer
+      and ang_auftragsdatum is not null
+    group by bud_tid
+EOF
+
+  # geplantes Budget lesen (Forecast)
+  my %bud_fc = select_hash($dbh, <<"EOF" );
+   select bpl_tid, sum(bpl_betrag), sum(bpl_personentage)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_version = $ppl
+    group by bpl_tid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Angebotsbudget' &>
+
+<table border='1'>
+ <tr>
+  <th rowspan='2' class='klein'>
+   Teilprojekt
+  </th>
+  <th colspan='3' class='klein'>
+   Betrag (<%$waehrung%>)
+  </th>
+  <th colspan='3' class='klein'>
+   Personentage
+  </th>
+ </tr>
+
+ <tr>
+  <th class='klein'>
+   Budget Rev
+  </th>
+  <th class='klein'>
+   Forecast
+  </th>
+  <th class='klein'>
+   Angebot
+  </th>
+
+  <th class='klein'>
+   Budget Rev
+  </th>
+  <th class='klein'>
+   Forecast
+  </th>
+  <th class='klein'>
+   Angebot
+  </th>
+ </tr>
+
+% foreach (@$tpr) {
+%   my ($tpr_tid, $tpr_titel) = @$_;
+%   my ($bud_betrag, $bud_personentage) = $bud{$tpr_tid} ? @{$bud{$tpr_tid}} : (0, 0);
+ <tr>
+  <td class='klein'>
+   <%$tpr_titel%>
+  </td>
+
+  <td class='rklein'>
+   <%sprintf('%d', $bud_rev{$tpr_tid}->[0])%>
+  </td>
+  <td class='rklein'>
+   <%sprintf('%d', $bud_fc{$tpr_tid}->[0])%>
+  </td>
+  <td class='rklein'>
+%   if ($ang_freigabe) {
+   <%sprintf('%d', $bud_betrag)%>
+%   } else {
+   <input type='hidden' name='tid' value='<%$tpr_tid%>'>
+   <input type='text' name='betrag' value='<%$bud_betrag%>' size='10'>
+%   }
+  </td>
+
+  <td class='rklein'>
+   <%$bud_rev{$tpr_tid}->[1]%>
+  </td>
+  <td class='rklein'>
+   <%$bud_fc{$tpr_tid}->[1]%>
+  </td>
+  <td class='rklein'>
+%   if ($ang_freigabe) {
+   <%$bud_personentage%>
+%   } else {
+   <input type='text' name='personentage' value='<%$bud_personentage%>' size='5'>
+%   }
+  </td>
+ </tr>
+% }
+
+% unless ($ang_freigabe) {
+ <tr>
+  <td class='klein'>
+   <input type='text' name='titel_neu' size='20'>
+  </td>
+  <td colspan='2'>
+  </td>
+  <td class='klein'>
+   <input type='text' name='betrag_neu' size='10'>
+  </td>
+  <td colspan='2'>
+  </td>
+  <td class='klein'>
+   <input type='text' name='personentage_neu' size='5'>
+  </td>
+ </tr>
+% }
+</table>
+
+% unless ($ang_freigabe) {
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+% }

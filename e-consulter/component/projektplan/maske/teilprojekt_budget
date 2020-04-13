@@ -1,0 +1,221 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+$tagessatz => undef
+</%args>
+<%init>
+
+  use Contavia::Db qw(select_hash);
+  use Contavia qw(formatnumber);
+  use Data::Dumper;
+
+  my $ppl_angebotdatum = $dbh->selectrow_array( <<"EOF" );
+   select ppl_angebotdatum
+     from projektplan
+    where ppl_pid = $projektid
+      and ppl_nummer = $projektplan
+EOF
+
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+EOF
+
+  my %bud = select_hash( $dbh, <<"EOF" );
+   select bud_tid, bud_betrag, bud_personentage, bud_sachkosten, bud_investition
+     from budget
+    where bud_pid = $projektid
+      and bud_ppl = $projektplan
+EOF
+
+  # berechne Tagessatz aus dem bisher eingegebenen Budget
+  my $bud = $bud{$tid};
+  my ($bud_betrag, $bud_personentage) = @$bud if $bud;
+  $tagessatz = int($bud_betrag / $bud_personentage + .5)
+    if ($bud_betrag > 0 && $bud_personentage > 0);
+
+  my %sum;
+
+</%init>
+<%cleanup>
+$ARGS{tid} = undef;
+return \%ARGS;
+</%cleanup>
+
+<h1>Budget</h1>
+
+%#Tagessatz <input type='text' name='tagessatz' value='<%$tagessatz%>' size='10'>
+
+Tagessatz <b><% $tagessatz %></b>
+<%$waehrung%> <br> <br>
+
+<table width='100%' border='1'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Betrag
+  </th>
+  <th bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Investment
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tpl)
+  {
+    my ($tpl_tid, $tpr_titel) = @$_;
+    my ($bud_betrag, $bud_personentage, $bud_sachkosten,
+        $bud_investition) = $bud{$tpl_tid} ? @{$bud{$tpl_tid}} : ();
+
+    $sum{betrag}       += $bud_betrag;
+    $sum{personentage} += $bud_personentage;
+    $sum{sachkosten}   += $bud_sachkosten;
+    $sum{investition}  += $bud_investition;
+
+ </%perl>
+%   if (!$ppl_angebotdatum && $tid == $tpl_tid) {
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='hidden' name='tpl_tid' value='<%$tpl_tid%>'>
+   <input type='radio' name='tid' value='<%$tpl_tid%>' checked>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <input type='text' name='bud_personentage' value='<%$bud_personentage%>' size='4'>
+  </td>
+  <td>
+   <input type='text' name='bud_betrag' value='<%$bud_betrag%>' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_sachkosten' value='<%$bud_sachkosten%>' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_investition' value='<%$bud_investition%>' size='10'>
+  </td>
+ </tr>
+
+%   } else {
+ <tr>
+  <td bgcolor='#cccccc'>
+% unless ($ppl_angebotdatum) {
+   <input type='radio' name='tid' value='<%$tpl_tid%>'<%$tid == $tpl_tid ? ' checked' : ''%>>
+% }
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_personentage, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_sachkosten, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_investition, 2, $ARGS{lang})%>
+  </td>
+ </tr>
+%   }
+
+% }
+
+% unless ($tid || $ppl_angebotdatum) {
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='tpr_titel' size='30' maxlength='80'>
+  </td>
+  <td>
+   <input type='text' name='bud_personentage' size='4'>
+  </td>
+  <td>
+   <input type='text' name='bud_betrag' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_sachkosten' size='10'>
+  </td>
+  <td>
+   <input type='text' name='bud_investition' size='10'>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th bgcolor='#cccccc' colspan='2' class='label'>
+   Summe
+  </th>
+  <td bgcolor='#cccccc' align='right'>
+   <%$sum{personentage}%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{betrag}, 2, $ARGS{lang})%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{sachkosten}, 2, $ARGS{lang})%>
+  </td>
+  <td bgcolor='#cccccc' align='right'>
+   <%formatnumber($sum{investition}, 2, $ARGS{lang})%>
+  </td>
+ </tr>
+
+</table>
+
+% unless ($ppl_angebotdatum) {
+<p class='button'>
+% if ($tid) {
+ <input type='submit' name='neu' value='neu'>
+% }
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='loeschen' value='löschen'>
+</p>
+% }
+
+<script language="JavaScript" type="text/javascript">
+% if ($tid) {
+   document.forms[0].bud_personentage.focus()
+% } else {
+   document.forms[0].tpr_titel.focus()
+% }
+</script>
+
+<h2>Erl&auml;uterung</h2>
+
+<h3>Budget</h3>
+
+<p>
+Das Budget ist das für den Kunden sichtbare Budget. Hier wird nur das im aktuellen Projektplan zus&auml;tzlich zu genehmigende oder genehmigte Budget angezeigt. Es ist nur auf Teilprojektebene. Das Budget muß vom Projektleiter in einem Budgetplan auf Aufgaben und Zeitr&auml;ume umgesetzt werden.
+</p>

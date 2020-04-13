@@ -1,0 +1,5 @@
+<%args>
+$text
+</%args>
+% use URI::Escape;
+<img src='/cgi-bin/lcd?<% uri_escape($text) %>'>\

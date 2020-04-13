@@ -1,0 +1,12 @@
+<%args>
+$waehrung
+</%args>
+
+<h1><i18n>Gesamtkosten</i18n> - <%$waehrung%></h1>
+
+<& 'budgetaufwand_monat', %ARGS,
+                          art    => [1, 3],
+                          color1 => [0, 0, 128],
+                          color2 => [0, 192, 0],
+                          label1 => 'Budget',
+                          label2 => 'Ist', &>

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+USER=$1
+ANREDE=${2:-Herr}
+
+psql econsulter <<EOF
+insert into benutzer(ben_uid, ben_password, ben_projekt, ben_personal, ben_anrede,
+  ben_vorname, ben_nachname, ben_email)
+  values('$USER', '$USER', 'f', 'f', '$ANREDE', '', '$USER', '');
+EOF

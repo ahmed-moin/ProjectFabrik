@@ -1,0 +1,36 @@
+<%args>
+$dbh
+$sql => undef
+$ausfuehren => undef
+</%args>
+<%perl>
+
+my $result = $dbh->selectall_arrayref( $sql ) if $ausfuehren;
+
+</%perl>
+
+<h1>SQL</h1>
+
+<textarea name='sql' rows='5' cols='60'><%$sql%></textarea>
+
+% if ($result) {
+
+<table border='1'>
+
+% foreach my $row (@$result) {
+
+   <tr>
+%   foreach my $value (@$row) {
+    <td><%$value%></td>
+%   }  # foreach (@$_)
+   </tr>
+
+% }  # foreach (@$result)
+
+</table>
+
+% }
+
+<p class='button'>
+ <input type='submit' name='ausfuehren' value='ausführen'>
+</p>

@@ -1,0 +1,30 @@
+<%attr>
+  titel      => 'Impressum'
+  barcolor   => [255, 255, 0]
+  titel_img  => '/cgi-bin/titel?IMPRESSUM&amp;e-consulter'
+</%attr>
+
+e-consulter &copy; 2000-2008 Die Projektfabrik GmbH<br><br><br>
+
+<address>
+ <p><b>Die Projektfabrik GmbH</b><br/>
+ Fuchstanzstra&szlig;e 20<br/>
+ 61462 K&ouml;nigstein/Ts.<br/><br/>
+ Telefon: +49 (6174) 20392-0<br/>
+ Fax: +49 (6174) 20392-12<br/>
+ E-Mail: <a href="mailto:info@projektfabrik.com">info@projektfabrik.com</a></p>
+</address>
+<table border="0">
+  <tr><td>Vertretungsberechtigte Gesch&auml;ftsf&uuml;hrer:</td><td>Petra Schw&auml;gerl</td></tr>
+  <tr><td>&nbsp;</td><td>Klaus Schw&auml;gerl</td></tr>
+</table>
+
+<p>Registergericht: Amtsgericht K&ouml;nigstein im Taunus<br/>
+Registernummer: HR B 6853</p>
+
+<p>Umsatzsteuer-Identifikationsnummer gem&auml;&szlig; &sect;27a Umsatzsteuergesetz: DE 227612795<br/>
+Steuer Nummer 003 231 531 25</p>
+
+<p>Inhaltlich Verantwortlicher gem&auml;&szlig; &sect;10 Absatz 3 MDStV: Klaus Schw&auml;gerl (Anschrift wie oben) </p>
+
+<p>Haftungshinweis: Trotz sorgf&auml;ltiger inhaltlicher Kontrolle &uuml;bernehmen wir keine Haftung f&uuml;r die Inhalte externer Links. F&uuml;r den Inhalt der verlinkten Seiten sind ausschlie&szlig;lich deren Betreiber verantwortlich</p>

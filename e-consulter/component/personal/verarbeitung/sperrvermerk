@@ -1,0 +1,64 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+$vkn_lfdnr => undef
+$vkn_firma => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia qw(fehler);
+
+$auswahl = $vkn_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($vkn_firma)
+{
+  if ($vkn_lfdnr)
+  {
+    update( $dbh, 'vkunde',
+            { vkn_benuid  => quote($uid),
+              vkn_lfdnr   => $vkn_lfdnr },
+            { vkn_firma   => quote($vkn_firma) } );
+  }
+  else
+  {
+    $vkn_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(vkn_lfdnr) + 1
+       from vkunde
+      where vkn_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'vkunde',
+            { vkn_benuid  => quote($uid),
+              vkn_lfdnr   => $vkn_lfdnr,
+              vkn_firma   => quote($vkn_firma) } );
+  }
+
+  $ARGS{sel_vkn_lfdnr} = undef;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from vkunde
+    where vkn_benuid = '$uid'
+      and vkn_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_vkn_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

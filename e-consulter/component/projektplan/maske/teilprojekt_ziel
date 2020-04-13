@@ -1,0 +1,87 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+</%args>
+<%once>
+
+  my $sth_tpz;
+
+</%once>
+<%perl>
+
+  # lese Teilprojekte
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+    select tpl_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan
+EOF
+
+  # lese Ziele des Projektes
+  my $prz = $dbh->selectall_arrayref( <<"EOF" );
+    select prz_zid, prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid <> 0
+     order by 1
+EOF
+
+  # lese bisher erfasste Zielvorgaben
+  my $sth_tpz = $dbh->prepare( <<"EOF" ) unless $sth_tpz;
+    select tpz_ziel
+      from teilprojektziel
+     where tpz_pid = ?
+       and tpz_ppl = ?
+       and tpz_tid = ?
+       and tpz_zid = ?
+EOF
+
+</%perl>
+
+<h1>Teilprojekt - Zielvorgaben</h1>
+
+<table border='1'>
+ <tr>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+% foreach (@$prz) {
+%   my ($prz_zid, $prz_titel, $prz_einheit) = @$_;
+  <th bgcolor='#ccccff'>
+   <%$prz_titel%> <br>
+   <%$prz_einheit%>
+  </th>
+% }
+ </tr>
+
+% foreach (@$tpl) {
+%   my ($tpl_tid, $tpr_titel) = @$_;
+ <tr>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+%   foreach (@$prz) {
+%     my ($prz_zid, $prz_titel, $prz_einheit) = @$_;
+%     my $tpz_ziel = $dbh->selectrow_array($sth_tpz, {},
+%                    $projektid, $projektplan, $tpl_tid, $prz_zid);
+  <td>
+   <input type='text' name='tpz_ziel_<%$tpl_tid%>_<%$prz_zid%>'
+          value='<%$tpz_ziel%>' size='15'>
+  </td>
+% }
+ </tr>
+
+% }
+ </tr>
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>

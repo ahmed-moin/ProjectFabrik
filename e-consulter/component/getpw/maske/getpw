@@ -1,0 +1,28 @@
+<%args>
+$requid => undef
+</%args>
+<%perl>
+
+  $requid =~ s/^3D//;
+
+</%perl>
+
+ <& '/masketitel', titel => 'Freischaltung Ihres Accounts' &>
+
+ <p>
+ Bitte geben Sie Ihre Benutzerkennung ein, die Ihnen beim
+ Erstkontakt mitgeteilt wurde.
+ </p>
+
+ <input type='hidden' name='requid' value='<%$requid%>'>
+
+ Benutzerkennung <br>
+ <input type='text' name='userid'>
+
+ <p class='button'>
+  <input type='submit' name='freischalten' value='Freischalten'>
+ </p>
+
+ <script language="JavaScript" type="text/javascript">
+  document.forms[0].userid.focus()
+ </script>

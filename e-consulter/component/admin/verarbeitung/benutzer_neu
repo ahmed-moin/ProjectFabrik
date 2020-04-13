@@ -1,0 +1,57 @@
+<%args>
+$dbh
+$speichern => undef
+$ben_uid => undef
+$ben_anrede => undef
+$ben_titel => undef
+$ben_vorname => undef
+$ben_nachname => undef
+$ben_status => undef
+$ben_kunde => undef
+$ben_projektleiter => undef
+$ben_admin => undef
+$passwort1 => undef
+$passwort2 => undef
+$ben_personal => undef
+$ben_projekt => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler("Anrede fehlt") unless $ben_anrede;
+    fehler("Benutzerkennung fehlt") unless $ben_uid;
+    fehler("Passworteingaben stimmen nicht überein") unless $passwort1 eq $passwort2;
+
+    my $ben_password = $passwort1;
+
+    my $dup = $dbh->selectrow_array( "select 1 from benutzer where ben_uid = '$ben_uid'");
+
+    fehler("Benutzerkennung $ben_uid bereits vorhanden") if $dup;
+
+    my $ben_nuid = $dbh->selectrow_array( "
+      select max(ben_nuid) + 1
+        from benutzer" ) || 1;
+
+    $dbh->insert( 'benutzer',
+      { ben_uid           => $dbh->quote($ben_uid),
+        ben_nuid          => $ben_nuid,
+        ben_anrede        => $dbh->quote($ben_anrede),
+        ben_email         => '\'\'',
+        ben_titel         => $dbh->quote($ben_titel),
+        ben_vorname       => $dbh->quote($ben_vorname),
+        ben_nachname      => $dbh->quote($ben_nachname),
+        ben_status        => $ben_status,
+        ben_kunde         => $dbh->bool($ben_kunde),
+        ben_projektleiter => $dbh->bool($ben_projektleiter),
+        ben_admin         => $dbh->bool($ben_admin),
+        ben_personal      => $dbh->bool($ben_personal),
+        ben_projekt       => $dbh->bool($ben_projekt),
+        ben_password      => $dbh->quote($ben_password) } );
+
+    $dbh->commit;
+  }
+
+</%perl>

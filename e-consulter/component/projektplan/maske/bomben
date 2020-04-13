@@ -1,0 +1,121 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+</%args>
+<%perl>
+
+  my $tpl = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+       join teilprojekt
+         on tpl_pid = tpr_pid
+        and tpl_tid = tpr_tid
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan" );
+
+  # lese zum ausgewählten Teilprojekt/Bombe gehörige Aufgaben/Milestones
+  my $bmb = $dbh->selectall_arrayref( "
+    select bmb_apl_tid, bmb_apl_aid, tpr_titel, auf_name
+      from bombe
+       join teilprojekt
+         on tpr_pid = bmb_pid
+        and tpr_tid = bmb_apl_tid
+       join aufgabe
+         on auf_pid = bmb_pid
+        and auf_tid = bmb_apl_tid
+        and auf_aid = bmb_apl_aid
+     where bmb_pid = $projektid
+       and bmb_ppl = $projektplan
+       and bmb_tid = $tid" ) if $tid;
+
+  # lese Milestones, die nicht zur ausgewählten Bombe gehören
+  my $mil = $dbh->selectall_arrayref( "
+    select apl_tid, tpr_titel, apl_aid, auf_name
+      from aufgabenplan
+       join aufgabe
+         on apl_pid = auf_pid
+        and apl_tid = auf_tid
+        and apl_aid = auf_aid
+       join teilprojekt
+         on tpr_pid = apl_pid
+        and tpr_tid = apl_tid
+     where apl_pid = $projektid
+       and apl_milestone
+       and not exists(
+         select 1
+           from bombe
+          where bmb_pid = apl_pid
+            and bmb_ppl = apl_ppl
+            and bmb_tid = $tid
+            and bmb_apl_tid = apl_tid
+            and bmb_apl_aid = apl_aid)" ) if $tid;
+
+</%perl>
+<%cleanup>
+$ARGS{tid} = undef;
+return \%ARGS;
+</%cleanup>
+
+<h1>Bombe</h1>
+
+<& '/select', name => 'tid',
+              values => $tpl,
+              selected => $tid &>
+
+% if ($tid) {
+
+  <table border='1' width='100%'>
+   <tr>
+    <td>
+    </td>
+    <th>
+     Teilprojekt
+    </th>
+    <th>
+     Aufgabe
+    </th>
+   </tr>
+
+%   foreach (@$bmb) {
+%     my ($bmb_apl_tid, $bmb_apl_aid, $tpr_titel, $auf_name) = @$_;
+   <tr>
+    <td>
+     <input type='radio' name='bmb' value='<%$bmb_apl_tid%>-<%$bmb_apl_aid%>'>
+    </td>
+    <td>
+     <%$tpr_titel%>
+    </td>
+    <td>
+     <%$auf_name%>
+    </td>
+   </tr>
+%   } # foreach (@$bmb)
+
+   <tr>
+    <td>
+    </td>
+    <td colspan='2'>
+     <& '/select', name => 'mil',
+                   values =>
+                     [
+                       map
+                       {
+                         my ($apl_tid, $tpr_titel, $apl_aid, $auf_name) = @$_;
+                         [ "$apl_tid-$apl_aid",
+                           "$tpr_titel / $auf_name" ]
+                       } @$mil
+                     ],
+                   submit => 0 &>
+    </td>
+   </tr>
+
+  </table>
+
+<p class='button'>
+ <input type='submit' name='loeschen' value='löschen'>
+ <input type='submit' name='hinzufuegen' value='hinzufügen'>
+</p>
+
+% } # if ($tid)

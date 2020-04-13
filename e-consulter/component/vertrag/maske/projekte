@@ -1,0 +1,102 @@
+<%args>
+$dbh
+$uid
+$sessid
+$projektid => undef
+</%args>
+<%perl>
+
+  # lese Projekte mit Status Anfrage, wo der angemeldete Benutzer
+  # Administrator ist, oder die keinen Administrator haben
+  my $prj = $dbh->selectall_arrayref( "
+    select prj_id, prj_titel, count(tpr_tid)
+      from projekt
+       left outer join teilprojekt
+         on prj_id = tpr_pid
+     where prj_status = 2
+       and (exists (select 1
+                     from rolle
+                    where rol_pid = prj_id
+                      and rol_uid = '$uid'
+                      and rol_admin)
+        or not exists (select 1
+                        from rolle
+                      where rol_pid = prj_id
+                        and rol_admin))
+     group by 1, 2");
+
+  my $sth_admin = $dbh->prepare( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+       join rolle
+         on ben_uid = rol_uid
+     where rol_pid = ?
+       and rol_admin" );
+
+</%perl>
+<%cleanup>
+
+  $ARGS{projektid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Projekte</h1>
+
+<table width='100%' border='1'>
+ <tr>
+  <td bgcolor='#ccccff' width='2%'>
+  </td>
+  <th bgcolor='#ccccff' width='5%'>
+   PID
+  </th>
+  <th bgcolor='#ccccff'>
+   Projekt
+  </th>
+  <th bgcolor='#ccccff'>
+   Projektleiter
+  </th>
+  <th bgcolor='#ccccff' width='5%'>
+   Teilprojekte
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$prj)
+  {
+    my ($prj_id, $prj_titel, $count) = @$_;
+    my $rol_admin = $dbh->selectall_arrayref($sth_admin, {}, $prj_id);
+
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='projektid' value='<%$prj_id%>'<%$projektid == $prj_id && ' checked'%>>
+  </td>
+  <td>
+   <%$prj_id%>
+  </td>
+  <td>
+   <%$prj_titel%>
+  </td>
+  <td>
+%    foreach (@$rol_admin) {
+%      my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+   <& '/kontakt', uid  => $ben_uid,
+                  vorname  => $ben_vorname,
+                  nachname => $ben_nachname,
+                  sessid   => $sessid &> <br>
+%    }
+  </td>
+  <td align='right'>
+   <pre><%$count%></pre>
+  </td>
+ </tr>
+
+% }
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='oeffnen' value='öffnen'>
+</p>

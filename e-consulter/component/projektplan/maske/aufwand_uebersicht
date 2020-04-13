@@ -1,0 +1,153 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$stand => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber formatpt);
+
+  $stand = $stand ? new Contavia::Date($stand) : Contavia::Date::current;
+
+  my $tpl = $dbh->selectall_arrayref( "
+   select tpl_tid, tpr_titel
+     from teilprojektplan
+       join teilprojekt
+         on tpl_pid = tpr_pid
+        and tpl_tid = tpr_tid
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan" );
+
+  my $bud = $dbh->selectall_arrayref( "
+    select tid, art, sum(budget)
+      from vbudget
+     where pid = $projektid
+       and ppl = $projektplan
+     group by tid, art" );
+
+  my %bud;
+  foreach (@$bud)
+  {
+    my ($tid, $aid, $betrag) = @$_;
+    $bud{$tid} = {} unless $bud{$tid};
+    $bud{$tid}->{$aid} = $betrag;
+  }
+
+  my $auf = $dbh->selectall_arrayref( "
+    select tid, art, sum(baufwand)
+      from vaufwand
+     where pid = $projektid
+     group by tid, art" );
+
+  my %auf;
+  foreach (@$auf)
+  {
+    my ($tid, $aid, $betrag) = @$_;
+    $auf{$tid} = {} unless $auf{$tid};
+    $auf{$tid}->{$aid} = $betrag;
+  }
+
+</%perl>
+
+<h1>Aufwandsübersicht - <%$waehrung%></h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <td colspan='2' rowspan='2' bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Personalkosten
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Personentage
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Investition
+  </th>
+ </tr>
+
+ <tr>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Aufwand
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Aufwand
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Aufwand
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Aufwand
+  </th>
+ </tr>
+
+ <%perl>
+
+  my %sum_bud;
+  my %sum_auf;
+
+  foreach (@$tpl) {
+    my ($tpl_tid, $tpr_titel) = @$_;
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <%$tpl_tid%>
+  </td>
+  <td bgcolor='#cccccc'>
+   <%$tpr_titel%>
+  </td>
+
+  <%perl>
+    foreach my $art (1..4)
+    {
+      my $bud = $bud{$tpl_tid} && $bud{$tpl_tid}->{$art};
+      my $auf = $auf{$tpl_tid} && $auf{$tpl_tid}->{$art};
+
+      $sum_bud{$art} += $bud;
+      $sum_auf{$art} += $auf;
+  </%perl>
+
+  <td align='right'>
+   <%$art == 2 ? formatpt($bud) : formatnumber($bud, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%$art == 2 ? formatpt($auf) : formatnumber($auf, 0, $ARGS{lang})%>
+  </td>
+%   } # foreach $art
+
+ </tr>
+% }  # foreach (@$tpl)
+
+ <tr>
+  <th class='label' colspan='2' bgcolor='#cccccc'>
+   Summe
+  </th>
+%   foreach my $art (1..4) {
+  <td align='right' bgcolor='#cccccc'>
+   <%$art == 2 ? formatpt($sum_bud{$art}) : formatnumber($sum_bud{$art}, 0, $ARGS{lang})%>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <%$art == 2 ? formatpt($sum_auf{$art}) : formatnumber($sum_auf{$art}, 0, $ARGS{lang})%>
+  </td>
+%   }
+ </tr>
+</table>

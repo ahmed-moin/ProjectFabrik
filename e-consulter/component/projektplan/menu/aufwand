@@ -1,0 +1,29 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'aufwand_uebersicht',
+             dlabel   => 'Gesamtübersicht',
+             menu     => 'aufwand' },
+           { maske    => 'aufwand_personal',
+             dlabel   => 'Personal',
+             menu     => 'aufwand' },
+           { maske    => 'aufwand_sachkosten',
+             dlabel   => 'Sachkosten',
+             menu     => 'aufwand' },
+           { maske    => 'aufwand_investition',
+             dlabel   => 'Investition',
+             menu     => 'aufwand' },
+           { maske    => 'taetigkeit_pruefen',
+             dlabel   => "Tätigkeit prüfen\nund freigeben",
+             menu     => 'aufwand' },
+           { maske    => 'aufwand_pruefen',
+             dlabel   => "Aufwand prüfen\nund freigeben",
+             menu     => 'aufwand' },
+           @$menu_footer
+         ];
+
+</%perl>

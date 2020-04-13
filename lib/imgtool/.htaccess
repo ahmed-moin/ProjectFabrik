@@ -1,0 +1,17 @@
+SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+SetEnv FONTSIZE 11
+<Files dlabel>
+    SetEnv FONTSIZE 10
+</Files>
+<Files asschart>
+    SetEnv BGCOLOR ffffff
+    SetEnv COLOR1 f00
+    SetEnv COLOR2 8cf
+    SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE 12
+</Files>
+<Files counter>
+    SetEnv FONTFILE /usr/share/fonts/truetype/arial.ttf
+    SetEnv FONTSIZE 12
+    SetEnv COUNTERDIR /var/lib/wwwrun/counter
+</Files>

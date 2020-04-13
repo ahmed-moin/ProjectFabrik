@@ -1,0 +1,197 @@
+<%args>
+$dbh
+$projektid
+$bearbeiten => undef
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = new Contavia::Date($dbh->selectrow_array( <<"EOF"));
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid
+EOF
+  $anf_datum->tag(1);
+
+  # ermittele aktuellen Monat
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+
+  # lese ausgewählten Bericht
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum) : $current;
+  my $ber_text = $dbh->selectrow_array(
+       sprintf(<<"EOF", $sel_datum->qpgdate) ) || '';
+    select ber_text
+      from bericht
+     where ber_pid = $projektid
+       and ber_datum = %s
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Bericht' &>
+
+<table>
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <select name='sel_datum' onChange='document.forms[0].submit()'>
+% for (my $dat = $anf_datum;
+%      $dat->cmp($current) <= 0;
+%      $dat = $dat->naechster_monat) {
+    <option value='<%$dat->format%>'<%$dat->cmp($sel_datum) == 0 ? ' selected' : ''%>> <%$dat->monat%>/<%$dat->jahr%>
+% }
+   </select>
+  </td>
+ </tr>
+</table>
+
+% if ($bearbeiten) {
+%   $ber_text =~ s/\</&lt;/g;
+%   $ber_text =~ s/\>/&gt;/g;
+
+<textarea name='ber_text' rows='15'><%$ber_text%></textarea>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='abbrechen' value='Abbrechen'>
+</p>
+
+Zur Formatierung können HTML-Anweisungen angegeben werden.
+Hier eine kurze Erläuterung einiger Möglichkeiten:
+
+<table border='1' width='100%'>
+ <tr>
+  <th width='20%'>
+   Eingabe
+  </th>
+  <th width='20%'>
+   Bedeutung
+  </th>
+  <th width='60%'>
+   Beispiel
+  </th>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;h1&gt;Überschrift&lt;/h1&gt;
+  </td>
+  <td>
+   Überschrift 1
+  </td>
+  <td>
+   <h1>Überschrift</h1>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;h2&gt;Überschrift&lt;/h2&gt;
+  </td>
+  <td>
+   Überschrift 2
+  </td>
+  <td>
+   <h2>Überschrift</h2>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   Text &lt;br&gt; weiterer Text
+  </td>
+  <td>
+   erzwungene Zeilenschaltung
+  </td>
+  <td>
+   Text <br> weiterer Text
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;b&gt;fett&lt;/b&gt;
+  </td>
+  <td>
+   Fett
+  </td>
+  <td>
+   Das ist ein Beispiel für <b>fetten</b> Text
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;i&gt;kursiv&lt;/i&gt;
+  </td>
+  <td>
+   Kursiv
+  </td>
+  <td>
+   Das ist ein Beispiel für <i>kursiven</i> Text
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;ul&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 1 &lt;/li&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 2 &lt;/li&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 3 &lt;/li&gt;<br>
+   &lt;/ul&gt;<br>
+  </td>
+  <td>
+   ungeordnete Aufzählung
+  </td>
+  <td>
+   <ul>
+    <li>Punkt 1 </li>
+    <li>Punkt 2 </li>
+    <li>Punkt 3 </li>
+   </ul>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   &lt;ol&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 1 &lt;/li&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 2 &lt;/li&gt;<br>
+   &nbsp;&lt;li&gt;Punkt 3 &lt;/li&gt;<br>
+   &lt;/ol&gt;<br>
+  </td>
+  <td>
+   geordnete Aufzählung
+  </td>
+  <td>
+   <ol>
+    <li>Punkt 1 </li>
+    <li>Punkt 2 </li>
+    <li>Punkt 3 </li>
+   </ol>
+  </td>
+ </tr>
+
+</table>
+
+% } else {
+
+<table border='1' width='100%'>
+ <tr>
+  <td>
+   <%$ber_text%>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+</p>
+
+% }

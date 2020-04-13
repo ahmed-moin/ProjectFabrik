@@ -1,0 +1,12 @@
+<%args>
+$detail => undef
+</%args>
+<%perl>
+
+  if ($detail)
+  {
+    $ARGS{folgemaske} = 'auftragdetails';
+    return \%ARGS;
+  }
+
+</%perl>

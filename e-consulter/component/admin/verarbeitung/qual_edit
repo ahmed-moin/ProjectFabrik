@@ -1,0 +1,63 @@
+<%args>
+  $dbh
+  $qid => undef
+  $qname
+  #$qparent
+  $qrate => 'false'
+  $qdel => undef
+</%args>
+<%perl>
+  return if ($qid !~ /\d+/);
+
+  if ($qdel eq 'd') {
+    my $sth = $dbh->prepare('SELECT count(*) FROM qual WHERE qua_oberid=?');
+    $sth->execute($qid);
+    my $count = ($sth->fetchrow_array())[0];
+
+    if ($count > 0) {
+      my $qua_id = ($dbh->selectrow_array('SELECT qua_id FROM qual WHERE qua_bezeichnung=\'Nicht zugewiesen\''))[0];
+
+      if (not defined $qua_id) {
+        $dbh->do('INSERT INTO qual (qua_id, qua_bezeichnung, qua_rank) VALUES ((SELECT max(qua_id) + 1 FROM qual), \'Nicht zugewiesen\', \'f\')');
+        $qua_id = ($dbh->selectrow_array('SELECT qua_id FROM qual WHERE qua_bezeichnung=\'Nicht zugewiesen\''))[0];
+      }
+
+      if ($qua_id == $qid) {
+        $m->print('Nicht zugewiesen kann');
+        return;
+      }
+
+      $dbh->do("UPDATE qual SET qua_oberid='$qua_id' WHERE qua_oberid='$qid'");
+      $sth = $dbh->prepare('DELETE FROM qual WHERE qua_id=?');
+      $sth->execute($qid);
+    }
+    else {
+      $sth = $dbh->prepare('DELETE FROM qual WHERE qua_id=?');
+      $sth->execute($qid);
+    }
+
+    $sth = $dbh->prepare('DELETE FROM qualrank WHERE qra_qualid=?');
+    $sth->execute($qid);
+
+  }
+  else {
+    $qrate = ($qrate eq 'on') ? 'true' : 'false';
+    # disabled
+    #$qparent = undef if ($qparent eq 'null');
+
+    my $old_parent = ($dbh->selectrow_array("SELECT qua_oberid FROM qual WHERE qua_id='$qid'"))[0];
+
+    # qua_oberid disabled because of non-functionality
+    #
+    #my $sth = $dbh->prepare("UPDATE qual SET qua_bezeichnung=?, qua_oberid=?, qua_rank=? WHERE qua_id=?");
+    #$sth->execute($qname, $qparent, $qrate, $qid);
+
+    my $sth = $dbh->prepare("UPDATE qual SET qua_bezeichnung=?, qua_rank=? WHERE qua_id=?");
+    $sth->execute($qname, $qrate, $qid);
+
+#    if (defined $qparent) {
+#      $sth = $dbh->prepare('UPDATE qualrank SET qra_qualid=? WHERE qra_qualid=?');
+#      $sth->execute($qparent, $old_parent);
+#    }
+  }
+</%perl>

@@ -1,0 +1,20 @@
+<%args>
+$bearbeiten => undef
+$teilnehmer => undef
+</%args>
+<%perl>
+
+  if ($bearbeiten)
+  {
+    return $m->comp('sitzung_bearbeiten', %ARGS);
+  }
+  elsif ($teilnehmer)
+  {
+    return $m->comp('sitzung_teilnehmer', %ARGS);
+  }
+  else
+  {
+    return $m->comp('sitzung_anzeigen', %ARGS);
+  }
+
+</%perl>

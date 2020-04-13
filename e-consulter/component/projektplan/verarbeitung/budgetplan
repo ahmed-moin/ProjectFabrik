@@ -1,0 +1,176 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$bpl_aid => undef
+$bpl_datum => undef
+$bpl_betrag => 0
+$bpl_personentage => 0
+$bpl_sachkosten => 0
+$bpl_investition => 0
+$speichern => undef
+$loeschen => undef
+$sel => undef
+$sel_tid => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(insert);
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler ("keine Aufgabe ausgew&auml;hlt") unless $bpl_aid;
+
+    $bpl_betrag       = 0 unless $bpl_betrag;
+    $bpl_personentage = 0 unless $bpl_personentage;
+    $bpl_sachkosten   = 0 unless $bpl_sachkosten;
+    $bpl_investition  = 0 unless $bpl_investition;
+
+    $bpl_datum = new Contavia::Date($bpl_datum);
+    fehler ("kein g&uuml;ltiges Datum eingegeben") if $bpl_datum->is_null;
+    $bpl_datum = $bpl_datum->qpgdate;
+
+    my $ppl_angebot = $dbh->selectrow_array( <<"EOF" );
+     select ppl_angebotdatum
+       from projektplan
+      where ppl_pid    = $projektid
+        and ppl_nummer = $projektplan
+EOF
+
+    my ($bud_betrag_db, $bud_personentage_db, $bud_sachkosten_db,
+        $bud_investition_db) =
+          $dbh->selectrow_array( <<"EOF" );
+     select sum(bud_betrag),
+            sum(bud_personentage),
+            sum(bud_sachkosten),
+            sum(bud_investition)
+       from budget, projektplan
+      where bud_pid       = $projektid
+        and bud_tid       = $tid
+        and ppl_pid       = bud_pid
+        and ppl_nummer    = bud_ppl
+        and ppl_angebotdatum is not null
+        and ppl_ablehnung is null
+EOF
+
+    my ($bpl_betrag_db, $bpl_personentage_db, $bpl_sachkosten_db,
+        $bpl_investition_db) =
+              $dbh->selectrow_array( <<"EOF" );
+     select sum(bpl_betrag),
+            sum(bpl_personentage),
+            sum(bpl_sachkosten),
+            sum(bpl_investition)
+       from budgetplan, projektplan
+      where bpl_pid       = $projektid
+        and bpl_tid       = $tid
+        and bpl_ppl       = $projektplan
+        and ppl_pid       = bpl_pid
+        and ppl_nummer    = bpl_ppl
+        and ppl_ablehnung is null
+EOF
+
+    if ($ppl_angebot)
+    {
+      # wenn wir ein Angebot abgegeben haben, dürfen wir das Budget nicht
+      # überschreiten
+      fehler("Personalkosten überschreiten Budget
+              (Budget:$bud_betrag_db, bisher geplant:$bpl_betrag_db,
+               neu geplant:$bpl_betrag)")
+        if $bpl_betrag > 0 && $bud_betrag_db < $bpl_betrag_db + $bpl_betrag;
+
+      fehler("Personentage überschreiten Budget
+              (Budget:$bud_personentage_db, bisher geplant:$bpl_personentage_db,
+               neu geplant:$bpl_personentage)")
+        if $bpl_personentage > 0 && $bud_personentage_db < $bpl_personentage_db + $bpl_personentage;
+
+      fehler("Sachkosten überschreiten Budget
+              (Budget:$bud_sachkosten_db, bisher geplant:$bpl_sachkosten_db,
+               neu geplant:$bpl_sachkosten)")
+        if $bpl_sachkosten > 0 && $bud_sachkosten_db < $bpl_sachkosten_db + $bpl_sachkosten;
+
+      fehler("Investitionen überschreiten Budget
+              (Budget:$bud_investition_db, bisher geplant:$bpl_investition_db,
+               neu geplant:$bpl_investition)")
+        if $bpl_investition > 0 && $bud_investition_db < $bpl_investition_db + $bpl_investition;
+    }
+
+    fehler("Personalkosten dürfen nicht negativ sein")
+      if $bpl_betrag_db + $bpl_betrag < 0;
+
+    fehler("Personentage dürfen nicht negativ sein")
+      if $bpl_personentage_db + $bpl_personentage < 0;
+
+    fehler("Sachkosten dürfen nicht negativ sein")
+      if $bpl_sachkosten_db + $bpl_sachkosten < 0;
+
+    fehler("Investitionen dürfen nicht negativ sein")
+      if $bpl_investition_db + $bpl_investition < 0;
+
+
+    my $count = $dbh->do( <<"EOF" );
+     update budgetplan
+        set bpl_betrag       = bpl_betrag       + $bpl_betrag,
+            bpl_personentage = bpl_personentage + $bpl_personentage,
+            bpl_sachkosten   = bpl_sachkosten   + $bpl_sachkosten,
+            bpl_investition  = bpl_investition  + $bpl_investition
+      where bpl_pid   = $projektid
+        and bpl_ppl   = $projektplan
+        and bpl_tid   = $tid
+        and bpl_aid   = $bpl_aid
+        and bpl_datum = $bpl_datum
+EOF
+
+    unless ($count > 0)
+    {
+      insert ($dbh, 'budgetplan',
+        { bpl_pid          => $projektid,
+          bpl_ppl          => $projektplan,
+          bpl_tid          => $tid,
+          bpl_aid          => $bpl_aid,
+          bpl_datum        => $bpl_datum,
+          bpl_betrag       => $bpl_betrag,
+          bpl_personentage => $bpl_personentage,
+          bpl_sachkosten   => $bpl_sachkosten,
+          bpl_investition  => $bpl_investition } );
+    }
+
+    $dbh->do(<<"EOF");
+     delete from budgetplan
+      where bpl_pid          = $projektid
+        and bpl_ppl          = $projektplan
+        and bpl_betrag       = 0
+        and bpl_personentage = 0
+        and bpl_sachkosten   = 0
+        and bpl_investition  = 0
+EOF
+
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    fehler ("keine Aufgabe ausgew&auml;hlt") unless $sel;
+
+    my ($aid, $datum) = split(/\|/, $sel);
+    $dbh->do( <<"EOF" );
+      delete from budgetplan
+       where bpl_pid = $projektid
+         and bpl_ppl = $projektplan
+         and bpl_tid = $tid
+         and bpl_aid = $aid
+         and bpl_datum = '$datum'
+EOF
+
+    $dbh->commit;
+  }
+  elsif ($sel_tid && $sel_tid != $ARGS{tid})
+  {
+    $ARGS{tid} = $sel_tid;
+    $ARGS{aid} = undef;
+  }
+
+  return \%ARGS;
+
+</%perl>

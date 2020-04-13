@@ -1,0 +1,64 @@
+<%attr>
+  tool      => 'person'
+  titel     => 'Portrait'
+  barcolor  => [255, 170, 0]
+  titel_img => '/cgi-bin/titel?e-consulter&Portrait'
+  icon      => '/images/icon/personal.gif'
+  foto      => '/images/131-31.jpg'
+</%attr>
+<%method preprocess>
+<%args>
+$dbh
+</%args>
+<%perl>
+  my ($sessid, $user, $maske) = split(/\//, $m->dhandler_arg);
+  $maske =~ s/\.hms$//;
+
+  $ARGS{maske} = $maske;
+  $ARGS{uid} = $dbh->selectrow_array( <<"EOF" );
+   select ben_uid
+     from benutzer
+    where ben_sessid = '$sessid'
+EOF
+  return if ($ARGS{uid} eq '');
+
+  $ARGS{sessid} = $ARGS{uid} && $sessid;
+  $ARGS{user}   = $user;
+
+  my @ben = $dbh->selectrow_array( <<"EOF" );
+   select ben_vorname, ben_nachname
+     from benutzer
+    where ben_uid = '$user'
+EOF
+
+  $ARGS{titel}   = "$ben[0] $ben[1]";
+  $ARGS{rol_uid} = $user;
+
+  return \%ARGS;
+</%perl>
+</%method>
+<%method getmenu>
+<%perl>
+  my $arg = $m->dhandler_arg;
+
+  my @menu = (
+    { href  => 'kontakt.hms',
+      label => 'Kontakt' },
+    { href  => 'bild.hms',
+      label => 'Bild' },
+    { href  => 'profil.hms',
+      label => 'Profil' } );
+
+  foreach (@menu)
+  {
+    my $href = $_->{href};
+    if($arg =~ /${href}$/)
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return @menu;
+</%perl>
+</%method>

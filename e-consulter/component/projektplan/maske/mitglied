@@ -1,0 +1,131 @@
+<%args>
+$dbh
+$projektid
+$sessid
+$sel_uid => undef
+</%args>
+<%perl>
+
+  my $rol = $dbh->selectall_arrayref( <<"EOF" );
+    select rol_uid, rol_admin, rol_kunde, rol_mitarbeiter,
+           ben_vorname, ben_nachname
+      from rolle, benutzer
+     where rol_pid = $projektid
+       and rol_uid = ben_uid
+     order by rol_uid
+EOF
+
+</%perl>
+<& '/masketitel', titel => 'Projektmitglieder' &>
+
+<table border='1' width='100%'>
+ <tr>
+  <th>
+  </th>
+  <th>
+   User-ID
+  </th>
+  <th>
+   Vorname
+  </th>
+  <th>
+   Nachname
+  </th>
+  <th>
+   Projektleiter
+  </th>
+  <th>
+   Kunde
+  </th>
+  <th>
+   Mitarbeiter
+  </th>
+ </tr>
+
+ <%perl>
+ foreach (@$rol)
+ {
+   my ($rol_uid, $rol_admin, $rol_kunde, $rol_mitarbeiter,
+       $ben_vorname, $ben_nachname) = @$_;
+   my $edit = ($sel_uid eq $rol_uid);
+ </%perl>
+ <tr>
+  <td>
+% if ($edit) {
+   <input type='hidden' name='rol_uid' value='<%$rol_uid%>'>
+% } else {
+   <input type='radio' name='sel_uid' value='<%$rol_uid%>'>
+% }
+  </td>
+  <td>
+   <a href='/person/<%$sessid%>/<%$rol_uid%>/kontakt.hms'
+      target=_blank><%$rol_uid%></a>
+  </td>
+  <td>
+   <%$ben_vorname%>
+  </td>
+  <td>
+   <%$ben_nachname%>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_admin',
+                value => $rol_admin,
+                edit  => $edit &>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_kunde',
+                value => $rol_kunde,
+                edit  => $edit &>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_mitarbeiter',
+                value => $rol_mitarbeiter,
+                edit  => $edit &>
+  </td>
+ </tr>
+
+% }
+
+% unless ($sel_uid) {
+ <tr>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='rol_uid' size='10'>
+   <& '/setfocus', name => 'rol_uid' &>
+  </td>
+  <td colspan='2'>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_admin',
+                edit  => 1 &>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_kunde',
+                edit  => 1 &>
+  </td>
+  <td align='center'>
+   <& '.check', name  => 'rol_mitarbeiter',
+                edit  => 1 &>
+  </td>
+ </tr>
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='speichern'  value='speichern'>
+</p>
+
+<%def .check>
+<%args>
+$name
+$value => undef
+$edit => undef
+</%args>
+% if ($edit) {
+   <input type='checkbox' name='<%$name%>'<%$value && ' checked'%>>
+% } else {
+   <%$value ? 'X' : ''%>
+% }
+</%def>

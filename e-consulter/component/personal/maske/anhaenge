@@ -1,0 +1,66 @@
+<%args>
+  $dbh
+  $sessid
+  @menu
+</%args>
+<%once>
+  use Contavia::Date;
+  my ($sth, $res);
+</%once>
+<%perl>
+  $sth = $dbh->prepare("
+    select anh_id, anh_beschreibung, anh_filename, anh_ins_time
+      from anhaenge
+     where anh_uid=(select ben_uid from benutzer where ben_sessid=?)");
+
+  $sth->execute($sessid);
+  $res = $sth->fetchall_arrayref();
+</%perl>
+<& '/masketitel', titel => '<i18n>Anhänge</i18n>',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+
+<table border="1" width="100%">
+  <tr bgcolor="#ccccff">
+    <th></th>
+    <th width="42%"><i18n>Beschreibung</i18n></th>
+    <th width="36%"><i18n>Dateiname</i18n></th>
+    <th><i18n>Ver&auml;ndert am</i18n></th>
+  </tr>
+% foreach (@$res) {
+%   my ($anh_id, $anh_beschreibung, $anh_filename, $anh_ins_time) = @$_;
+%   $anh_ins_time =~ s/\.\d+//;
+    <tr>
+      <td align="center"><input type="radio" name="anh_id" value="<% $anh_id %>"></td>
+      <td><b><% $anh_beschreibung || '&nbsp;' %></b></td>
+      <td align="right"><a href="/files/<% $anh_id %>?sid=<% $sessid %>&a=1"><% $anh_filename %></a></td>
+      <td align="right"><% $anh_ins_time %></td>
+    </tr>
+% }
+</table>
+<input type="submit" name="del" value="l&ouml;schen">
+<br>
+<br>
+<br>
+
+<h2>Datei anh&auml;ngen</h2>
+Beschreibung<br>
+<input type="text" name="anh_beschreibung" size="65"><br><br>
+Datei<br>
+<input type="file" name="anh_filename" size="35">&nbsp;&nbsp;<input type="submit" name="upload" value="Upload">
+<br><br>
+<br><br>
+<h2>Erl&auml;uterung</h2>
+<p>
+  Hier k&ouml;nnen Sie Zertifikate, Referenzen, Zeugnisse etc. an Ihr Profil
+  anh&auml;ngen. W&auml;hlen Sie dazu eine Datei aus (der Button links neben
+  Upload) und klicken anschlie&szlig;end auf Upload. Sie k&ouml;nnen jede
+  beliebige Datei hochladen, jedoch empfehlen wir g&auml;ngige Formate (wie
+  z.B. PDF, Word, Text...) zu verwenden, da sonst die Gefahr besteht, dass es
+  ein Benutzer auf seinem Computer nicht ansehen kann<br><br> Wenn Sie eine
+  Datei hochladen, welche schon vorhanden ist, wird die vorhandene
+  &uuml;berschrieben. So k&ouml;nnen Sie auch die Beschreibung &auml;ndern,
+  sollte sie nicht Ihren W&uuml;nschen entsprechen.
+</p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

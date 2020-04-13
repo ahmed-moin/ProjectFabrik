@@ -1,0 +1,44 @@
+<%args>
+$maxvalue
+$width
+$unit => undef
+$output => 1
+</%args>
+<%perl>
+
+  use URI::Escape;
+
+  my $pow10 = 10 ** int( log($maxvalue) / log(10) + 0.5 ); # größte 10er-Potenz kleiner $maxvalue
+  my $h = (int($maxvalue / $pow10) + 1 ) * $pow10;   # nächst größere Zahl mit {x*10^n | x Ganzzahl}
+
+  # berechne eine geeignete Anzahl von Teilstrichen
+  my $q = $h / $pow10;   # 1 <= q < 10
+  my $tt = $q >= 3 ? int($q) : int($q * 2);
+
+  my $f = 1000 ** int( log($maxvalue / 10) / log(1000));  # 1000er-Faktor
+
+  my $endvalue = int($h / $f);
+  my $step = $endvalue / $tt;
+
+  if ($f == 1000)
+  { $unit = "T $unit"; }
+  elsif ($f == 1000000)
+  { $unit = "Mio $unit"; }
+  elsif ($f != 1)
+  { $unit = "x$f $unit"; }
+
+  #$unit = "x$f $unit"       if ($f != 1);
+  $unit = uri_escape($unit) if $unit;
+
+  if ($output)
+  {
+    $m->out("<img src='/cgi-bin/scale?$width&0&$endvalue&$step&$step");
+    $m->out("&$unit")       if ($unit);
+    $m->out('\'');
+    $m->out(" alt='$unit'") if ($unit);
+    $m->out('>');
+  }
+
+  return $width/$h;
+
+</%perl>

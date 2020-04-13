@@ -1,0 +1,28 @@
+<%args>
+$dbh
+$anmelden => undef
+$userid => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($anmelden)
+  {
+    my $ben_projektleiter = $dbh->selectrow_array( "
+      select 1
+        from benutzer
+       where ben_uid = '$userid'
+         and ben_projektleiter" );
+
+    if ($ben_projektleiter)
+    {
+      return $m->comp('/verarbeitung/login', %ARGS);
+    }
+    else
+    {
+      fehler('<i18n>Anmeldung fehlgeschlagen</i18n>');
+    }
+  }
+
+</%perl>

@@ -1,0 +1,38 @@
+<%args>
+$menu => undef
+$tool
+$lang => 'de'
+$menu_head => []
+</%args>
+<%perl>
+
+if ($menu)
+{
+  foreach (@$menu_head)
+  {
+    if ($_->{menu} eq $menu)
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  if ($m->comp_exists("/$tool/menu.$lang/$menu"))
+  {
+    return $m->comp("/$tool/menu.$lang/$menu", %ARGS);
+  }
+  elsif($m->comp_exists("/menu.$lang/$menu"))
+  {
+    return $m->comp("/menu.$lang/$menu", %ARGS);
+  }
+  elsif ($m->comp_exists("/$tool/menu/$menu"))
+  {
+    return $m->comp("/$tool/menu/$menu", %ARGS);
+  }
+  elsif($m->comp_exists("/menu/$menu"))
+  {
+    return $m->comp("/menu/$menu", %ARGS);
+  }
+}
+
+</%perl>

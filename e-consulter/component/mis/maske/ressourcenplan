@@ -1,0 +1,55 @@
+<%args>
+$projektid
+$dbh
+</%args>
+<%perl>
+  my @tpr;
+
+  my $projektplan = $m->comp('/get_projektplan', %ARGS);
+
+  # lese alle Teilprojekte
+  # Teilprojekte werden in einem Hash mit dem Schlüssel tid gesammelt 
+  my $sth_tpr = $dbh->prepare(<<"EOF");
+    select tpr_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan
+EOF
+
+  my $sth_bud = $dbh->prepare(<<"EOF");
+    select sum(bpl_personentage)
+      from budgetplan
+     where bpl_pid = $projektid
+       and bpl_tid = ?
+       and bpl_ppl = $projektplan
+EOF
+
+  $sth_tpr->execute();
+  while (my $row = $sth_tpr->fetch)
+  {
+    my @row = @$row;
+    my $tid = $row->[0];
+    my $mt = $dbh->selectrow_array($sth_bud, {}, $tid);
+    push @row, $mt;
+    push @tpr, \@row;
+  }
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Projektplan - Ressourcen</i18n>' &>
+
+<table>
+% foreach my $row (@tpr) {
+%   my ($tid, $titel, $budget) = @$row;
+%   $budget = 0 unless defined $budget;
+ <tr>
+  <td>
+   <%$titel%>
+  </td>
+  <td bgcolor='black' valign='right'>
+   <& '/lcd', text => "$budget PT" &>
+  </td>
+ </tr>
+% }

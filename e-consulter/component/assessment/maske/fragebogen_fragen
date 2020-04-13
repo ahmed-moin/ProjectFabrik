@@ -1,0 +1,62 @@
+<%args>
+$dbh
+$uid
+@menu => undef
+$lang => 'de'
+</%args>
+<%perl>
+
+  my $fra = $dbh->selectall_arrayref( <<"EOF" );
+    select fra_fid, fra_frage
+      from assfrage, assantwort
+     where fra_fid  = ant_fid
+       and fra_lang = '$lang'
+       and ant_antwortzeit is null
+       and ant_uid  = '$uid'
+EOF
+
+  my $seiten = $dbh->selectrow_array( <<"EOF" );
+    select count(distinct fra_seite)
+      from assfrage
+     where fra_lang = '$lang'
+EOF
+
+  my $seite = $dbh->selectrow_array( <<"EOF" );
+    select count(distinct fra_seite)
+      from assfrage, assantwort
+     where ant_uid = '$uid'
+       and ant_fid = fra_fid
+       and  fra_lang = '$lang'
+EOF
+
+</%perl>
+
+  <h1> <i18n> Fragebogen </i18n> </h1>
+
+   <i18n> Seite </i18n> <%$seite%>/<%$seiten%>
+
+  <ul>
+% foreach (@$fra) {
+%   my ($fra_fid, $fra_frage) = (@$_);
+    <li>
+     <p>
+      <%$fra_frage%><br>
+      0%
+%  for (my $i = 0; $i <= 10; ++$i) {
+      <input type='radio' name='frage<%$fra_fid%>' value='<%$i%>'>
+%  }
+      100%
+     </p>
+    </li>
+% }
+  </ul>
+
+  <p class='button'>
+   <a href="javascript:document.forms[0].submit()"><img src='/images/vor.gif'
+        alt='weiter' border='0'
+        onMousedown="this.src='/images/vor-pr.gif'"
+        onMouseover="this.src='/images/vor-ak.gif'"
+        onMouseup="this.src='/images/vor.gif'"
+        onMouseout="this.src='/images/vor.gif'"></a>
+  </p>
+

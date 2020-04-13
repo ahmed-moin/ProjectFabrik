@@ -1,0 +1,151 @@
+<%args>
+$projektid
+$dbh
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  # lese Teilprojekte
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+    select tpr_tid, tpr_titel, tpr_status
+      from teilprojekt
+     where tpr_pid = $projektid
+     order by tpr_tid
+EOF
+
+  my (%kos_wert, %budget_wert);
+  my ($sum_kos, $sum_bud) = (0, 0);
+
+  # lese Kosten zu den Teilprojekten
+  my $sth_kos = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(kos_bbetrag)
+      from kosten
+             join auftrag
+               on kos_auftrag = atr_nummer
+     where kos_pid = $projektid
+       and kos_geprueft is not null
+     group by atr_tid
+EOF
+  $sth_kos->execute();
+  while (my $row = $sth_kos->fetch)
+  {
+    $kos_wert{$row->[0]} = $row->[1];
+    $sum_kos += $row->[1];
+  }
+
+  my $sth_tkos = $dbh->prepare(<<"EOF");
+    select atr_tid, sum(tae_stunden * atr_btagessatz / 8)
+      from taetigkeit, auftrag
+     where atr_nummer = tae_nummer
+       and atr_pid = $projektid
+       and tae_geprueft is not null
+     group by atr_tid
+EOF
+  $sth_tkos->execute();
+  while (my $row = $sth_tkos->fetch)
+  {
+    $kos_wert{$row->[0]} += $row->[1];
+    $sum_kos += $row->[1];
+  }
+
+  # ermittele aktuellen Budgetplan
+  my $budplan = $m->comp('/get_projektplan', %ARGS);
+
+  if ($budplan)
+  {
+    # lese Budget zu den Teilprojekten
+    my $sth_bud = $dbh->prepare(<<"EOF");
+    select bpl_tid, sum(bpl_betrag)
+      from budgetplan
+     where bpl_pid = $projektid
+       and bpl_ppl = $budplan
+     group by bpl_tid
+EOF
+    $sth_bud->execute();
+    while (my $row = $sth_bud->fetch)
+    {
+      $budget_wert{$row->[0]} = $row->[1];
+      $sum_bud += $row->[1];
+    }
+  }
+
+  # der längste Balken sollte 300 Pixel breit sein
+  my $max = 0;
+  while ( my ($tid, $value) = each(%budget_wert) ) {
+    $max = $value if $value > $max;
+  }
+
+  my $scale = $m->comp('/hscale',
+                       output => 0,
+                       maxvalue => ($max || 300),
+                       width => 300);
+
+</%perl>
+
+<& '/masketitel', titel => 'Status - Budget' &>
+
+<p> <i18n>Stand</i18n>: <%Contavia::Date::current->format()%> </p>
+
+<table>
+% foreach (@$tpr) {
+%   my ($tid, $titel, $status) = @$_;
+%   my $kosten  = $kos_wert{$tid} || 0;
+%   my $budget  = $budget_wert{$tid} || 0;
+ <tr>
+  <td> <%$titel%> </td>
+  <td>
+   <%perl>
+    my $width1 = int($budget * $scale) || 1;
+    my $width2 = int($kosten * $scale) || 1;
+    $m->comp('/bar2', width1 => $width1,
+                      width2 => $width2,
+                      height => 15,
+                      color1 => [0, 0, 128],
+                      color2 => [0, 192, 0],
+                      alt => "$kosten/$budget");
+   </%perl>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => ($max || 300), width => 300, unit => 'EUR' &>
+  </td>
+ </tr>
+
+ <%perl>
+  $scale = $m->comp('/hscale',
+                    output => 0,
+                    maxvalue => ($sum_bud || 300),
+                    width => 300);
+ </%perl>
+
+ <tr>
+  <td> <b><i18n>Gesamt</i18n></b> </td>
+  <td>
+   <%perl>
+    my $width1 = int($sum_bud * $scale) || 1;
+    my $width2 = int($sum_kos * $scale) || 1;
+    $m->comp('/bar2', width1 => $width1,
+                      width2 => $width2,
+                      height => 15,
+                      color1 => [0, 0, 128],
+                      color2 => [0, 192, 0],
+                      alt => "$sum_bud/$sum_kos");
+   </%perl>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/hscale', maxvalue => ($sum_bud || 300), width => 300, unit => 'EUR' &>
+  </td>
+ </tr>
+
+</table>

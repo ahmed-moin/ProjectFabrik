@@ -1,0 +1,72 @@
+<%args>
+$dbh
+$absenden => undef
+$anrede => undef
+$titel => undef
+$vorname => undef
+$nachname => undef
+$email => undef
+$tool
+$ref => undef
+</%args>
+<%once>
+
+  use Contavia::Date;
+  use Mail::Sendmail;
+
+</%once>
+<%perl>
+  if ($absenden)
+  {
+      die "<fehler>Bitte Daten vollst&auml;ndig angeben</fehler>"
+        unless ($anrede && length($nachname) > 0
+          && length($vorname) > 0 && $email =~ /@/);
+
+    my $uid = substr($vorname, 0, 1) . substr($nachname, 0, 1);
+
+    my $maxuid = $dbh->selectrow_array( "
+     select max(ben_uid)
+       from benutzer
+      where ben_uid like '$uid%'" );
+
+    my $maxnuid = $dbh->selectrow_array( "
+     select max(ben_nuid) + 1
+       from benutzer" );
+
+    $uid .= $maxuid ? sprintf("%03d", substr($maxuid, 2) + 1)
+                    : '001';
+    $maxnuid = 1 unless $maxnuid;
+
+    my $requid = rand(1e8);
+
+    $dbh->insert( 'benutzer',
+      { ben_uid      => $dbh->quote($uid),
+        ben_nuid     => $maxnuid,
+        ben_reqid    => $dbh->quote($requid),
+        ben_titel    => $dbh->quote($titel),
+        ben_anrede   => $dbh->quote($anrede),
+        ben_vorname  => $dbh->quote($vorname),
+        ben_nachname => $dbh->quote($nachname),
+        ben_email    => $dbh->quote($email),
+        ben_personal => $dbh->bool($tool eq 'personal'),
+        ben_projekt  => $dbh->bool($tool eq 'projekt'),
+        ben_admin    => $dbh->bool(0),
+        ben_kunde    => $dbh->bool($tool eq 'projekt'),
+        ben_lupdate  => Contavia::Date::current->qpgdate,
+        ben_ref      => $dbh->quote($ref) } );
+
+    my $URL = $ENV{GETPW_URL} || "http://$ENV{SERVER_NAME}/getpw.hms";
+    sendmail( To      => $email,
+              From    => $ENV{FROM_ADDRESS},
+              Subject => "=?iso-8859-1?Q?Ihre Freischaltung f=FCr http://$ENV{SERVER_NAME}?=",
+              Message => "Sie schalten Ihren Zugang auf der Seite\n  $URL?requid=$requid\nfrei. Dort erhalten Sie Ihr persönliches Passwort.")
+      or die "<fehler>$Mail::Sendmail::error</fehler>";
+
+    $dbh->commit;
+
+    $ARGS{uid} = $uid;
+    $ARGS{folgemaske} = 'erstkontakt_ok';
+
+    return \%ARGS;
+  }
+</%perl>

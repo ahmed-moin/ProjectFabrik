@@ -1,0 +1,152 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$sel_taid => undef
+</%args>
+<%shared>
+  my $sth_tpltpa;
+</%shared>
+<%perl>
+
+  my $tpa = $dbh->selectall_arrayref( <<"EOF" );
+    select tpa_taid, tpa_titel
+      from teilprojektagg
+     where tpa_pid = $projektid
+       and tpa_ppl = $projektplan
+EOF
+
+  $sth_tpltpa = $dbh->prepare( <<"EOF" ) unless $sth_tpltpa;
+    select tpl_tid, tpr_titel
+      from teilprojektplan, teilprojekt
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_taid = ?
+EOF
+
+  my $notpltpa = $dbh->selectall_arrayref( <<"EOF" );
+    select tpl_tid, tpr_titel
+      from teilprojektplan, teilprojekt
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_taid is null
+EOF
+
+</%perl>
+
+<h1>aggregierte Teilprojekte</h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th colspan='2' bgcolor='#ccccff' class='label'>
+   aggregiertes Teilprojekt
+  </th>
+  <th bgcolor='#ccccff' class='label'>
+   zugehörige Teilprojekte
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tpa)
+  {
+    my ($tpa_taid, $tpa_titel) = @$_;
+    my $tpltpa = $dbh->selectall_arrayref($sth_tpltpa, {}, $tpa_taid);
+    if ($sel_taid == $tpa_taid)
+    {
+      $m->comp('.edit', tpa => $_, tpltpa => $tpltpa, notpltpa => $notpltpa );
+    }
+    else
+    {
+      $m->comp('.list', tpa => $_, tpltpa => $tpltpa );
+    }
+  }
+
+ </%perl>
+% unless ($sel_taid) {
+ <tr>
+  <td colspan='2' bgcolor='#cccccc'>
+  </td>
+  <td>
+   <input type='text' name='tpa_titel' size='20'>
+  </td>
+ </tr>
+% }
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+ <input type='submit' name='loeschen' value='L&ouml;schen'>
+</p>
+
+<%def .edit>
+ <%args>
+  @tpa
+  @tpltpa
+  @notpltpa
+ </%args>
+ <%perl>
+  my ($tpa_taid, $tpa_titel) = @tpa;
+
+ </%perl>
+
+ <tr>
+  <td bgcolor='#ccccff'>
+   <input type='hidden' name='tpa_taid' value='<%$tpa_taid%>'>
+  </td>
+  <td>
+   A<%$tpa_taid%>
+  </td>
+  <td>
+   <input type='text' name='tpa_titel' value='<%$tpa_titel%>'>
+  </td>
+  <td>
+% foreach (@tpltpa) {
+%   my ($tpl_tid, $tpl_titel) = @$_;
+   <input type='checkbox' name='tpl_tid' value='<%$tpl_tid%>' checked> <%$tpl_tid%> <%$tpl_titel%> <br>
+% }
+% foreach (@notpltpa) {
+%   my ($tpl_tid, $tpl_titel) = @$_;
+   <input type='checkbox' name='tpl_tid' value='<%$tpl_tid%>'> <%$tpl_tid%> <%$tpl_titel%> <br>
+% }
+  </td>
+ </tr>
+
+</%def>
+
+<%def .list>
+ <%args>
+  @tpa
+  @tpltpa
+ </%args>
+ <%perl>
+  my ($tpa_taid, $tpa_titel) = @tpa;
+
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_taid' value='<%$tpa_taid%>'>
+  </td>
+  <td>
+   A<%$tpa_taid%>
+  </td>
+  <td>
+   <%$tpa_titel%>
+  </td>
+  <td>
+   <ul>
+% foreach (@tpltpa) {
+%   my ($tpl_tid, $tpl_titel) = @$_;
+    <li> <%$tpl_tid%> <%$tpl_titel%> </li>
+% }
+   </ul>
+  </td>
+ </tr>
+</%def>

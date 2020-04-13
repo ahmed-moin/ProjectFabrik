@@ -1,0 +1,97 @@
+<%args>
+$dbh
+$projektid => undef
+$projektplan => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  fehler ( 'kein Projekt ausgewählt' ) unless $projektid;
+
+  my $ppl = $dbh->selectall_arrayref( <<"EOF" );
+   select ppl_nummer, ppl_datum, ppl_text, ppl_angebotdatum, ppl_auftrag, ppl_ablehnung
+     from projektplan
+    where ppl_pid = $projektid
+    order by ppl_nummer
+EOF
+
+</%perl>
+<%cleanup>
+
+  $ARGS{projektplan} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1> Projektübersicht </h1>
+
+<h2> Projektpläne </h2>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th bgcolor='#ccccff'>
+   Nr
+  </th>
+  <th bgcolor='#ccccff'>
+   Datum
+  </th>
+  <th bgcolor='#ccccff'>
+   Angebotsdatum
+  </th>
+  <th bgcolor='#ccccff'>
+   Auftragsdatum
+  </th>
+  <th bgcolor='#ccccff'>
+   Ablehnungsdatum
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$ppl)
+  {
+    my ($ppl_nummer, $ppl_datum, $ppl_text, $ppl_angebotdatum, $ppl_auftrag,
+        $ppl_ablehnung) = @$_;
+
+ </%perl>
+ <tr>
+  <td>
+   <input type='radio' name='projektplan'
+          value='<%$ppl_nummer%>'
+          <%$ppl_nummer == $projektplan ? ' checked' : ''%>>
+  </td>
+  <td>
+   <%$ppl_nummer%>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_datum)->preformat%>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_angebotdatum)->preformat%>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_auftrag)->preformat%>
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_ablehnung)->preformat%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+<p class='button'>
+  <input type='submit' name='oeffnen' value='&ouml;ffnen' style='width:120'>
+  <input type='submit' name='oeffnen_akt' value='aktuellen &ouml;ffnen' style='width:120'>
+  <input type='submit' name='oeffnen_neu' value='neuesten &ouml;ffnen' style='width:120'>
+  <input type='submit' name='neu' value='Neu' style='width:120'>
+% if ($loeschen) {
+  <input type='hidden' name='ppl_loeschen' value='<%$projektplan%>'>
+  <input type='submit' name='loeschen_ok' value='Projektplan <%$projektplan%> wirklich Löschen'>
+% } else {
+  <input type='submit' name='loeschen' value='Löschen' style='width:120'>
+% }
+</p>

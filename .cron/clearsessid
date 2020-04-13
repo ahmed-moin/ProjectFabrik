@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+
+use strict;
+#use lib '/usr/local/lib/perl5';
+use lib '/u/e-consulter/lib';
+use EConsulter;
+use Getopt::Std;
+
+$ENV{PGUSER} = 'e-consulter';
+$ENV{PGHOST} = 'localhost';
+
+my %opt;
+getopts('t:q', \%opt);
+my $t = $opt{t} || '2:00';
+my $quiet = $opt{q};
+
+my $econ = new EConsulter;
+my $dbh = $econ->connect;
+
+print scalar(localtime), " lösche überalterte Session-IDs\n" unless $quiet;
+
+my $count = $dbh->do( "
+  update benutzer
+     set ben_sessid = null
+   where ben_sessid is not null
+     and (ben_uid in (
+                select acc_uid
+                  from account
+                 where acc_uid is not null
+                 group by acc_uid
+                 having CURRENT_TIMESTAMP - max(acc_zeit) > '$t')
+       or ben_uid not in(
+                select distinct acc_uid
+                  from account))" );
+
+$dbh->commit;
+
+print scalar(localtime), ' ', $count + 0, " Sätze gelöscht ... OK\n" unless $quiet;
+
+$dbh->disconnect;

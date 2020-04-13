@@ -1,0 +1,29 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'teilprojekte',
+             dlabel   => 'Übersicht',
+             menu     => 'teilprojekte' },
+           { maske    => 'teilprojekt_beschreibung',
+             dlabel   => 'Beschreibung',
+             menu     => 'teilprojekte' },
+           { maske    => 'teilprojekt_ziel',
+             dlabel   => 'Zielvorgaben',
+             menu     => 'teilprojekte' },
+           { maske    => 'teilprojekt_zielrealisierung',
+             dlabel   => 'Zielrealisierung',
+             menu     => 'teilprojekte' },
+           { maske    => 'teilprojekt_diagramm',
+             dlabel   => 'Zeitplan',
+             menu     => 'teilprojekte' },
+           { maske    => 'teilprojektagg',
+             dlabel   => "aggregierte\nTeilprojekte",
+             menu     => 'teilprojekte' },
+           @$menu_footer
+         ];
+
+</%perl>

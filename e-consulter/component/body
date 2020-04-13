@@ -1,0 +1,56 @@
+<%args>
+@menu => undef
+$tool => undef
+$folgemaske => undef
+$lang => 'de'
+</%args>
+<%perl>
+
+my $maske = $folgemaske;
+
+if ($maske)
+{
+  if ($m->comp_exists("/$tool/maske.$lang/$maske"))
+  {
+    $m->comp("/$tool/maske.$lang/$maske", %ARGS);
+  }
+  elsif($m->comp_exists("/maske.$lang/$maske"))
+  {
+    $m->comp("/maske.$lang/$maske", %ARGS);
+  }
+  elsif ($m->comp_exists("/$tool/maske/$maske"))
+  {
+    $m->comp("/$tool/maske/$maske", %ARGS);
+  }
+  elsif($m->comp_exists("/maske/$maske"))
+  {
+    $m->comp("/maske/$maske", %ARGS);
+  }
+}
+else
+{
+</%perl>
+<pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+<%perl>
+}
+
+</%perl>

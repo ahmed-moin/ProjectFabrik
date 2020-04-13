@@ -1,0 +1,9 @@
+<%args>
+$label
+$open => undef
+$alt => undef
+$onClick => undef
+</%args>
+% use URI::Escape;
+% $label = uri_escape($label);
+<img src='/cgi-bin/tab?<% $open ? "$label&o" : $label %>'<% $alt ? " alt='$alt'" : '' %><% $onClick ? " onClick='$onClick'" : ''%>>\

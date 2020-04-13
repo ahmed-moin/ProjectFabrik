@@ -1,0 +1,113 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Personaltool
+  Programmiert          Tommi Mäkitalo, Kommunikationsmanagement Schwägerl
+  Datum                 Januar 2001
+
+  Beschreibung
+    Verwaltung von Projekten
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Juli 2000     Erstimplementierung in PHP
+  0.2     TM    Januar 2001   Neuimplementierung mit HTML::Mason
+  0.3     TM    Mai 2001      Einführung autohandler
+
+</%doc>
+<%attr>
+
+  tool      => 'personal'
+  titel     => 'Personaltool'
+  barcolor  => [255, 170, 0]
+  titel_img => '/images/titel/personal.gif'
+  icon      => '/images/icon/personal.gif'
+  foto      => '/images/131-31.jpg'
+  defmaske  => 'anleitung'
+  logo      => undef
+
+</%attr>
+
+<%method getmenu>
+<%perl>
+  my @menu;
+
+  if ( $ARGS{sessid} )
+  {
+    @menu =
+    (
+      { maske  => 'anleitung',
+        label  => '<i18n>Anleitung</i18n>' },
+      { maske  => 'password',
+        label  => '<i18n>Passwort</i18n>' },
+      { maske  => 'stammdaten',
+        label  => '<i18n>Stammdaten</i18n>' },
+      { maske  => 'ausbildung',
+        label  => '<i18n>Ausbildung</i18n>' },
+      { maske  => 'qualifikation',
+        label  => '<i18n>Qualifikation</i18n>' },
+      { maske  => 'bis_taetigkeit',
+        label  => "<i18n>bisheriger\nTätigkeitsbereich</i18n>" },
+      { maske  => 'referenzen',
+        label  => '<i18n>Referenzen</i18n>' },
+      { maske  => 'ges_taetigkeit',
+        label  => "<i18n>gesuchter\nTätigkeitsbereich</i18n>" },
+      { maske  => 'verfuegbarkeit',
+        label  => '<i18n>Verfügbarkeit</i18n>' },
+      { maske  => 'sperrvermerk',
+        label  => '<i18n>Sperrvermerk</i18n>' },
+      { maske  => 'bemerkung',
+        label  => '<i18n>Bemerkung</i18n>' },
+      { maske  => 'zusammenfassung',
+        label  => '<i18n>Zusammenfassung</i18n>' },
+      { maske  => 'abschluss',
+        label  => '<i18n>Abschluß</i18n>' },
+    );
+  }
+  else
+  {
+    @menu =
+    (
+      { maske  => 'anleitung',
+        label  => '<i18n>Anleitung</i18n>' },
+      { maske  => 'nutzungsbedingungen',
+        label  => '<i18n>Nutzungsbedingungen</i18n>' },
+      { maske  => 'erstkontakt',
+        label  => '<i18n>Erstkontakt</i18n>' },
+      { maske  => 'login',
+        label  => '<i18n>Login</i18n>' },
+    );
+
+    $ARGS{folgemaske} = 'anleitung' unless $ARGS{folgemaske};
+  }
+
+  return @menu;
+
+</%perl>
+</%method>
+
+<%method preprocess>
+<%args>
+$dbh
+$uid => undef
+</%args>
+<%perl>
+
+  if ($uid)
+  {
+    my @ben = $dbh->selectrow_array( <<"EOF" );
+      select ben_vorname, ben_nachname
+        from benutzer
+       where ben_uid = '$uid'
+EOF
+    $ARGS{titel} = "$ben[0] $ben[1]" if @ben;
+  }
+
+  return \%ARGS;
+
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+<%perl>
+  return [ ['nb', $ARGS{nb}] ];
+</%perl>
+</%method>

@@ -1,0 +1,15 @@
+<%args>
+$bearbeiten => undef
+</%args>
+<%perl>
+
+  if ($bearbeiten)
+  {
+    return $m->comp( 'teilprojektsummary_bearbeiten', %ARGS );
+  }
+  else
+  {
+    return $m->comp( 'teilprojektsummary_anzeigen', %ARGS );
+  }
+
+</%perl>

@@ -1,0 +1,25 @@
+<%args>
+    $uid
+    $dbh
+</%args>
+<%once>
+    use Apache::Session::File;
+</%once>
+<%perl>
+    my %s;
+
+    tie %s, 'Apache::Session::File', undef, {
+        Directory => '/tmp',
+    #    LockDirectory   => '/var/lock/sessions',
+    };
+
+    my $ben_sessid = $dbh->selectrow_array( <<EOF );
+         select ben_sessid
+           from benutzer
+           where ben_uid = '$uid'
+EOF
+
+    #return $ben_sessid || sprintf('%010d%s%08d', time, $uid, rand(1e8));
+    return $ben_sessid || "$uid$s{_session_id}";
+
+</%perl>

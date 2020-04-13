@@ -1,0 +1,122 @@
+<%args>
+$dbh
+$projektid => undef
+$projektplan => undef
+</%args>
+<%perl>
+  use Contavia::Date;
+  use HTML::Entities;
+
+  fehler ( 'kein Projektplan ausgewählt' ) unless $projektplan;
+
+  my ($ppl_nummer, $ppl_datum, $ppl_text, $ppl_angebotdatum, $ppl_angebottext,
+      $ppl_angebotbis, $ppl_auftrag, $ppl_ablehnung, $ppl_ablehnungsgrund,
+      $ppl_ablehnungstext, $ppl_vorgehen) = $dbh->selectrow_array( "
+      select ppl_nummer, ppl_datum, ppl_text, ppl_angebotdatum, ppl_angebottext,
+             ppl_angebotbis, ppl_auftrag, ppl_ablehnung, ppl_ablehnungsgrund,
+             ppl_ablehnungstext, ppl_vorgehen
+        from projektplan
+       where ppl_pid    = ?
+         and ppl_nummer = ?
+        ", {}, $projektid, $projektplan );
+
+  $ppl_text = encode_entities($ppl_text);
+  $ppl_angebottext = encode_entities($ppl_angebottext);
+
+  my %grund = (
+    1 => 'Angebot zu teuer',
+    2 => 'Anforderung falsch interpretiert',
+    3 => 'internet Priorisierung hat sich verändert',
+    4 => 'Projekt zurückgestellt',
+    5 => 'für einen anderen Anbieter entschiedenen' );
+
+  my %vorgehen = (
+    1 => 'Kontaktaufnahme per Telefon',
+    2 => 'Kontaktaufnahme per E-Mail',
+    3 => 'Kontaktaufnahme per Fax',
+    4 => 'Termin zu einem persönlichen Gespräch',
+    5 => 'keine weitere Kontaktaufnahme' );
+
+</%perl>
+<h1>Projektplan</h1>
+
+<table width='100%'>
+ <tr>
+  <th class='label' width='20%'>
+   Nummer
+  </th>
+  <td width='80%'>
+   <%$ppl_nummer%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <%new Contavia::Date($ppl_datum)->preformat%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Beschreibung
+  </th>
+  <td>
+   <%$ppl_text%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Angebotsdatum
+  </th>
+  <td>
+   <%new Contavia::Date($ppl_angebotdatum)->preformat%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Angebotstext
+  </th>
+  <td>
+   <%$ppl_angebottext%>
+  </td>
+ </tr>
+</table>
+
+<hr>
+
+% if ($ppl_auftrag) {
+Das Angebot ist am <%new Contavia::Date($ppl_auftrag)->format%> beauftragt worden.
+% }
+
+% if ($ppl_ablehnung) {
+
+  <p>
+    Das Angebot ist am <%new Contavia::Date($ppl_ablehnung)->format%> abgelehnt worden. Als Grund wurde angegeben:
+
+    <ul>
+% for (my $i = 1; $i <= 5; ++$i) {
+%   if ($ppl_ablehnungsgrund & (1 << $i)) {
+     <li><%$grund{$i}%></li>
+%   }
+% }
+    </ul>
+  </p>
+
+  <p>
+   <%$ppl_ablehnungstext%>
+  </p>
+
+  <p>
+    Gewünschte weitere vorgehensweise: 
+
+    <ul>
+      <li><%$vorgehen{$ppl_vorgehen}%></li>
+    </ul>
+  </p>
+
+% }

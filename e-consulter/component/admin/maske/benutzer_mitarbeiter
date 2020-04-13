@@ -1,0 +1,6 @@
+<%args>
+</%args>
+<span style="float:right"><a href="/contacts.csv?cond=mitarbeiter&sessid=<% $ARGS{sessid} %>">download</a></span>
+<h1>Mitarbeiter</h1>
+<& 'benutzer', cond => 'ben_status = 1',
+               %ARGS &>

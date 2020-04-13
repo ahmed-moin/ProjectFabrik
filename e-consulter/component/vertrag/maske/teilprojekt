@@ -1,0 +1,208 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$sel_tid => undef
+</%args>
+<%perl>
+
+  $projektplan = $dbh->selectrow_array( "
+    select max(ppl_nummer)
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_ablehnung is null" ) unless $projektplan;
+
+  my $tpl = $projektplan ? $dbh->selectall_arrayref( "
+   select tpl_tid, tpr_titel, tpl_start, tpl_ende,
+          tpr_verantwortlich
+     from teilprojekt
+     join teilprojektplan
+       on tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+    order by tpl_tid" ) : [];
+
+  my ($start, $ende) = $dbh->selectrow_array( "
+   select min(tpl_start), max(tpl_ende)
+     from teilprojekt
+     join teilprojektplan
+       on tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan" ) if $projektplan;
+
+  my $projektleiter = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+     where ben_projektleiter" );
+
+  $start = new Contavia::Date($start);
+  $ende  = new Contavia::Date($ende);
+
+</%perl>
+<%cleanup>
+
+  $ARGS{projektplan}  = $projektplan;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Teilprojektdetails</h1>
+
+<table width='100%' border='1'>
+ <tr>
+  <td bgcolor='#ccccff' width='5%'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff' width='50%'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff' width='20%'>
+   Start
+  </th>
+  <th bgcolor='#ccccff' width='20%'>
+   Ende
+  </th>
+  <th bgcolor='#ccccff' width='20%'>
+   Verantwortlich
+  </th>
+ </tr>
+
+ <%perl>
+
+  foreach (@$tpl)
+  {
+    my ($tpl_tid, $tpr_titel, $tpl_start, $tpl_ende,
+        $tpr_verantwortlich) = @$_;
+
+    if ($sel_tid == $tpl_tid) {
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='hidden' name='tpl_tid' value='<%$tpl_tid%>'>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'tpl_start', value => $tpl_start &>
+   <& '/setfocus', name => 'tpl_start' &>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'tpl_ende', value => $tpl_ende &>
+  </td>
+  <td>
+   <& '/select', name => 'tpr_verantwortlich',
+                 values =>
+                 [
+                   map
+                   {
+                     my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                     [ $ben_uid, "$ben_uid: $ben_vorname $ben_nachname" ];
+                   } @$projektleiter
+                 ],
+                 selected => $tpr_verantwortlich,
+                 submit => 0 &>
+  </td>
+ </tr>
+
+%   } else { # if ($sel_tid == $tpl_tid)
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_tid' value='<%$tpl_tid%>'<%$sel_tid == $tpl_tid ? ' selected' : ''%>>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <% new Contavia::Date($tpl_start)->preformat %>
+  </td>
+  <td align='right'>
+   <% new Contavia::Date($tpl_ende)->preformat %>
+  </td>
+  <td>
+   <%$tpr_verantwortlich%>
+  </td>
+ </tr>
+
+%   } # if ($sel_tid == $tpl_tid)
+
+% } # foreach (@$tpl)
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+% if ($sel_tid) {
+ <input type='submit' name='speichern' value='Speichern'>
+% }
+</p>
+
+% if ($start && $ende) {
+
+  <table>
+   <tr>
+    <td colspan='2'>
+    </td>
+    <td>
+     <& '/dateline', start => [$start->monat, $start->jahr],
+                     end   => [$ende->monat, $ende->jahr],
+                     width => 30 &>
+    </td>
+   </tr>
+
+   <%perl>
+
+    my $starttage = $start->zinstage;
+
+    foreach (@$tpl)
+    {
+      my ($tpl_tid, $tpr_titel, $tpl_start, $tpl_ende) = @$_;
+
+      $tpl_start = new Contavia::Date($tpl_start)->zinstage;
+      $tpl_ende  = new Contavia::Date($tpl_ende)->zinstage;
+
+   </%perl>
+
+   <tr>
+    <td>
+     <%$tpl_tid%>
+    </td>
+    <td>
+     <%$tpr_titel%>
+    </td>
+    <td background='/images/tdbg.png'>
+     <%perl>
+     #
+     # ATTENTION! Bad hack! ;)
+     #
+     # The '+14' was added, because the width of the
+     # first (white) zeitbar was not correct. One month
+     # on the scale has 20px, but the zeitbar CGI did
+     # assume 16px. Funnily enough the second zeitbar
+     # was not affected.
+     #
+     # 2003-09-03, Die Projektfabrik GmbH, Florian Doerfler
+	 
+     $m->comp( '/zeitbar', width  => $tpl_start - $starttage + 14,
+                           height => 1,
+                           color  => 'ffffff' );
+
+     $m->comp( '/zeitbar', width  => $tpl_ende - $tpl_start,
+                           height => 12,
+                           color  => '0000ff' );
+
+     </%perl>
+    </td>
+   </tr>
+
+%   } # foreach (@$tpl)
+  </table>
+% }

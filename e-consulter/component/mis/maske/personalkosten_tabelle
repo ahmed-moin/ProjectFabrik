@@ -1,0 +1,8 @@
+<%args>
+$waehrung
+</%args>
+
+<h1><i18n>Personalkosten</i18n> - <%$waehrung%></h1>
+
+<& 'budgetaufwand_tabelle', %ARGS,
+                            art => 1 &>

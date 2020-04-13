@@ -1,0 +1,85 @@
+<%args>
+$projektid
+$dbh
+$zid => 1
+$stand
+$lang => ''
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  $stand = new Contavia::Date($stand)->qpgdate;
+
+  my $projektplan = $m->comp('/get_projektplan', %ARGS);
+
+  my ($prz_titel, $prz_einheit) = $dbh->selectrow_array(<<"EOF");
+    select prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid = $zid
+EOF
+
+  my %tpz = $dbh->select_hash(<<"EOF");
+    select tpz_tid, tpz_ziel
+      from teilprojektziel
+     where tpz_pid = $projektid
+       and tpz_ppl = $projektplan
+       and tpz_zid = $zid
+EOF
+
+  my %tpe = $dbh->select_hash(<<"EOF");
+    select tpe_tid, tpe_realisierung
+      from teilprojektrealisierung a
+     where tpe_pid = $projektid
+       and tpe_zid = $zid
+       and tpe_datum = (select max(tpe_datum)
+         from teilprojektrealisierung b
+        where a.tpe_pid = b.tpe_pid
+          and a.tpe_tid = b.tpe_tid
+          and a.tpe_zid = b.tpe_zid
+          and b.tpe_datum <= $stand)
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => "<i18n>Status</i18n> - $prz_titel" &>
+
+<table>
+ <tr>
+<& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<& '/balkengrafik', dbh => $dbh,
+                    projektid => $projektid,
+                    projektplan => $projektplan,
+                    werte1 => \%tpz,
+                    werte2 => \%tpe, 
+                    color1 => [128, 64, 192],
+                    color2 => [192, 192, 0],
+                    unit   => $prz_einheit,
+                    lang   => $lang &>
+
+ <table>
+  <tr>
+   <td>
+	<i18n>
+    Ziel
+	</i18n>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [128, 64, 192] &>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+	  <i18n>Ist</i18n>
+%#    <%$lang eq 'en' ? 'Actual state' : 'Ist'%>
+   </td>
+   <td>
+    <& '/bar', width => 16, height => 10, color => [192, 192, 0] &>
+   </td>
+  </tr>
+ </table>

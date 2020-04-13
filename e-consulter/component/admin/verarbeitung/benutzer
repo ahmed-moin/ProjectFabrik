@@ -1,0 +1,108 @@
+<%args>
+$dbh
+
+$speichern => undef
+$loeschen_ok => undef
+$passwort_aendern => undef
+$bearbeiten => undef
+$fldel => undef
+$ben_uid => undef
+$ben_status => undef
+$ben_projektleiter => undef
+$ben_admin => undef
+$ben_kunde => undef
+$ben_personal => undef
+$ben_projekt => undef
+$ben_blacklisted => undef
+$ben_blackreason => undef
+$passwort1 => undef
+$passwort2 => undef
+$ben_frmid_owned => undef
+$ben_firmenlogo => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Db qw(replace quote);
+  use MIME::Base64;
+
+
+  if ($speichern) {
+    my %values;
+    $values{ben_status}        = $ben_status if defined($ben_status);
+    $values{ben_projektleiter} = $dbh->bool($ben_projektleiter);
+    $values{ben_admin}         = $dbh->bool($ben_admin);
+    $values{ben_kunde}         = $dbh->bool($ben_kunde);
+    $values{ben_personal}      = $dbh->bool($ben_personal);
+    $values{ben_projekt}       = $dbh->bool($ben_projekt);
+    $values{ben_frmid_owned}   = (not defined $ben_frmid_owned or $ben_frmid_owned eq '') ? 'null' : $ben_frmid_owned;
+    $values{ben_blacklisted}   = $dbh->bool($ben_blacklisted);
+    $values{ben_blackreason}   = $dbh->quote($ben_blackreason);
+
+    $dbh->update( 'benutzer',
+      { ben_uid           => $dbh->quote($ben_uid) },
+      \%values ) if %values;
+
+    my $q = $m->cgi_object;
+    my $uploadInfo = $q->uploadInfo($ben_firmenlogo);
+    
+    if ($uploadInfo)
+    {
+      my $bld_mime = $uploadInfo->{'Content-Type'};
+      fehler ("</18n>das Bild hat keinen g&uuml;ltigen Dateityp</i18n>")
+        unless $bld_mime =~ m{^image/};
+
+      my $fh = $q->upload('ben_firmenlogo');
+      my $data;
+
+      local $/ = undef;
+      my $i = 0;
+      while (read $fh, $data, 570)
+      {
+        replace( $dbh, 'firmenlogo',
+          { flg_uid   => quote($ben_uid),
+            flg_lfdnr => $i++ },
+          { flg_mime  => quote($bld_mime),
+            flg_bild  => quote(MIME::Base64::encode($data)) } );
+      }
+
+      $dbh->do( <<"EOF" );
+        delete from firmenlogo
+         where flg_uid = '$ben_uid'
+           and flg_lfdnr >= $i
+EOF
+    }
+
+
+    $dbh->commit;
+
+    #$ARGS{ben_uid} = undef;
+    return \%ARGS;
+  }
+  elsif ($loeschen_ok) {
+    $dbh->do( "delete from benutzer where ben_uid = '$ben_uid'" );
+    $dbh->commit;
+  }
+  elsif ($passwort_aendern && ($passwort1 ne 'query' || $passwort2 ne 'pw')) {
+    fehler("kein Passwort angegeben") unless $passwort1;
+
+    fehler("eingegebene Passworte stimmen nicht überein")
+          unless $passwort1 eq $passwort2;
+
+    $dbh->update( 'benutzer',
+      { ben_uid      => $dbh->quote($ben_uid) },
+      { ben_password => $dbh->quote($passwort1) } );
+
+    $dbh->commit;
+  }
+  elsif ($bearbeiten) {
+    $ARGS{zusammenfassung} = undef;
+    return \%ARGS;
+  }
+  elsif ($fldel) {
+    my $sth = $dbh->prepare('delete from firmenlogo where flg_uid=?');
+    $sth->execute($ben_uid);
+    $dbh->commit();
+  }
+
+</%perl>

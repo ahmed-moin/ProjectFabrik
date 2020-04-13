@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use lib qw(/var/www/e-consulter.com/www/lib);
+
+use CGI;
+use MIME::Base64;
+use EConsulter;
+
+my $q = new CGI;
+my $uid = $q->param('uid');
+
+my $econsulter = new EConsulter;
+my $dbh = $econsulter->connect;
+
+my $sth = $dbh->prepare( "
+ select bld_mime, bld_bild
+   from bild
+  where bld_uid = ?
+  order by bld_lfdnr");
+
+$sth->execute($uid);
+my $bld = $sth->fetchall_arrayref();
+
+$dbh->disconnect;
+
+my $bld_bild;
+
+if ($bld)
+{
+  my $bld_mime = $bld->[0]->[0];
+
+  print $q->header(-type => $bld_mime);
+
+  foreach (@$bld)
+  {
+    my ($mime, $bild) = @$_;
+    print decode_base64($bild);
+  }
+}
+else
+{
+  return 404;
+}

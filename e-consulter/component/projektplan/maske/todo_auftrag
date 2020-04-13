@@ -1,0 +1,185 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+</%args>
+<%perl>
+
+  my $auf = $dbh->selectall_arrayref( "
+    select tpr_tid, tpr_titel,
+           auf_aid, auf_name,
+           apl_startdatum, apl_endedatum
+      from aufgabenplan
+       join aufgabe
+         on auf_pid = apl_pid
+        and auf_tid = apl_tid
+        and auf_aid = apl_aid
+       join teilprojekt
+         on tpr_pid = apl_pid
+        and tpr_tid = apl_tid
+     where apl_pid        = $projektid
+       and apl_ppl        = $projektplan
+       and not exists (
+         select 1
+           from auftrag
+          where atr_pid = apl_pid
+            and atr_tid = apl_tid
+            and atr_aid = apl_aid)" );
+
+  my $auf2 = $dbh->selectall_arrayref( "
+   select atr_nummer, atr_uid,
+          tpr_tid, tpr_titel,
+          auf_aid, auf_name,
+          apl_startdatum, apl_endedatum
+      from aufgabenplan
+       join aufgabe
+         on auf_pid = apl_pid
+        and auf_tid = apl_tid
+        and auf_aid = apl_aid
+       join teilprojekt
+         on tpr_pid = apl_pid
+        and tpr_tid = apl_tid
+       join auftrag
+         on atr_pid = apl_pid
+        and atr_tid = apl_tid
+        and atr_aid = apl_aid
+     where apl_pid        = $projektid
+       and apl_ppl        = $projektplan
+       and atr_freigabe is null" );
+
+</%perl>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  $ARGS{aid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>TODO - Auftrag</h1>
+
+<input type='hidden' name='aid' value='<%$aid%>'>
+
+<h2>folgende Aufgaben wurden noch nicht beauftragt:</h2>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th bgcolor='#ccccff'>
+   Startdatum
+  </th>
+  <th bgcolor='#ccccff'>
+   Endedatum
+  </th>
+ </tr>
+
+% foreach (@$auf) {
+%   my ($tpr_tid, $tpr_titel,
+%       $auf_aid, $auf_name,
+%       $apl_startdatum, $apl_endedatum) = @$_;
+
+ <tr>
+  <td>
+% my $checked = ' checked' if $tid == $tpr_tid && (!$aid || $aid == $auf_aid);
+   <input type='radio' name='tid' value='<%$tpr_tid%>'<%$checked%>
+     onClick='document.forms[0].aid.value = <%$auf_aid%>'>
+% $tid = undef if $checked;
+  </td>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$auf_aid%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+ </tr>
+
+% }
+
+</table>
+
+<h2>folgende Aufträge sind noch nicht freigegeben:</h2>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th bgcolor='#ccccff'>
+   Nr
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th bgcolor='#ccccff'>
+   Verantwortlich
+  </th>
+  <th bgcolor='#ccccff'>
+   Startdatum
+  </th>
+  <th bgcolor='#ccccff'>
+   Endedatum
+  </th>
+  
+%   foreach (@$auf2) {
+%     my ($atr_nummer, $atr_uid, $tpr_tid, $tpr_titel,
+%         $auf_aid, $auf_name, $apl_startdatum, $apl_endedatum) = @$_;
+
+ <tr>
+  <td>
+% my $checked = ' checked' if $tid == $tpr_tid && (!$aid || $aid == $auf_aid);
+   <input type='radio' name='tid' value='<%$tpr_tid%>'<%$checked%>
+     onClick='document.forms[0].aid.value = <%$auf_aid%>'>
+% $tid = undef if $checked;
+  </td>
+  <td>
+   <%$atr_nummer%>
+  </td>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$auf_aid%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td>
+   <%$atr_uid%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td>
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+ </tr>
+
+%   } # foreach (@$ende)
+ </tr>
+</table>

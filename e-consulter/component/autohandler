@@ -1,0 +1,547 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           autohandler
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 4/2001
+
+  Beschreibung
+    autohandler
+
+  Version Autor Datum         Beschreibung
+  0.1     TM                  initiales Release
+
+</%doc>
+<%args>
+  $lang => 'de'
+</%args>
+<%attr>
+  tool          => undef
+  titel         => 'e-consulter'
+  barcolor      => undef
+  titel_img     => '/cgi-bin/titel?e-consulter'
+  icon          => undef
+  foto          => undef
+  logo          => '/images/logo/e-consulter.gif'
+  defmaske      => undef
+  startmaske    => undef
+  startmenu     => undef
+</%attr>
+<%init>
+  #
+  # Initialisierung
+  #
+  use EConsulter;
+  use URI::Escape;
+  use Contavia::Date;
+
+  my $self      = $m->base_comp;
+
+  my $econsulter;
+  my $dbh;
+
+  my $tool      = $self->attr('tool');
+  my $titel     = $self->attr('titel');
+  my $titel_img = $self->attr('titel_img');
+  my $barcolor  = $self->attr('barcolor');
+  my $icon      = $self->attr('icon');
+  my $foto      = $self->attr('foto');
+  my $logo      = $self->attr('logo');
+
+  my $fehlermeldung;
+  my @menu;
+  my @img;
+
+  eval {
+    $econsulter = new EConsulter;
+    $econsulter->connect();
+    $dbh = $econsulter->dbh;
+
+    $ARGS{econsulter} = $econsulter;
+    $ARGS{dbh}        = $dbh;
+    $ARGS{tool}       = $tool;
+    $ARGS{lang}       = $lang;
+
+    #
+    # Session-Id checken
+    #
+    if ($ARGS{sessid}) {
+      $ARGS{uid} = $dbh->selectrow_array( "
+       select ben_uid
+         from benutzer
+        where ben_sessid = '$ARGS{sessid}'");
+
+      if (!$ARGS{uid}) {
+        $ARGS{sessid}     = undef;
+        $ARGS{folgemaske} = undef;
+        $ARGS{maske}      = undef;
+        $ARGS{projektid}  = undef;
+      }
+    }
+
+    #
+    # Verarbeitung aufrufen
+    #
+    %ARGS = %{$m->comp('.verarbeite', %ARGS)};
+
+    my $ret = $self->call_method('preprocess', %ARGS);
+    %ARGS = %$ret if (ref($ret) eq 'HASH');
+    $titel = $ARGS{titel} if $ARGS{titel};
+
+    # Maskenwechsel falls erforderlich
+    $ARGS{folgemaske} =~ s/\s+//g;
+    $ARGS{maske} = $ARGS{folgemaske} || $ARGS{maske} || $self->attr('defmaske');
+
+    $ARGS{folgemaske} = $ARGS{maske};
+
+    @menu = $self->call_method('getmenu', %ARGS);
+
+    unless(@menu) {
+      my @menu_head   = $self->call_method('getmenu_head', %ARGS);
+      my @menu_footer = $self->call_method('getmenu_footer', %ARGS);
+
+      my $ret = $m->comp('/getmenu', %ARGS,
+                         menu_head => \@menu_head,
+                         menu_footer => \@menu_footer );
+
+      @menu = ref($ret) eq 'ARRAY' ? @$ret
+                                   : ( @menu_head, @menu_footer );
+    }
+
+    # Accounting
+    $dbh->insert('account',
+      { acc_zeit       => 'CURRENT_TIMESTAMP',
+        acc_servername => $dbh->quote($ENV{SERVER_NAME}),
+        acc_uri        => $dbh->quote($ENV{REQUEST_URI}),
+        acc_ssl        => $ENV{SERVER_PORT} == 80 ? '\'f\'' : '\'t\'',
+        acc_ip         => $dbh->quote($ENV{REMOTE_ADDR}),
+        acc_uid        => $dbh->quote($ARGS{uid}),
+        acc_pid        => $ARGS{projektid} || 'null',
+        acc_maske      => $dbh->quote($ARGS{maske}) } );
+
+    $dbh->commit;
+  };  # eval
+
+  # Im Fehlerfall ist $@ ($EVAL_ERROR) gesetzt
+  if ($@) {
+    #$ARGS{maske} = 'fehlermeldung';
+    $fehlermeldung = $@;
+  }
+
+  # Zeilenschaltungen in Titel einfügen
+  my $wtitel = $titel;
+  $wtitel =~ s/([^\n]{3})\s+([^\n]{3})/$1\n$2/g;
+</%init>\
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+  <title><%$titel%></title>
+  <link rel="stylesheet" type="text/css" href="/ptool.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="/ptool_print.css" media="print">
+  <script language="JavaScript" src="/ptool.js" type="text/javascript"></script>
+% if ($ARGS{'maske'} eq 'qual_edit') {
+  <link rel="stylesheet" type="text/css" href="/js/extjs/resources/css/ext-all.css">
+%#<link rel="stylesheet" type="text/css" href="/js/extjs/resources/css/xtheme-gray.css" />
+  <script type="text/javascript" src="/js/extjs/adapter/ext/ext-base.js"></script>
+  <script type="text/javascript" src="/js/extjs/ext-all-debug.js"></script>
+%#  <script type="text/javascript" src="/js/extjs/ext-custom.js"></script>
+% }
+ </head>
+ <body bgcolor="#FFFFFF" style="margin:0; padding:0;">
+  <table cellspacing="0" cellpadding="0" border="0" width="100%" style="height:100%;">
+   <tr bgcolor='#6f6f6f' id="titlecol">
+    <td bgcolor="#000080">
+% if ($barcolor) {
+     <& '/bar', width => 20, height => 60, color => $barcolor, alt => $ARGS{maske} &></td>
+% } else {
+     &nbsp;</td>
+% }
+    <td bgcolor="#000080" width="85%" align="left" id="rtc">
+%   if ($titel_img) {
+      <a href="/"><img src="<% $titel_img %>" border="0" alt="titel"></a>
+%   } else {
+      <font face="Arial" size="20" color="white"><% $titel %></font>
+%   }
+    </td>
+   </tr>
+   <tr>
+    <td bgcolor="#c0c0c0" valign="top" height="100%" align="right" id="menucol">
+     <p style="padding-left:10; padding-top:10; margin-right:0; padding-right:0; padding-bottom:0; margin-bottom:10">
+      <img src='/cgi-bin/bluelabel?<%uri_escape($wtitel)%>&amp;fc=000080'<% " alt='$ARGS{titel_alt}' title='$ARGS{titel_alt}'" %>>
+     </p>
+
+    <%perl>
+    foreach my $entry (@menu) {
+      my $img = $m->comp('/menuentry',
+                         entry => $entry,
+                         maske => $ARGS{maske});
+      if (ref($img)) {
+        push @img, @$img;
+      }
+      elsif ($img) {
+        push @img, $img;
+      }
+    }
+
+    </%perl>
+
+    <img src="/cgi-bin/label?<%$ARGS{maske}%>&amp;bg=ccc&amp;fc=ccc"
+      onMousedown="this.src='/cgi-bin/label?<%$ARGS{maske}%>&amp;bg=ccc&amp;fc=888'"
+      onMouseout="this.src='/cgi-bin/label?<%$ARGS{maske}%>&amp;bg=ccc&amp;fc=ccc'"
+      onMouseup="this.src='/cgi-bin/label?<%$ARGS{maske}%>&amp;bg=ccc&amp;fc=ccc'" alt="">
+
+    </td>
+
+    <td valign="top">
+
+     <table cellpadding="10" width="100%">
+%     if ($icon || $foto || $logo) {
+      <tr>
+       <td width="90%">
+%       if ($icon) {
+        <img src="<%$icon%>" alt="icon">
+%       }
+       </td>
+
+       <td>
+%       if ($foto) {
+        <img src="<%$foto%>" alt="foto">
+%       }
+       </td>
+
+       <td valign="bottom">
+%       if ($logo) {
+        <a href="/"><img src="<%$logo%>" border="0" alt="logo"></a>
+%       }
+       </td>
+      </tr>
+%     }
+
+      <tr>
+       <td colspan="3" id="maincol">
+% if ($ENV{DEBUG}) {
+        <form>
+% } else {
+        <form id="mainform" enctype="multipart/form-data" method="post" action="<% ($m->request_comp()->name =~ /^doku.hms$/) ? "doku.hms" : "" %>">
+% }
+
+         <%perl>
+           unless ($fehlermeldung) {
+             eval {
+               $m->call_next(%ARGS);
+
+               # $ARGS{menu} ist der Menüname, die Masken benötigen allerdings
+               # das Menü selbst. Wir sichern den Menünamen und schreiben ihn
+               # anschliessend zurück
+               my $menuname = $ARGS{menu};
+
+               my $ret = $m->comp('.maske', %ARGS, menu => \@menu );
+               %ARGS = %$ret if (ref($ret));
+
+               $ARGS{menu} = $menuname;
+             };
+             $fehlermeldung = $@ if $@;
+           }
+
+           if ($fehlermeldung) {
+             $dbh->rollback if $dbh;
+             $m->comp('.fehlermeldung', fehlermeldung => $fehlermeldung, %ARGS)
+           }
+         </%perl>
+
+         <& '.hiddenvar',   name => 'folgemaske' &>
+         <& '.hiddenvar',   name => 'aktion'     &>
+         <& '.hiddenvar',   name => 'maske',     value => $ARGS{maske} &>
+         <& '.hiddenvar',   name => 'menu',      value => $ARGS{menu} &>
+         <& '.hiddenvalue', name => 'sessid',    value => $ARGS{sessid} &>
+         <& '.hiddenvalue', name => 'projektid', value => $ARGS{projektid} &>
+%        foreach my $v ( @{$self->call_method('hiddenvalues', %ARGS)} ) {
+%          my ($name, $value) = @$v;
+         <& '.hiddenvalue', name => $name, value => $value &>
+%        }
+        </form>
+       </td>
+      </tr>
+     </table>
+    </td>
+   </tr>
+  </table>
+ </body>
+</html>
+%#######################################################################
+%#
+%# subcomponent .hiddenvar
+%#
+%# erzeugt ein 'hidden'-Feld
+%#
+<%def .hiddenvar>\
+<%args>
+  $name
+  $value => undef
+</%args>
+ <input type="hidden" name="<%$name%>"<%$value && " value='$value'"%>>\
+</%def>
+
+%#######################################################################
+%#
+%# subcomponent .hiddenvalue
+%#
+%# erzeugt ein 'hidden'-Feld
+%# Im Gegensatz zu .hiddenvar wird das Feld nur angelegt, wenn es auch
+%# einen Wert hat
+%#
+<%def .hiddenvalue>\
+<%args>
+  $name
+  $value => undef
+</%args>
+% if ($value) {
+ <input type='hidden' name='<%$name%>' value='<%$value%>'>\
+% }
+</%def>
+
+%#######################################################################
+%#
+%# subcomponent .verarbeite
+%#
+<%def .verarbeite>
+ <%args>
+  $tool => undef
+  $maske => undef
+  $aktion => undef
+ </%args>
+ <%perl>
+   my $ret;
+
+   # Standardverarbeitung
+   if ($tool && $m->comp_exists("/$tool/global")) {
+     $ret = $m->comp("/$tool/global", %ARGS);
+     %ARGS = %$ret if (ref($ret) eq 'HASH');
+   }
+
+   if ($maske) {
+     $ret = $m->comp('.searchcall', %ARGS,
+                                    dir => 'verarbeitung',
+                                    file => $maske);
+     %ARGS = %$ret if (ref($ret) eq 'HASH');
+   }
+
+   if ($aktion) {
+     $ret = $m->comp('.searchcall', %ARGS,
+                                    dir => 'aktion',
+                                    file => $aktion);
+     %ARGS = %$ret if (ref($ret) eq 'HASH');
+   }
+
+   return \%ARGS;
+
+ </%perl>
+</%def>
+
+%#######################################################################
+%#
+%# subcomponent .maske
+%#
+<%def .maske>
+<%args>
+$tool
+$maske
+</%args>
+<%perl>
+  return $m->comp('.searchcall', %ARGS, dir => 'maske', file => $maske);
+</%perl>
+</%def>
+
+<%def .searchcall>
+<%args>
+$tool
+$dir
+$file
+</%args>
+<%perl>
+  my $ret;
+
+  if ($tool && $m->comp_exists("/$tool/$dir/$file")) {
+    $ret = $m->comp("/$tool/$dir/$file", %ARGS);
+  }
+  elsif ($m->comp_exists("/$dir/$file")) {
+    $ret = $m->comp("/$dir/$file", %ARGS);
+  }
+
+  return $ret;
+</%perl>
+</%def>
+
+%#######################################################################
+%#
+%# subcomponent .fehlermeldung
+%#
+<%def .fehlermeldung>
+ <%args>
+  $dbh
+  $fehlermeldung
+ </%args>
+ <%perl>
+  use Data::Dumper;
+  use HTML::Entities;
+
+  my $out;
+
+  if ( $fehlermeldung =~ /<fehler>(.*)<\/fehler>/ ) {
+    $out = "<b>$1</b>";
+  }
+  elsif ($dbh) {
+    my $ref;
+    eval {
+      # Versuchen wir mal, die Fehlermeldung in die Datenbank zu schreiben.
+      $ref = $dbh->selectrow_array(
+        'select max(err_ref) + 1 from fehler' ) || 1;
+
+      my %args = %ARGS;
+      $args{fehlermeldung} = undef;
+
+      $Data::Dumper::Terse = 1;
+      $dbh->do( 'insert into fehler(err_ref, err_msg, err_arg, err_env) values(?, ?, ?, ?)',
+        {}, $ref,
+        $dbh->quote($fehlermeldung),
+        $dbh->quote(Dumper(\%args)),
+        $dbh->quote(Dumper(\%ENV)) );
+
+      $dbh->commit;
+    };
+    if ($@) {
+      # hat nicht geklappt - no dann eben nicht...
+      $out = $fehlermeldung;
+      $out =~ s/\n/<br>\n/g;
+    }
+    else {
+      $out = "Referenznummer $ref";
+    }
+  }
+  else {
+    $out = $fehlermeldung;
+    $out =~ s/\n/<br>\n/g;
+  }
+
+  my $t = encode_entities($fehlermeldung);
+</%perl>
+
+<h1>Fehler</h1>
+
+<p>
+<%$out%>
+</p>
+
+<input type='button' onClick='history.back()' value='OK'>
+
+% if ($ENV{DEBUG}) {
+
+<h2>Fehlermeldung</h2>
+
+<pre>
+<%$fehlermeldung%>
+</pre>
+
+% } else {
+
+<!--<%$fehlermeldung%>-->
+
+% }
+</%def>
+
+%#######################################################################
+%#
+%# method getmenu
+%#
+%# default-Implementation
+%#
+<%method getmenu>
+% return ();
+</%method>
+
+<%method getmenu_head>
+% return ();
+</%method>
+
+<%method getmenu_footer>
+<%args>
+$sessid => undef
+</%args>
+<%perl>
+return $sessid
+  ? (
+      { space  => 80 },
+      { aktion => 'abmelden',
+        label  => '<i18n>Abmelden</i18n>' },
+    )
+  : ();
+</%perl>
+</%method>
+
+<%method preprocess>
+<%args>
+$dbh
+$projektid => undef
+</%args>
+<%perl>
+
+  if ($projektid) {
+    ($ARGS{titel}, $ARGS{prj_status}, $ARGS{waehrung})
+      = $dbh->selectrow_array( <<"EOF" );
+   select prj_titel, prj_status, prj_waehrung
+     from projekt
+    where prj_id = $projektid
+EOF
+    $ARGS{titel_alt} = "pid=$projektid";
+  }
+
+  return \%ARGS;
+
+</%perl>
+</%method>
+
+<%method hiddenvalues>
+% return [];
+</%method>
+
+<%filter>
+  use URI::Escape;
+  use HTML::Entities;
+
+  if ($lang eq 'en')
+  {
+    my $econsulter = new EConsulter;
+
+    # Übersetzen:
+
+    # Ersetze "<i18n>irgendein Text</i18n>" durch seine englische Übersetzung.
+    # Der Tag <i18n> kann einen numerischen Parameter mit dem Namen 'n' enthalten,
+    # welcher der EConsulter::translate-Funktion als 2. Parameter übergeben wird.
+    # Beispiel: "<i18n n=2>blah</i18n>" liefert die 2. Variante der Übersetzung.
+    s {<i18n(?:\s+n=(\d+))?\s*>\s*(.*?\S)\s*</i18n>}
+      { $econsulter->translate($2, $1) }gme;
+
+    # Die Label werden als URL übergeben. Da die Zeichen bereits in URL umgesetzt wurden,
+    # benötigen sie eine extrabehandlung. Die Zeichen < und > sind jeweils als %3C und
+    # %3E angegeben.
+    s {%3Ci18n(?:\s+n=(\d+))?\s*%3E\s*(.*?\S)\s*%3C/i18n%3E}
+      { uri_escape( $econsulter->translate( uri_unescape($2), $1 ) ) }gme;
+  }
+  else
+  {
+    # <i18n>-Tags entfernen
+    s{<i18n(?:\s+n=\d+)?\s*>(.*?)</i18n>} {$1}gm;
+    s{%3Ci18n(?:\s+n=\d+)?\s*%3E(.*?)%3C/i18n%3E} {$1}gmi;
+	s{(%3Ci18n%3E)} {}gmi;
+	s{(%3C%2Fi18n%3E)} {}gmi;
+  }
+
+  # Einem H1-Tag, welches nicht mit einem weiteren Tag anfängt, wird ein bluedot01.gif
+  # vorangestellt.
+  s{<h1>(\s*[^<].*?)</h1>}
+   {<h1><img src='/images/bluedot01.gif' alt=''>&nbsp;$1</h1>}g;
+
+  $_ = encode_entities($_, "\200-\377");
+</%filter>

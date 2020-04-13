@@ -1,0 +1,15 @@
+<%args>
+$anzeigen => undef
+</%args>
+<%perl>
+
+  if ($anzeigen)
+  {
+    return $m->comp('mitarbeiterbericht_anzeigen', %ARGS);
+  }
+  else
+  {
+    return $m->comp('mitarbeiterbericht_uebersicht', %ARGS);
+  }
+
+</%perl>

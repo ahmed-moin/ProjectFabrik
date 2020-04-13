@@ -1,0 +1,49 @@
+<%args>
+$dbh
+$projektid
+$speichern => undef
+$prz_zid => undef
+$prz_titel => undef
+$prz_einheit => undef
+$prz_kostenvergleich => undef
+$prz_personentagevergleich => undef
+$prz_sachkostenvergleich => undef
+$prz_investitionsvergleich => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    fehler("kein Titel angegeben") unless $prz_titel;
+
+    if ($prz_zid)
+    {
+      $dbh->update('projektziel',
+        { prz_pid             => $projektid,
+          prz_zid             => $prz_zid },
+        { prz_titel           => $dbh->quote($prz_titel),
+          prz_einheit         => $dbh->quote($prz_einheit),
+          prz_kostenvergleich => $dbh->bool($prz_kostenvergleich) } );
+    }
+    else
+    {
+      $prz_zid = $dbh->selectrow_array( "
+        select max(prz_zid) + 1
+          from projektziel
+         where prz_pid = $projektid" ) || 1;
+
+      $dbh->insert('projektziel',
+        { prz_pid                   => $projektid,
+          prz_zid                   => $prz_zid,
+          prz_titel                 => $dbh->quote($prz_titel),
+          prz_einheit               => $dbh->quote($prz_einheit),
+          prz_kostenvergleich       => $dbh->bool($prz_kostenvergleich),
+          prz_personentagevergleich => $dbh->bool(0),
+          prz_sachkostenvergleich   => $dbh->bool(0),
+          prz_investitionsvergleich => $dbh->bool(0) } );
+    }
+
+    $dbh->commit;
+  }
+
+</%perl>

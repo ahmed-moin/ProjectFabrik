@@ -1,0 +1,141 @@
+<%args>
+$dbh
+$projektid
+$uid
+$waehrung
+$atr_nummer => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  my $ppl = $m->comp('/get_projektplan', dbh => $dbh, projektid => $projektid);
+
+  my $auf = $dbh->selectall_arrayref( <<"EOF" );
+    select atr_nummer, atr_datum, atr_tagessatz, atr_personentage,
+           tpr_titel, auf_name, apl_startdatum, apl_endedatum
+      from auftrag, teilprojekt,
+           aufgabe
+             left outer join aufgabenplan
+               on apl_pid = auf_pid
+              and apl_tid = auf_tid
+              and apl_aid = auf_aid
+              and apl_ppl = $ppl
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+       and auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+       and atr_status <= 5
+     order by atr_nummer
+EOF
+
+  my %tae = $dbh->select_hash( "\
+    select tae_auftrag, sum(tae_stunden)
+      from taetigkeit join auftrag on tae_auftrag = atr_nummer
+     group by tae_auftrag" );
+
+</%perl>
+<& '/masketitel', titel => 'Auftr&auml;ge' &>
+
+<% $ppl . " " . $projektid %>
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Nr
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>PT</i18n><br>
+   <i18n>erfasst</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+  <i18n>PT</i18n><br>
+   <i18n>Auftrag</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Datum</i18n><br><i18n>von</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Datum</i18n<br><i18n>bis</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Teilprojekt</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+   <i18n>Aufgabe</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  my %sum;
+
+  foreach (@$auf)
+  {
+    my ($atr_nummer_l, $atr_datum, $atr_tagessatz, $atr_personentage,
+        $tpr_titel, $auf_name, $apl_startdatum, $apl_endedatum) = @$_;
+
+    my $pt = $tae{$atr_nummer_l} / 8;
+
+    $sum{pt} += $pt;
+    $sum{atr_personentage} += $atr_personentage;
+
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='atr_nummer'
+     value='<%$atr_nummer_l%>'<%$atr_nummer == $atr_nummer_l && ' checked'%>>
+  </td>
+  <td align='right'>
+   <%$atr_nummer_l%>
+  </td>
+  <td align='right' valign='center'>
+   <pre><% formatnumber($pt, 2, $ARGS{lang}) %></pre>
+  </td>
+  <td align='right' valign='center'>
+   <pre><% formatnumber($atr_personentage, 2, $ARGS{lang}) %></pre>
+  </td>
+  <td align='right' valign='center'>
+   <%new Contavia::Date($apl_startdatum)->preformat%>
+  </td>
+  <td align='right' valign='center'>
+   <%new Contavia::Date($apl_endedatum)->preformat%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$auf_name%>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <td colspan='2' bgcolor='#cccccc'>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><% formatnumber($sum{pt}, 2, $ARGS{lang}) %></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><% formatnumber($sum{atr_personentage}, 2, $ARGS{lang}) %></pre>
+  </td>
+  <td colspan='4' bgcolor='#cccccc'>
+  </td>
+ </tr>
+</table>
+ 
+<p class='button'>
+  <input type='submit' name='detail' value='<i18n>anzeigen</i18n>'>
+</p>
+
+<%perl>
+$ARGS{atr_nummer} = undef;
+return \%ARGS;
+</%perl>

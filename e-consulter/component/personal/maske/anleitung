@@ -1,0 +1,31 @@
+<%args>
+@menu
+</%args>
+
+<& '/masketitel', titel => '<i18n>Anleitung</i18n>',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+
+<p>
+Zur Anmeldung lesen Sie bitte die Nutzungsbedingungen durch. Sind Sie damit
+einverstanden, füllen Sie die Seite 'Erstkontakt' aus. Sie erhalten sofort auf
+dem Bildschirm eine User-ID, die Sie sich unbedingt merken müssen. Ausserdem
+erhalten Sie per Mail eine Request-ID, die dazu dient, Ihre Anmeldung freizuschalten.
+Die Mail enthält eine Web-Adresse, die Sie aufrufen müssen. Dort werden Sie nach
+der User-ID gefragt. Sobald Sie diese korrekt eingegeben und bestätigt haben,
+können Sie sich anmelden.
+</p>
+
+<p>
+Im Personaltool können Sie die Masken über das linke Menü in einer beliebigen
+Reihenfolge ausfüllen. Versuchen Sie möglichst viele Informationen über sich
+unterzubringen, damit wir Ihnen Projekte anbieten können, die für Sie geeignet sind.
+Finden Sie keine geeignete Rubrik für eine Angabe, die Sie machen möchten, können Sie diese gerne in der Bemerkungsmaske ergänzen.
+</p>
+
+<p>
+Sie können die Eingabe jederzeit unterbrechen und zu einem späteren Zeitpunkt
+fortsetzen. Auch können Sie später Angaben nach Belieben ergänzen oder löschen.
+</p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

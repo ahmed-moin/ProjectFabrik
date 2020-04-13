@@ -1,0 +1,11 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+<%perl>
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n> Frage </i18n>', menu => \@menu, maske => $ARGS{folgemaske} &>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

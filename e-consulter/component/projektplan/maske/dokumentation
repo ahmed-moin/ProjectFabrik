@@ -1,0 +1,14 @@
+<%args>
+$dbh
+$uid
+$projektid
+$sessid
+$folder => 0
+</%args>
+
+<& '/doku/maske/projekt', dbh       => $dbh,
+                          uid       => $uid,
+                          projektid => $projektid,
+                          folder    => $folder,
+                          sessid    => $sessid &>
+

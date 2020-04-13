@@ -1,0 +1,29 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$speichern => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(replace);
+
+  if ($speichern)
+  {
+    while ( my ($key, $tpz_ziel) = each(%ARGS) )
+    {
+      next unless $key =~ /^tpz_ziel_(\d+)_(\d+)$/;
+
+      my ($tpl_tid, $tpz_zid) = ($1, $2);
+      replace($dbh, 'teilprojektziel',
+        { tpz_pid  => $projektid,
+          tpz_ppl  => $projektplan,
+          tpz_tid  => $tpl_tid,
+          tpz_zid  => $tpz_zid },
+        { tpz_ziel => $tpz_ziel || 0 } );
+    }
+
+    $dbh->commit;
+  }
+
+</%perl>

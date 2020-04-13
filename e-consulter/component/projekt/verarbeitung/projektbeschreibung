@@ -1,0 +1,42 @@
+<%args>
+$dbh
+$projektid
+$prj_kurzbeschreibung => undef
+$prj_statusquo => undef
+$prj_bereich => undef
+</%args>
+<%once>
+  my $sth_insbereich;
+</%once>
+<%perl>
+
+use Contavia::Db qw(insert update replace quote);
+
+$sth_insbereich = $dbh->prepare( <<"EOF" ) unless $sth_insbereich;
+  insert into prjbereich (prj_id, prj_bereich)
+  values (?, ?)
+EOF
+
+replace( $dbh, 'projekt',
+  { prj_id               => $projektid },
+  { prj_kurzbeschreibung => quote($prj_kurzbeschreibung),
+    prj_statusquo        => quote($prj_statusquo) } );
+
+$dbh->do( <<"EOF" );
+  delete from prjbereich
+   where prj_id = $projektid
+EOF
+
+if ($prj_bereich)
+{
+  $prj_bereich = [$prj_bereich] unless ref($prj_bereich);
+  foreach (@$prj_bereich)
+  {
+    $sth_insbereich->execute($projektid, $_) if $_;
+  }
+
+}
+
+$dbh->commit;
+
+</%perl>

@@ -1,0 +1,114 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$waehrung
+$sel_tid => undef
+</%args>
+<%init>
+
+  $projektplan = $dbh->selectrow_array( "
+    select max(ppl_nummer)
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_ablehnung is null" ) unless $projektplan;
+
+  my $tpl = $projektplan ? $dbh->selectall_arrayref( "
+   select tpl_tid, tpr_titel, tpr_verantwortlich
+     from teilprojekt
+     join teilprojektplan
+       on tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan" ) : [];
+
+  my $projektleiter = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+     where ben_projektleiter" );
+
+</%init>
+<%cleanup>
+
+  $ARGS{projektplan}  = $projektplan;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Teilprojektverantwortlich</h1>
+
+<table width='100%' border='1'>
+ <tr>
+  <td bgcolor='#ccccff' width='5%'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff' width='50%'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff' width='50%'>
+   Verantwortlich
+  </th>
+ </tr>
+
+ <%perl>
+
+  foreach (@$tpl)
+  {
+    my ($tpl_tid, $tpr_titel, $tpr_verantwortlich) = @$_;
+
+    if ($sel_tid == $tpl_tid) {
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='hidden' name='tpl_tid' value='<%$tpl_tid%>'>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <& '/select', name => 'verantwortlich',
+                 values =>
+                 [
+                   map
+                   {
+                     my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                     [ $ben_uid, "$ben_uid: $ben_vorname $ben_nachname" ];
+                   } @$projektleiter
+                 ],
+                 selected => $tpr_verantwortlich,
+                 submit => 0 &>
+   <& '/setfocus', name => 'verantwortlich' &>
+  </td>
+ </tr>
+
+%   } else {
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_tid' value='<%$tpl_tid%>'<%$sel_tid == $tpl_tid ? ' selected' : ''%>>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$tpr_verantwortlich%>
+  </td>
+ </tr>
+%   }
+
+% }
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+% if ($sel_tid) {
+ <input type='submit' name='speichern' value='Speichern'>
+% }
+</p>
+

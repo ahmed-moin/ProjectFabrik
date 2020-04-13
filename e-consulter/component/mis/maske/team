@@ -1,0 +1,67 @@
+<%args>
+$sessid
+$dbh
+$projektid
+</%args>
+<%perl>
+  my %person;
+
+  $person{'Projektleiter'} = $dbh->selectall_arrayref( <<"EOF" );
+    select ben_uid, ben_anrede, ben_titel, ben_vorname, ben_nachname
+      from benutzer, rolle
+     where ben_uid = rol_uid
+       and rol_pid = $projektid
+       and rol_admin
+EOF
+
+  $person{'Kunde'} = $dbh->selectall_arrayref( <<"EOF" );
+    select ben_uid, ben_anrede, ben_titel, ben_vorname, ben_nachname
+      from benutzer, rolle
+     where ben_uid = rol_uid
+       and rol_pid = $projektid
+       and rol_kunde
+EOF
+
+  $person{'Mitarbeiter'} = $dbh->selectall_arrayref( <<"EOF" );
+    select ben_uid, ben_anrede, ben_titel, ben_vorname, ben_nachname
+      from benutzer, rolle
+     where ben_uid = rol_uid
+       and rol_pid = $projektid
+       and rol_mitarbeiter
+EOF
+
+</%perl>
+<& '/masketitel', titel=>'Team' &>
+
+% foreach my $h (qw(Projektleiter Kunde Mitarbeiter)) {
+%   my $person = $person{$h};
+
+  <h2><%$h%></h2>
+
+%   foreach (@$person) {
+%     my ($ben_uid, $ben_anrede, $ben_titel, $ben_vorname, $ben_nachname) = @$_;
+
+   <& '.portrait', sessid       => $sessid,
+                   ben_uid      => $ben_uid,
+                   ben_anrede   => $ben_anrede,
+                   ben_titel    => $ben_titel,
+                   ben_vorname  => $ben_vorname,
+                   ben_nachname => $ben_nachname &>
+
+   <br>
+%   }
+% }
+
+<%def .portrait>
+ <%args>
+  $sessid
+  $ben_uid
+  $ben_vorname => undef
+  $ben_nachname => undef
+  $ben_titel => undef
+  $ben_anrede => undef
+ </%args>
+ <a href='/person/<%$sessid%>/<%$ben_uid%>/kontakt.hms' target=_blank>
+ <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%>
+ </a>
+</%def>

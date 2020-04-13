@@ -1,0 +1,24 @@
+<%args>
+$titel
+$maske => undef
+@menu => undef
+</%args>
+% if ($maske && @menu) {
+<table>
+ <tr>
+  <td width="100%">
+   <h1>
+    <img src="/images/bluedot01.gif" border=0 alt="bluedot">&nbsp;<% $titel %>
+   </h1>
+  </td>
+  <td>
+   <& '/zurueck_button', maske => $maske, menu => \@menu &>
+  </td>
+  <td>
+   <& '/weiter_button',  maske => $maske, menu => \@menu &>
+  </td>
+ </tr>
+</table>
+% } else {
+<h1><% $titel %></h1>
+% }

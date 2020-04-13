@@ -1,0 +1,15 @@
+<%args>
+$projektid
+</%args>
+
+<h1>Sitzungsprotokolle</h1>
+
+<table border='1'>
+ <tr>
+  <td>
+  </td>
+  <th>
+   Datum
+  </th>
+ </tr>
+</table>

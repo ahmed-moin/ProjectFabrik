@@ -1,0 +1,50 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$waehrung
+</%args>
+<%perl>
+
+  my $ppl = $dbh->selectall_arrayref( <<"EOF" );
+    select ppl_nummer
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_auftrag is not null
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Auftrag' &>
+
+% if (scalar(@$ppl) == 0) {
+
+  <p>
+   <i18n>es liegen keine Auftr&auml;ge vor</i18n>
+  </p>
+
+%  return;
+% } elsif (scalar(@$ppl) == 1) {
+%
+%  $projektplan = $ppl->[0]->[0];
+
+  <input type='hidden' name='projektplan' value='<%$projektplan%>'>
+
+% } else {
+
+  <& '/select', name => 'projektplan',
+                values => [
+                            map
+                            {
+                              my ($ppl_nummer) = @$_;
+                              [ $ppl_nummer, "$projektid/$ppl_nummer" ]
+                            } @$ppl
+                          ],
+                selected => $projektplan &>
+
+% }
+
+% if ($projektplan) {
+<& '/angebot_anzeigen', projektplan => $projektplan, bezeichnung => '<i18n>Auftrag</i18n>', %ARGS &>
+% }
+

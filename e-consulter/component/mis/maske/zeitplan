@@ -1,0 +1,516 @@
+<%args>
+$projektid
+$dbh
+$projektplan
+</%args>
+<%shared>
+
+  my $height = 15;
+
+</%shared>
+<%once>
+
+  sub datumstage
+  {
+    my $d = new Contavia::Date(shift);
+    #return $d && ! $d->is_null && $d->tag + $d->monat * 30 + $d->jahr * 360;
+    return $d->zinstage;
+  }
+
+  sub combine
+  {
+    my $tprs = shift;
+
+    for (my $i = 1; $i < @$tprs; ++$i)
+    {
+      # vergleiche jede Aufgabe mit seinem Vorgänger
+      if ($tprs->[$i-1][4] ge $tprs->[$i][3] - 1 )  # Endedatum Vorgänger > Startdatum?
+      {
+        if ($tprs->[$i-1][4] lt $tprs->[$i][4] )    # Endedatum Vorgänger < Endedatum?
+        {
+          $tprs->[$i-1][2] = $tprs->[$i][2];
+          $tprs->[$i-1][4] = $tprs->[$i][4];
+        }
+        splice(@$tprs, $i--, 1);
+      }
+    }
+
+    return @$tprs;
+  }
+
+</%once>
+<%init>
+
+  use Contavia qw(fehler);
+  use Contavia::Date;
+
+  # ermittele Gesamtlaufzeit des Projektes
+  my ($projektstart, $projektende) = $dbh->selectrow_array( "
+    select min(apl_startdatum), max(apl_endedatum)
+      from aufgabenplan
+     where apl_pid = $projektid
+       and apl_ppl = $projektplan" );
+
+  fehler "Zeitplan nicht vorhanden ($projektid, $projektplan)"
+    unless $projektstart && $projektende;
+
+  my ($tae_start, $tae_ende) = $dbh->selectrow_array( "
+    select min(tae_datum), max(tae_datum)
+      from taetigkeit
+       join auftrag
+         on atr_nummer = tae_auftrag
+     where atr_pid = $projektid" );
+
+  $projektstart = new Contavia::Date($projektstart);
+  $projektende  = new Contavia::Date($projektende);
+
+  if ($tae_start)
+  {
+    $tae_start = new Contavia::Date($tae_start);
+    $projektstart = $tae_start if ($projektstart->cmp($tae_start) > 0)
+  }
+  $projektstart->tag(1);
+
+  if ($tae_ende)
+  {
+    $tae_ende = new Contavia::Date($tae_ende);
+    $projektende = $tae_ende if ($projektende->cmp($tae_ende) < 0)
+  }
+
+  my $projektstarttage = datumstage($projektstart);
+
+  # ermittele Teilprojekte zu dem Projektplan
+  my $tprs = $dbh->selectall_arrayref( "
+    select taid, titel, min(apl_startdatum), max(apl_endedatum)
+      from vteilprojekt
+       left outer join aufgabenplan
+         on apl_pid = pid
+        and apl_tid = tid
+        and apl_ppl = ppl
+        and apl_startdatum is not null
+        and apl_endedatum is not null
+     where pid = $projektid
+       and ppl = $projektplan
+     group by taid, titel" );
+
+  # rechne Start- und Endedatum in Tage um
+  foreach (@$tprs)
+  {
+    $_->[4] = datumstage($_->[2]);
+    $_->[5] = datumstage($_->[3]);
+  }
+
+  # sortiere nach Start- und Endedatum
+  @$tprs = sort { $a->[4] <=> $b->[4] || $a->[5] <=> $b->[5] } @$tprs;
+
+  # ermittele Plan-Start- und Endezeitpunkte der Aufgaben
+  my $auf = $dbh->selectall_arrayref( "
+    select taid, apl_startdatum, apl_endedatum
+      from vteilprojekt
+       left outer join aufgabenplan
+         on apl_pid = pid
+        and apl_tid = tid
+        and apl_ppl = ppl
+        and apl_startdatum is not null
+        and apl_endedatum is not null
+     where pid = $projektid
+       and ppl = $projektplan" );
+
+  # rechne Start- und Endedatum in Tage um
+  foreach (@$auf)
+  {
+    $_->[3] = datumstage($_->[1]);
+    $_->[4] = datumstage($_->[2]);
+  }
+
+  # ermittele Ist-Start- und Endezeitpunkte der Aufgaben
+  my $ist = $dbh->selectall_arrayref( "
+    select taid, min(tae_datum), max(tae_datum), max(tae_datum_bis)
+      from taetigkeit
+       join auftrag
+         on atr_nummer = tae_auftrag
+       join vteilprojekt
+         on pid = atr_pid
+        and tid = atr_tid
+     where atr_pid = $projektid
+       and ppl     = $projektplan
+     group by taid, atr_aid" );
+
+  # ermittele Endedatum aus tae_datum und tae_datum_bis
+  # und rechne Start- und Endedatum in Tage um
+  foreach (@$ist)
+  {
+    $_->[2] = $_->[3] if $_->[3];
+    $_->[3] = datumstage($_->[1]);
+    $_->[4] = datumstage($_->[2]);
+  }
+
+  # lese voraussichtliches Fertigstellungsdatum
+  my %fertig = $dbh->select_hash( "
+    select taid, max(abr_fertigbis)
+      from vteilprojekt
+       join auftrag
+         on atr_pid = pid
+        and atr_tid = tid
+       join auftragbericht
+         on abr_nummer = atr_nummer
+     where pid = $projektid
+       and abr_geprueft is not null
+       and abr_fertigbis is not null
+       and atr_status < 5
+     group by taid" );
+
+  # ermittele Realisierungsgrad
+  my %tpr = $dbh->select_hash( "
+    select taid, min(tpe_realisierung)
+      from teilprojektrealisierung t
+       join vteilprojekt
+         on pid = tpe_pid
+        and tid = tpe_tid
+     where tpe_pid = $projektid
+       and tpe_zid = 0
+       and tpe_datum = (select max(tpe_datum)
+          from teilprojektrealisierung m
+         where tpe_pid = t.tpe_pid
+           and tpe_tid = t.tpe_tid
+           and tpe_zid = t.tpe_zid)
+     group by taid" );
+
+  # ermittele Milestones zum Teilprojekt
+  my $mil = $dbh->selectall_arrayref( "
+    select distinct taid, datum, status
+      from vmilestone m
+       join vteilprojekt t
+         on m.pid = t.pid
+        and m.ppl = t.ppl
+        and m.tid = t.tid
+     where m.pid = $projektid
+       and m.ppl = $projektplan");
+
+  # ermittele Bomben
+  my $bmb = $dbh->selectall_arrayref( "
+    select distinct taid, datum, status
+      from vbombe b
+       join vteilprojekt t
+         on b.pid = t.pid
+        and b.ppl = t.ppl
+        and b.tid = t.tid
+     where b.pid = $projektid
+       and b.ppl = $projektplan");
+
+  my $current = Contavia::Date::current;
+
+</%init>
+
+<h1><i18n>Projektzeitplan</i18n></h1>
+
+<table cellpadding='0' cellspacing='0'>
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/dateline', start => [$projektstart->monat, $projektstart->jahr],
+                   end   => [$projektende->monat, $projektende->jahr],
+                   width => 30 &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <td background='/images/tdbg.png' height='5px'>
+   <font size='1'>&nbsp;</font>
+  </td>
+ </tr>
+
+<%perl>
+
+  foreach (@$tprs)
+  {
+    my ($taid, $titel) = @$_;
+    my @a = sort { $a->[3] <=> $b->[3] || $a->[4] <=> $b->[4] }
+                 grep { $_->[0] eq $taid } @$auf;
+    my @i = sort { $a->[3] <=> $b->[3] || $a->[4] <=> $b->[4] }
+                 grep { $_->[0] eq $taid } @$ist;
+
+    combine (\@a);
+    combine (\@i);
+
+    my @milestone =
+    (
+      map
+      {
+        my ($taid, $datum, $status) = @$_;
+        $datum = new Contavia::Date($datum) if $datum;
+        my $tage = datumstage($datum);
+        [
+          $tage,
+          $status > 5                   ? '0f0' :
+              !$datum                   ? 'fff' :
+              $datum->cmp($current) > 0 ? 'ff0' : 'f00'
+        ];
+      } grep
+        {
+          $_->[0] eq $taid || "A$_->[1]" eq $taid
+        } @$mil
+    );
+
+    my @bomb =
+    (
+      map
+      {
+        my ($taid, $datum, $status) = @$_;
+        $datum = new Contavia::Date($datum) if $datum;
+        my $pos = datumstage($datum);
+        $pos = 5 if $pos < 5;
+        [
+          $pos,
+          $status > 5                   ? '0f0' :
+              !$datum                   ? 'fff' :
+              $datum->cmp($current) > 0 ? 'ff0' : 'f00'
+        ];
+      } grep
+        {
+          $_->[0] eq $taid || "A$_->[1]" eq $taid
+        } @$bmb
+    );
+
+
+</%perl>
+ <tr>
+  <td>
+   <%$titel%>
+  </td>
+  <td background='/images/tdbg.png'>
+   <%perl>
+
+    # Soll-Zeitplan ausgeben
+    $m->comp( '.zeitbar', start     => $projektstarttage,
+                          tprs      => \@a,
+                          color     => '000080',
+                          milestone => \@milestone,
+                          bomb      => \@bomb );
+
+    $m->out('<br>');
+
+    if (@i)
+    {
+      # Ist-Zeitplan ausgeben
+      my $datum = $m->comp( '.zeitbar', start  => $projektstarttage,
+                                        tprs   => \@i,
+                                        color  => '8080C0' );
+      # Forecast
+      my $fc = $fertig{$taid};
+      if ($fc)
+      {
+        my $t = datumstage($fc);
+        $m->comp( '/zeitbar', width  => $t - $datum,
+                              height => $height,
+                              color  => 'ccf' );
+      }
+      elsif ($tpr{$taid} < 100)
+      {
+        $m->out('<img src=\'/images/continue.png\'>');
+      }
+    }
+
+   </%perl>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <td background='/images/tdbg.png' height='5px'>
+   <font size='1'>&nbsp;</font>
+  </td>
+ </tr>
+
+% }
+
+</table>
+
+<hr>
+
+<h2>Legende:</h2>
+<table>
+ <tr>
+  <td>
+   <i18n>
+    Plan
+   </i18n>
+  </td>
+  <td>
+   <& '/bar', width => 24, height => $height, color => [0, 0, 128] &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Ist
+   </i18n>
+  </td>
+  <td align='center'>
+   <& '/bar', width => 24, height => $height, color => [128, 128, 192] &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    voraussichtlich beendet
+   </i18n>
+  </td>
+  <td align='center'>
+   <& '/bar', width => 24, height => $height, color => [192, 192, 255] &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    nicht abgeschlossen
+   </i18n>
+  </td>
+  <td align='center'>
+   <& '/bar', width => 14, height => $height, color => [128, 128, 192]
+   &><img src='/images/continue.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Milestone erledigt
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/ms_gruen.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Milestone nicht erledigt
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/ms_gelb.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Milestone überschritten
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/ms_rot.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Bombe erledigt
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/bm_gruen.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Bombe nicht erledigt
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/bm_gelb.png'>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+   <i18n>
+    Bombe überschritten
+   </i18n>
+  </td>
+  <td align='center'>
+   <img src='/images/bm_rot.png'>
+  </td>
+ </tr>
+
+</table>
+
+<%doc>
+  ----------------------------------------------------------------------
+  Subcomponent .zeitbar
+  ----------------------------------------------------------------------
+</%doc>
+<%def .zeitbar>
+<%args>
+$start
+@tprs
+$color
+@milestone => ()
+@bomb => ()
+</%args>\
+<%perl>
+
+  my $datum = $start;
+
+  foreach (@tprs)
+  {
+    my (undef, undef, undef, $tstart, $ende) = @$_;
+
+    #my %args;
+    #$args{milestone} = $milestone if $milestone;
+    #$args{bomb}      = $bomb      if $bomb;
+
+    $m->comp('/zeitbar', width     => $tstart - $datum,
+                         height    => 1,
+                         color     => [255, 255, 255] );
+
+    my $hh = $height / 2;
+    $m->comp('/zeitbar', width  => $ende - $tstart,
+                         height => $height,
+                         color  => $color,
+                         milestone =>
+                         [
+                           map
+                           {
+                             my ($s, $c) = @$_;
+                             my $ms = $s - $tstart;    # start milestone
+                             my $me = $ende - $tstart; # end milestone
+
+                             # Wir verschieben den Milestone so, daß er immer vollständig
+                             # auf dem Balken liegt.
+                             [ ($ms >= 0 && $ms < $hh ? $hh :
+                                $ms > $me - $hh       ? $me - $hh : $ms),
+                               $c ];
+                           } grep {
+                                my ($s, $c) = @$_;
+                                $s >= $tstart && $s <= $ende;
+                              } @milestone
+                         ],
+                         bomb =>
+                         [
+                           map
+                           {
+                             my ($s, $c) = @$_;
+                             $s -= $tstart;
+                             [ $s >= 0 && $s < $hh ? $hh : $s, $c ];
+                           } @bomb
+                         ] );
+
+    $datum = $ende;
+  }
+
+  return $datum;
+
+</%perl></%def>

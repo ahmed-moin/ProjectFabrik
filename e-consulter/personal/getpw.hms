@@ -1,0 +1,37 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Getpw
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Mai 2001
+
+  Beschreibung
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Mai 2001
+
+</%doc>
+<%attr>
+
+  tool      => 'getpw'
+  titel     => 'Freischaltung'
+  barcolor  => [255, 255, 0]
+  titel_img => '/cgi-bin/titel?Freischaltung'
+  logo      => undef
+  defmaske  => 'getpw'
+
+</%attr>
+
+<%method getmenu>
+<%args>
+$sessid => undef
+</%args>
+<%perl>
+
+  return
+  (
+      { maske  => 'getpw',
+        label  => 'Passwort' },
+  );
+
+</%perl>
+</%method>

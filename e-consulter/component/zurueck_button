@@ -1,0 +1,25 @@
+<%args>
+$maske
+@menu
+</%args>
+<%perl>
+
+  my $prev;
+  foreach (@menu)
+  {
+    last if ($maske eq $_->{maske});
+    $prev = $_->{maske};
+  }
+
+</%perl>
+% if ($prev) {
+  <a href="javascript:Maskenwechsel('<%$prev%>')"><img src='/images/rck.gif'
+     alt="zurueck" border='0'
+        onMousedown="this.src='/images/rck-pr.gif'"
+        onMouseover="this.src='/images/rck-ak.gif'"
+        onMouseup="this.src='/images/rck.gif'"
+        onMouseout="this.src='/images/rck.gif'"
+        onClick="Maskenwechsel('<%$prev%>')"></a>
+% } else {
+   <img src="/images/rck-de.gif" alt="zurueck">
+% }

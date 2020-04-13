@@ -1,0 +1,86 @@
+<%args>
+$dbh
+$projektid
+$uid
+$tid => undef
+$aid => undef
+$atr_nummer => undef
+$kos_lfdnr => undef
+$kos_datum => undef
+$kos_beschreibung => undef
+$kos_art => undef
+$kos_betrag => undef
+$kos_freigabe => undef
+$speichern => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    $kos_datum = new Contavia::Date($kos_datum);
+
+    fehler("<i18n>Datum fehlt</i18n>")        if $kos_datum->is_null;
+    fehler("<i18n>Beschreibung fehlt</i18n>") unless $kos_beschreibung;
+    fehler("<i18n>Art fehlt</i18n>")          unless $kos_art;
+    fehler("<i18n>Betrag fehlt</i18n>")       unless $kos_betrag;
+
+    my $pgcurrent = Contavia::Date::current->qpgdate;
+
+    $kos_betrag =~ s/,/\./ if ($ARGS{lang} eq 'de');
+
+    if ($kos_lfdnr)
+    {
+      # update
+      $dbh->update('kosten',
+        { kos_auftrag      => $atr_nummer,
+          kos_lfdnr        => $kos_lfdnr },
+        { kos_art          => $kos_art,
+          kos_datum        => new Contavia::Date($kos_datum)->qpgdate,
+          kos_betrag       => $kos_betrag,
+          kos_bbetrag      => $kos_betrag,
+          kos_beschreibung => $dbh->quote($kos_beschreibung),
+          kos_erfasst      => Contavia::Date::current->qpgdate,
+          kos_freigabe     => $kos_freigabe ? $pgcurrent : 'NULL' } );
+    }
+    else
+    {
+      # neuer Satz
+      $kos_lfdnr = $dbh->selectrow_array( "
+        select max(kos_lfdnr) + 1
+          from kosten
+         where kos_auftrag = $atr_nummer" ) || 1;
+
+      $dbh->insert('kosten',
+        { kos_auftrag      => $atr_nummer,
+          kos_lfdnr        => $kos_lfdnr,
+          kos_art          => $kos_art,
+          kos_datum        => new Contavia::Date($kos_datum)->qpgdate,
+          kos_betrag       => $kos_betrag,
+          kos_bbetrag      => $kos_betrag,
+          kos_beschreibung => $dbh->quote($kos_beschreibung),
+          kos_erfasst      => Contavia::Date::current->qpgdate,
+          kos_freigabe     => $kos_freigabe ? $pgcurrent : 'NULL' } );
+    }
+
+    $dbh->commit;
+
+    $ARGS{kos_lfdnr} = undef;
+    return \%ARGS;
+  }
+  elsif ($loeschen)
+  {
+    fehler('<i18n>kein Satz ausgewählt</i18n>') unless $kos_lfdnr;
+
+    $dbh->do( "
+      delete from kosten
+       where kos_auftrag = $atr_nummer
+         and kos_lfdnr   = $kos_lfdnr" );
+
+    $dbh->commit;
+  }
+
+</%perl>

@@ -1,0 +1,7 @@
+<%args>
+$sel_tid => undef
+</%args>
+<%perl>
+$ARGS{tid} = $sel_tid if $sel_tid;
+return \%ARGS;
+</%perl>

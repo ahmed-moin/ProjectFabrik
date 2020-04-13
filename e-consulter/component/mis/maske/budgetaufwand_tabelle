@@ -1,0 +1,265 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$stand
+$art
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  my $startdatum = new Contavia::Date($stand);
+  $startdatum->tag(1);
+  my $endedatum = $startdatum->naechster_monat->voriger_tag->qpgdate;
+  $startdatum = $startdatum->qpgdate;
+
+  $stand = new Contavia::Date($stand)->qpgdate;
+
+  my $artcond = ref($art) ? sprintf('in (%s)', join(', ', @$art))
+                          : "= $art";
+
+  my $ppl = $dbh->selectrow_array( "
+    select ppl_nummer
+      from projektplan
+     where ppl_pid = $projektid
+       and ppl_auftrag = (select min(ppl_auftrag)
+                            from projektplan
+                           where ppl_pid = $projektid)" );
+
+  # ermittele Anfangsbudget
+  my %budget_start = $dbh->select_hash( "
+   select tid, sum(budget)
+     from vbudgetg
+    where pid = $projektid
+      and art $artcond
+      and freigabe is not null
+      and ppl = (
+       select ppl_nummer
+         from projektplan
+       where ppl_pid = $projektid
+         and ppl_auftrag = (select min(ppl_auftrag)
+                              from projektplan
+                             where ppl_pid = $projektid) )
+    group by tid" );
+
+  # ermittele Gesamtbudget
+  my %budget_gesamt = $dbh->select_hash( "\
+    select tid, sum(budget)
+      from vbudgetg
+     where pid = $projektid
+       and art $artcond
+       and freigabe <= $stand
+     group by tid" );
+
+  # ermittele bisheriges Budget (Budget kumuliert)
+  my %budget_kumuliert = $dbh->select_hash( "\
+    select tid, sum(budget)
+      from vbudget
+     where pid = $projektid
+       and ppl = $projektplan
+       and art $artcond
+       and datum <= $stand
+       and freigabe is not null
+     group by tid" );
+
+  # ermittele Monatsbudget (Budget Monat)
+  my %budget_monat = $dbh->select_hash( "\
+    select tid, sum(budget)
+      from vbudget
+     where pid = $projektid
+       and ppl = $projektplan
+       and art $artcond
+       and datum between $startdatum and $endedatum
+       and freigabe is not null
+     group by tid" );
+
+  # ermittele bisherigen Aufwand (Ist kumuliert)
+  my %ist_kumuliert = $dbh->select_hash( "\
+    select tid, sum(baufwand)
+      from vaufwand
+     where pid = $projektid
+       and art $artcond
+       and datum <= $stand
+       and freigabe is not null
+     group by tid" );
+
+  # ermittele Monatsaufwand (Ist Monat)
+  my %ist_monat = $dbh->select_hash( "\
+    select tid, sum(baufwand)
+      from vaufwand
+     where pid = $projektid
+       and art $artcond
+       and datum between $startdatum and $endedatum
+       and freigabe is not null
+     group by tid" );
+
+  # ermittele Rev-Nummer
+  my $rev = $dbh->selectrow_array( "
+  select count(*)
+    from projektplan
+   where ppl_pid = $projektid
+     and ppl_auftrag <= $stand" ) - 1;
+
+  # lese alle Teilprojekte
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpr_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan" );
+
+  my %tpr;
+  foreach (@$tpr)
+  {
+    my ($tpr_tid, $tpr_titel) = @$_;
+    $tpr{$tpr_tid} = $tpr_titel;
+  }
+
+  # Aggregation
+  $m->comp('/aggregiere', dbh => $dbh,
+     projektid   => $projektid,
+     projektplan => $projektplan,
+     tpr         => \%tpr,
+     werte       => [ \%budget_start,
+                      \%budget_gesamt,
+                      \%budget_kumuliert,
+                      \%budget_monat,
+                      \%ist_kumuliert,
+                      \%ist_monat ] );
+
+</%perl>
+
+<table>
+ <tr>
+  <& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<table border="1" width="100%">
+ <tr>
+  <th rowspan="2" bgcolor="#ccccff">
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <th colspan="4" bgcolor="#ccccff">
+	<i18n>
+   Budget
+	</i18n>
+  </th>
+  <th colspan="2" bgcolor="#ccccff">
+	<i18n>
+   Ist
+	</i18n>
+  </th>
+ </tr>
+
+ <tr>
+  <th bgcolor="#ccccff">
+	<i18n>
+   Start
+	</i18n>
+  </th>
+  <th bgcolor="#ccccff">
+   <i18n>Rev.</i18n> <%$rev%>
+  </th>
+  <th bgcolor="#ccccff">
+	<i18n>
+   kumuliert
+	</i18n>
+  </th>
+  <th bgcolor="#ccccff">
+	<i18n>
+   Monat
+	</i18n>
+  </th>
+  <th bgcolor="#ccccff">
+	<i18n>
+   kumuliert
+	</i18n>
+  </th>
+  <th bgcolor="#ccccff">
+	<i18n>
+   Monat
+	</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+
+  my %sum;
+  foreach my $tpr_tid (keys %tpr)
+  {
+    my $tpr_titel = $tpr{$tpr_tid};
+    next unless $tpr_titel;
+
+    my $budget_start     = $budget_start{$tpr_tid};
+    my $budget_gesamt    = $budget_gesamt{$tpr_tid};
+    my $budget_kumuliert = $budget_kumuliert{$tpr_tid};
+    my $budget_monat     = $budget_monat{$tpr_tid};
+    my $ist_kumuliert    = $ist_kumuliert{$tpr_tid};
+    my $ist_monat        = $ist_monat{$tpr_tid};
+
+    $sum{budget_start}     += $budget_start;
+    $sum{budget_gesamt}    += $budget_gesamt;
+    $sum{budget_kumuliert} += $budget_kumuliert;
+    $sum{budget_monat}     += $budget_monat;
+    $sum{ist_kumuliert}    += $ist_kumuliert;
+    $sum{ist_monat}        += $ist_monat;
+
+ </%perl>
+ <tr>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align="right">
+   <%formatnumber($budget_start, 0, $ARGS{lang})%>
+  </td>
+  <td align="right">
+   <%formatnumber($budget_gesamt, 0, $ARGS{lang})%>
+  </td>
+  <td align="right">
+   <%formatnumber($budget_kumuliert, 0, $ARGS{lang})%>
+  </td>
+  <td align="right">
+   <%formatnumber($budget_monat, 0, $ARGS{lang})%>
+  </td>
+  <td align="right">
+   <%formatnumber($ist_kumuliert, 0, $ARGS{lang})%>
+  </td>
+  <td align="right">
+   <%formatnumber($ist_monat, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+% }
+
+ <tr>
+  <th class="label" bgcolor="#cccccc">
+	<i18n>
+   Summe
+	</i18n>
+  </th>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{budget_start}, 0, $ARGS{lang})%>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{budget_gesamt}, 0, $ARGS{lang})%>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{budget_kumuliert}, 0, $ARGS{lang})%>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{budget_monat}, 0, $ARGS{lang})%>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{ist_kumuliert}, 0, $ARGS{lang})%>
+  </td>
+  <td align="right" bgcolor="#cccccc">
+   <%formatnumber($sum{ist_monat}, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+</table>

@@ -1,0 +1,16 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { maske    => 'projekt',
+             label    => 'Projekt',
+             menu     => 'projekt' },
+           { maske    => 'profile',
+             label    => 'Profile',
+             menu     => 'projekt' },
+           @$menu_footer
+         ];
+
+</%perl>

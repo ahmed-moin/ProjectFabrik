@@ -1,0 +1,20 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n> Willkommen </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+
+<p><i18n> Willkommen in unserem virtuellen Assessment-Center. Zu Beginn finden Sie eine kurze Einführung mit Informationen über den Ablauf und das Auswertungsverfahren. Wir sichern Ihnen hiermit rechtsverbindlich zu, dass alle Ihre Angaben vertraulich behandelt werden. Nach der Bearbeitung der Aufgaben entscheiden Sie persönlich, ob Sie Ihre Testergebnisse an uns weitergeben.
+</i18n></p>
+
+<p>
+<i18n>
+Wenn Sie mehr über unser Datensicherheitskonzept wissen möchten, kontaktieren Sie uns unter <a href='mailto:virtualassessment@e-consulter.de'>virtualassessment@e-consulter.de</a>. Wir beantworten gerne Ihre Fragen.
+</i18n>
+</p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

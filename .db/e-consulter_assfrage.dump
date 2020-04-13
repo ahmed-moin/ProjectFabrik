@@ -1,0 +1,100 @@
+--
+-- PostgreSQL database dump
+--
+
+SET client_encoding = 'SQL_ASCII';
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+SET search_path = public, pg_catalog;
+
+--
+-- Data for Name: assfrage; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (1, 'de', 1, 'r', true, 'Ich bin ein aktiver Mensch ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (2, 'de', 1, 's', true, 'Ich bin leicht beunruhigt ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (3, 'de', 1, 'g', true, 'Mir fällt es leicht, andere Menschen zu verstehen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (4, 'de', 1, 'n', true, 'Initiative und Optimismus zeichnen mich aus ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (5, 'de', 1, 'v', false, 'Nicht immer bin ich so verlässlich, wie es die Situation erfordert ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (6, 'de', 2, 'r', true, 'Ich bin gerne mit vielen Leuten zusammen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (7, 'de', 2, 's', true, 'Manchmal fühle ich mich völlig unverstanden ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (8, 'de', 2, 'g', true, 'Ich erkenne die Fähigkeiten anderer und fördere sie ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (9, 'de', 2, 'b', true, 'Ich schätze es, mir schwierige Ziele zu setzen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (10, 'de', 2, 'v', true, 'Ich bin bestrebt, begonnene Dinge immer zu beenden ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (11, 'de', 3, 'r', true, 'Neuen Dingen gegenüber bin ich sehr aufgeschlossen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (12, 'de', 3, 's', true, 'Ich habe häufig Scham-, Schuld- oder Reuegefühle.');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (13, 'de', 3, 'g', false, 'Es fällt mir schwer, unvoreingenommen zuzuhören ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (14, 'de', 3, 'b', true, 'Ich bin ständig bestrebt, meine Leistungen zu steigern ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (15, 'de', 3, 'v', true, 'Verpflichtungen komme ich immer nach ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (16, 'de', 4, 'r', false, 'In fremder Umgebung fühle ich mich unsicher ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (17, 'de', 4, 's', false, 'Es fällt mir schwer, mich auf eine Sache zu konzentrieren ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (18, 'de', 4, 'r', true, 'Ich beteilige mich gerne an lebhaften Gesprächen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (19, 'de', 4, 'g', true, 'Emotionale Strömungen in einer Gruppe erfasse ich sehr schnell ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (20, 'de', 4, 'b', false, 'Es fällt mir schwer, mir die Ziele der Gruppe oder des Unternehmens zu Eigen zu machen');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (21, 'de', 5, 'v', true, 'Ordnung ist für mich sehr wichtig ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (22, 'de', 5, 's', true, 'Ich wünsche mir oft eine Person, die meine Probleme löst ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (23, 'de', 5, 'r', true, 'Ich bin ein optimistischer Mensch ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (24, 'de', 5, 'g', true, 'Ich schätze es, für ein gemeinsames Ziel mit anderen Menschen zusammenzuarbeiten ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (25, 'de', 5, 'b', true, 'Ich bin meistens hoch motiviert ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (26, 'de', 6, 'v', false, 'Nach Perfektion zu streben, ist mir nicht so wichtig ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (27, 'de', 6, 's', false, 'Ich bin nicht leicht zu erschüttern ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (28, 'de', 6, 'r', true, 'Manchmal könnte ich vor Energie überschäumen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (29, 'de', 6, 'g', true, 'Andere Menschen schätzen mich als Zuhörer für ihre Sorgen und Bedürfnisse ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (30, 'de', 6, 'b', true, 'Bei kniffligen Fragen reizt es mich, selbst die Lösung zu finden ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (31, 'de', 7, 'v', false, 'Wer Ordnung hält, ist nur zu faul zum Suchen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (32, 'de', 7, 's', true, 'Bei Widrigkeiten gebe ich leicht auf ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (37, 'de', 8, 's', false, 'Ich bin nicht leicht entmutigt ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (33, 'de', 7, 'r', false, 'Veränderungen stehe ich skeptisch gegenüber ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (34, 'de', 7, 'g', true, 'Mir fällt es leicht, andere zu inspirieren ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (35, 'de', 7, 'b', false, 'Es fällt mir schwer, mich selbst zu motivieren ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (36, 'de', 8, 'v', true, 'Ich bin ein systematischer Mensch ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (38, 'de', 8, 'g', false, 'Mir fällt es schwer, nützliche Beziehungen zu pflegen ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (39, 'de', 8, 'b', true, 'Chancen, die sich mir bieten, nutze ich ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (40, 'de', 8, 'v', true, 'Meine Mitmenschen empfinden mich als sehr zuverlässig ');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (1, 'en', 1, 'r', true, 'I am an active person');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (2, 'en', 1, 's', true, 'I easily feel anxious');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (3, 'en', 1, 'g', true, 'I find it easy to understand other people');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (4, 'en', 1, 'n', true, 'I am characterized by initiative and optimism');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (5, 'en', 1, 'v', false, 'I am not always as reliable as required by the situation');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (6, 'en', 2, 'r', true, 'I like to be together with many people');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (7, 'en', 2, 's', true, 'Sometimes I feel completely misunderstood');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (8, 'en', 2, 'g', true, 'I recognize the abilities of other persons and encourage these');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (9, 'en', 2, 'b', true, 'I like setting myself demanding goals');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (10, 'en', 2, 'v', true, 'It''s my aim to always complete the tasks I undertake');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (11, 'en', 3, 'r', true, 'I am very open-minded');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (12, 'en', 3, 's', true, 'I have feelings of shame, guilt or remorse quite frequently');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (13, 'en', 3, 'g', false, 'I find it difficult to listen without prejudices');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (14, 'en', 3, 'b', true, 'I''m always aiming at improving my performance');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (15, 'en', 3, 'v', true, 'I always fulfil my obligations');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (16, 'en', 4, 'r', false, 'In unfamiliar company I feel insecure');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (17, 'en', 4, 's', false, 'I find it difficult to concentrate on one matter');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (18, 'en', 4, 'r', true, 'I like to participate in animated discussions');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (19, 'en', 4, 'g', true, 'I have a strong sense for emotional trends within a group of people');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (20, 'en', 4, 'b', false, 'I find it difficult to adopt the goals of a group or a company');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (21, 'en', 5, 'v', true, 'Orderliness is very important for me');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (22, 'en', 5, 's', true, 'Often I wish I had somebody to solve my problems');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (23, 'en', 5, 'r', true, 'I am an optimistic person');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (24, 'en', 5, 'g', true, 'I appreciate working together with other people to a achieve a mutual goal');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (25, 'en', 5, 'b', true, 'Most of the time, I am highly motivated');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (26, 'en', 6, 'v', false, 'Striving for perfection is not important to me');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (27, 'en', 6, 's', false, 'I am not easily disturbed');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (28, 'en', 6, 'r', true, 'Sometimes I am brimming with energy');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (29, 'en', 6, 'g', true, 'Other people estimate me as a listener for their concerns and needs');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (30, 'en', 6, 'b', true, 'When it comes to difficult questions, it is a challenge to me to find the solution without assistance');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (31, 'en', 7, 'v', false, 'Orderliness is only for people who are too lazy for searching');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (32, 'en', 7, 's', true, 'I easily give up when adversities arise');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (33, 'en', 7, 'r', false, 'Generally I am sceptical about changes');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (34, 'en', 7, 'g', true, 'I find it easy to inspire other people');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (35, 'en', 7, 'b', false, 'I find it difficult to motivate myself');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (36, 'en', 8, 'v', true, 'I am a systematic person');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (37, 'en', 8, 's', false, 'I am not easily discouraged');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (38, 'en', 8, 'g', false, 'I find it difficult to build and maintain helpful relationships');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (39, 'en', 8, 'b', true, 'When an opportunity presents itself to me, I seize it');
+INSERT INTO assfrage (fra_fid, fra_lang, fra_seite, fra_kid, fra_positiv, fra_frage) VALUES (40, 'en', 8, 'v', true, 'Other people describe me as a very reliable person');
+
+
+--
+-- PostgreSQL database dump complete
+--
+

@@ -1,0 +1,104 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+$aus_lfdnr => undef
+$aus_katid => undef
+$aus_institut => undef
+$aus_bezeichnung => undef
+$aus_datvon_monat => undef
+$aus_datvon_jahr => undef
+$aus_datbis_monat => undef
+$aus_datbis_jahr => undef
+$aus_abschluss => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia::Date;
+use Contavia qw(fehler);
+
+$auswahl = $aus_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($aus_katid || $aus_institut || $aus_bezeichnung || $aus_abschluss)
+{
+  my $no_month = 'f'; # Nur die Jahreszahl speichern und spaeter anzeigen
+  my $aus_datvon;
+  my $aus_datbis;
+
+  # Kein Datum angegeben, leer lassen
+  if (not $aus_datvon_monat and
+      not $aus_datvon_jahr and
+      not $aus_datbis_monat and
+      not $aus_datbis_jahr) {
+    $aus_datvon = new Contavia::Date();
+    $aus_datbis = new Contavia::Date();
+  }
+  # Nur Jahreszahlen angegeben
+  else {
+    ($aus_datvon_monat = 1, $no_month = 't') if (not $aus_datvon_monat);
+    ($aus_datbis_monat = 1, $no_month = 't') if (not $aus_datbis_monat and $aus_datbis_jahr);
+    $aus_datvon = new Contavia::Date(1, $aus_datvon_monat, $aus_datvon_jahr);
+    $aus_datbis = new Contavia::Date(1, $aus_datbis_monat, $aus_datbis_jahr);
+  }
+
+  if ($aus_lfdnr)
+  {
+    update( $dbh, 'ausbildung',
+            { aus_benuid      => quote($uid),
+              aus_lfdnr       => $aus_lfdnr },
+            { aus_katid       => $aus_katid,
+              aus_institut    => quote($aus_institut),
+              aus_bezeichnung => quote($aus_bezeichnung),
+              aus_datvon      => $aus_datvon->qpgdate(),
+              aus_datbis      => $aus_datbis->qpgdate(),
+              aus_abschluss   => quote($aus_abschluss),
+              aus_nomonth     => quote($no_month) } );
+  }
+  else
+  {
+    $aus_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(aus_lfdnr) + 1
+       from ausbildung
+      where aus_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'ausbildung',
+            { aus_benuid      => quote($uid),
+              aus_lfdnr       => $aus_lfdnr,
+              aus_katid       => $aus_katid,
+              aus_institut    => quote($aus_institut),
+              aus_bezeichnung => quote($aus_bezeichnung),
+              aus_datvon      => $aus_datvon->qpgdate(),
+              aus_datbis      => $aus_datbis->qpgdate(),
+              aus_abschluss   => quote($aus_abschluss),
+              aus_nomonth     => quote($no_month) } );
+  }
+
+  $ARGS{sel_aus_lfdnr} = undef;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('keine Auswahl') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from ausbildung
+    where aus_benuid = '$uid'
+      and aus_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_aus_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

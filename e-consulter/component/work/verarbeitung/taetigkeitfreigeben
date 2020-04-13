@@ -1,0 +1,33 @@
+<%args>
+$dbh
+$projektid
+$uid
+$tae_nummer => undef
+$freigeben => undef
+</%args>
+<%perl>
+
+  return unless $freigeben;
+
+  die "<fehler><i18n>keine T&auml;tigkeit ausgew&auml;hlt</i18n></fehler>" unless $tae_nummer;
+
+  $tae_nummer = [$tae_nummer] unless ref($tae_nummer);
+
+  my $sth = $dbh->prepare( <<"EOF" );
+    update taetigkeit
+       set tae_freigabedatum = CURRENT_DATE
+     where tae_uid = '$uid'
+       and tae_auftrag = ?
+       and tae_datum = ?
+       and tae_lfdnr = ?
+EOF
+
+  foreach (@$tae_nummer)
+  {
+    my ($tae_auftrag, $tae_datum, $tae_lfdnr) = split(/,/);
+    $sth->execute($tae_auftrag, $tae_datum, $tae_lfdnr);
+  }
+
+  $dbh->commit;
+
+</%perl>

@@ -1,0 +1,57 @@
+<%args>
+@menu
+$uid
+$dbh
+</%args>
+<%perl>
+
+  my ($bem_bewertung, $bem_fehl, $bem_ausgepraegt, $bem_kurz, $bem_bemerkung) =
+    $dbh->selectrow_array( <<"EOF" );
+    select bem_bewertung, bem_fehl, bem_ausgepraegt, bem_kurz, bem_bemerkung
+      from bemerkung
+     where bem_uid = '$uid'
+EOF
+
+$bem_bewertung = -1 unless defined $bem_bewertung;
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Bemerkungen</i18n>',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+
+<p class='label'><i18n>Bitte bewerten Sie den Fragebogen</i18n></p>
+<i18n>schlecht</i18n>
+<input type='radio'
+       name='bem_bewertung'
+       value='0'<%$bem_bewertung == 0 ? ' checked' : ''%>>
+<input type='radio'
+       name='bem_bewertung'
+       value='1'<%$bem_bewertung == 1 ? ' checked' : ''%>>
+<input type='radio'
+       name='bem_bewertung'
+       value='2'<%$bem_bewertung == 2 ? ' checked' : ''%>>
+<input type='radio'
+       name='bem_bewertung'
+       value='3'<%$bem_bewertung == 3 ? ' checked' : ''%>>
+<input type='radio'
+       name='bem_bewertung'
+       value='4'<%$bem_bewertung == 4 ? ' checked' : ''%>>
+<input type='radio'
+       name='bem_bewertung'
+       value='5'<%$bem_bewertung == 5 ? ' checked' : ''%>>
+<i18n>gut</i18n>
+
+<p class='label'><i18n>Was hat Ihnen im Fragebogen gefehlt?</i18n></p>
+<textarea rows='3' cols='60' name='bem_fehl'><%$bem_fehl%></textarea>
+
+<p class='label'><i18n>Was empfanden Sie als zu ausgepr&auml;gt?</i18n></p>
+<textarea rows='3' cols='60' name='bem_ausgepraegt'><%$bem_ausgepraegt%></textarea>
+
+<p class='label'><i18n>Was empfanden Sie als zu kurz behandelt?</i18n></p>
+<textarea rows='3' cols='60' name='bem_kurz'><%$bem_kurz%></textarea>
+
+<p class='label'><i18n>sonstiges</i18n></p>
+<textarea rows='10' cols='60' name='bem_bemerkung'><%$bem_bemerkung%></textarea>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu, debug => 1 &>

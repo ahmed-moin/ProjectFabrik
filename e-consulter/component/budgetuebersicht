@@ -1,0 +1,193 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$waehrung
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+  my (%budget, %budgetplan, %kosten, %verfuegbar, %angebot);
+
+  # Teilprojekte lesen
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojektplan, teilprojekt
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+EOF
+
+  # beauftragtes Budget lesen
+  my $budget = $dbh->selectall_arrayref( <<"EOF" );
+   select bud_tid, sum(bud_betrag), sum(bud_personentage)
+     from budget, projektplan
+    where bud_pid = $projektid
+      and bud_pid = ppl_pid
+      and bud_ppl = ppl_nummer
+      and ppl_auftrag is not null
+    group by bud_tid
+EOF
+  my ($sum_bud_betrag, $sum_bud_personentage) = (0, 0);
+  foreach (@$budget)
+  {
+    my ($bud_tid, $bud_betrag, $bud_personentage) = @$_;
+    $budget{$bud_tid} = [$bud_betrag, $bud_personentage];
+    $sum_bud_betrag       += $bud_betrag;
+    $sum_bud_personentage += $bud_personentage;
+  }
+
+  # geplantes Budget lesen
+  my $budgetplan = $dbh->selectall_arrayref( <<"EOF" );
+   select bpl_tid, sum(bpl_betrag), sum(bpl_personentage)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+    group by bpl_tid
+EOF
+  my ($sum_bpl_betrag, $sum_bpl_personentage) = (0, 0);
+  foreach (@$budgetplan)
+  {
+    my ($bpl_tid, $bpl_betrag, $bpl_personentage) = @$_;
+    $budgetplan{$bpl_tid} = [$bpl_betrag, $bpl_personentage];
+    $sum_bpl_betrag       += $bpl_betrag;
+    $sum_bpl_personentage += $bpl_personentage;
+  }
+
+  # offene Angebote lesen
+  my $angebot = $dbh->selectall_arrayref( <<"EOF" );
+   select bud_tid, sum(bud_betrag), sum(bud_personentage)
+     from budget, projektplan
+    where bud_pid           = $projektid
+      and bud_pid           = ppl_pid
+      and bud_ppl           = ppl_nummer
+      and ppl_angebotdatum  is not null
+      and ppl_ablehnung     is null
+      and ppl_auftrag       is null
+    group by bud_tid
+EOF
+  my ($sum_ang_betrag, $sum_ang_personentage) = (0, 0);
+  foreach (@$angebot)
+  {
+    my ($bud_tid, $bud_betrag, $bud_personentage) = @$_;
+    $angebot{$bud_tid} = [$bud_betrag, $bud_personentage];
+    $sum_ang_betrag       += $bud_betrag;
+    $sum_ang_personentage += $bud_personentage;
+  }
+
+</%perl>
+
+<table border='1'>
+ <tr>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   beauftragt (<%$waehrung%>/PT)
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   geplant (<%$waehrung%>/PT)
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   verf&uuml;gbar (<%$waehrung%>/PT)
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   offene Angebote (<%$waehrung%>/PT)
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tpl)
+  {
+    my ($tpl_tid, $tpr_titel) = @$_;
+    my ($bud_betrag, $bud_personentage) =
+          $budget{$tpl_tid} ? @{$budget{$tpl_tid}} : (0, 0);
+    my ($bpl_betrag, $bpl_personentage) =
+          $budgetplan{$tpl_tid} ? @{$budgetplan{$tpl_tid}} : (0, 0);
+    my ($ang_betrag, $ang_personentage) =
+          $angebot{$tpl_tid} ? @{$angebot{$tpl_tid}} : (0, 0);
+ </%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='sel_tid' value='<%$tpl_tid%>'<%$tid == $tpl_tid ? 'checked' : ''%>>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+
+  <td align='right'>
+   <pre><%formatnumber($bud_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%$bud_personentage%></pre>
+  </td>
+
+  <td align='right'>
+   <pre><%formatnumber($bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%$bpl_personentage%></pre>
+  </td>
+
+  <td align='right'>
+   <pre><%formatnumber($bud_betrag - $bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%$bud_personentage - $bpl_personentage%></pre>
+  </td>
+
+  <td align='right'>
+   <pre><%formatnumber($ang_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%$ang_personentage%></pre>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th class='label' colspan='2' bgcolor='#cccccc'>
+   Summe
+  </th>
+
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum_bud_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bud_personentage%></pre>
+  </td>
+
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum_bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bpl_personentage%></pre>
+  </td>
+
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum_bud_betrag - $sum_bpl_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_bud_personentage - $sum_bpl_personentage%></pre>
+  </td>
+
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum_ang_betrag, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum_ang_personentage%></pre>
+  </td>
+ </tr>
+</table>

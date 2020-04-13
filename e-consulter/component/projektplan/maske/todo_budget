@@ -1,0 +1,124 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+
+  my %bud = $dbh->select_hash( "
+    select bud_tid,
+           sum(bud_betrag),     sum(bud_personentage),
+           sum(bud_sachkosten), sum(bud_investition)
+      from budget
+     where bud_pid = $projektid
+    group by bud_tid");
+
+  my %bpl = $dbh->select_hash( "
+    select bpl_tid,
+           sum(bpl_betrag),     sum(bpl_personentage),
+           sum(bpl_sachkosten), sum(bpl_investition)
+      from budgetplan
+     where bpl_pid = $projektid
+       and bpl_ppl = $projektplan
+    group by bpl_tid" );
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpr_tid, tpr_titel
+      from teilprojekt
+     where tpr_pid = $projektplan" );
+
+</%perl>
+
+<h1>TODO - Budget</h1>
+
+<h2>in folgenden Teilprojekten gibt es eine Abweichnung zwischen Budget
+    und Budgetplan</h2>
+
+<table border='1' width='100%'>
+ <tr>
+  <th colspan='2' rowspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Personalkosten
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Personentage
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Investition
+  </th>
+ </tr>
+ <tr>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Plan
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Plan
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Plan
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Plan
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tpr)
+  {
+    my ($tpr_tid, $tpr_titel) = @$_;
+    my @bud = @{$bud{$tpr_tid} || [0, 0, 0, 0]};
+    my @bpl = @{$bpl{$tpr_tid} || [0, 0, 0, 0]};
+
+    next if ( $bud[0] == $bpl[0]
+      && $bud[1] == $bpl[1]
+      && $bud[2] == $bpl[2]
+      && $bud[3] == $bpl[3] );
+ </%perl>
+ <tr>
+  <td>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+%   for(my $i = 0; $i < 4; ++$i) {
+%     my $bgcolor = $bud[$i] > $bpl[$i] ? ' bgcolor=\'#ccffcc\''
+%                 : $bud[$i] < $bpl[$i] ? ' bgcolor=\'#ffcccc\'' : '';
+  <td align='right'<%$bgcolor%>>
+   <%formatnumber($bud[$i], 0, $ARGS{lang})%>
+  </td>
+  <td align='right'<%$bgcolor%>>
+   <%formatnumber($bpl[$i], 0, $ARGS{lang})%>
+  </td>
+%   } # for(my $i)
+
+ </tr>
+
+% } # foreach (@$tpr)
+
+</table>
+
+<h2>folgende Teilprojekte haben ihr Budget überschritten</h2>
+noch nicht implementiert
+
+<h2>folgende Aufträge haben ihr Budget überschritten</h2>
+noch nicht implementiert

@@ -1,0 +1,88 @@
+<%args>
+$dbh
+$rol_uid
+</%args>
+
+<h1>Qualifikation von <%$rol_uid%></h1>
+<table>
+<& 'SELF:.qualnew', dbh => $dbh, uid => $rol_uid &>
+</table>
+
+<input type="hidden" name="rol_uid" value="<%$rol_uid%>">
+
+
+<%method .qualnew>
+<%args>
+$dbh
+$oberid => undef
+$level => 0
+$uid
+</%args>
+<%perl>
+  my $sql = "
+   select qra_qualid, qra_rank, qra_bemerkung,
+          qua_bezeichnung, qua_rank
+     from qualrank, qual
+    where qra_benuid = '$uid'
+      and qra_qualid = qua_id";
+  $sql .= defined ($oberid) ? " and qua_oberid = $oberid"
+                            : " and qua_oberid is null";
+  $sql .= ' order by qra_rank desc';
+  my $qra = $dbh->selectall_arrayref($sql);
+
+
+  foreach (@$qra) {
+    my ($qra_qualid, $qra_rank, $qra_bemerkung,
+        $qua_bezeichnung, $qua_rank) = @$_;
+</%perl>
+    <tr>
+%   if ($level == 0 and not $qua_rank) {
+      <td style="width:300px;"><b><% $qua_bezeichnung %></b></td><td></td>
+%   } else {
+      <td style="vertical-align:top;width:300px">
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td nowrap="nowrap" valign="top">
+              <&  '/bar', width => $level * 15, height => 1, color => [255, 255, 255] &>
+              <img src='/images/20x20ar.gif' alt="->">
+            </td>
+            <td style="padding:4px 0 0 2px">
+              <% $qua_bezeichnung %>
+%             if ($qra_bemerkung) {
+                <br><small>(<% $qra_bemerkung %>)</small>
+%             }
+            </td>
+          </tr>
+        </table>
+      </td>
+%     if ($qua_rank) {
+      <td valign="top" width="220">
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td><img src="/images/minus.gif" alt="-"></td>
+            <td width="158" align="center">
+%             $m->comp('/bar', height => 15,
+%                              width  => $qra_rank * 30,
+%                              color  => [0, 0, 0x80]);
+%             $m->comp('/bar', height => 15,
+%                              width  => (5 - $qra_rank) * 30 - 3,
+%                              color  => [192, 192, 192]);
+            </td>
+            <td>
+              <img src="/images/plus.gif" alt="+">
+            </td>
+          </tr>
+        </table>
+      </td>
+%     } else {
+      <td></td>
+%     }
+%   }
+    </tr>
+    <& 'SELF:.qualnew', uid => $uid,
+                        dbh => $dbh,
+                        oberid => $qra_qualid,
+                        oberbezeichnung => $qua_bezeichnung,
+                        level => $level + 1 &>
+% }
+</%method>

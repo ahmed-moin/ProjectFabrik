@@ -1,0 +1,41 @@
+<%args>
+$dbh
+@menu => undef
+</%args>
+<%perl>
+
+my $fra =
+   [
+     [ 1 => '<i18n>Frage</i18n> 1' ],
+     [ 2 => '<i18n>Frage</i18n> 2' ],
+     [ 3 => '<i18n>Frage</i18n> 3' ],
+     [ 4 => '<i18n>Frage</i18n> 4' ],
+     [ 5 => '<i18n>Frage</i18n> 5' ]
+   ];
+
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n> Einführung </i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> In dem folgenden Online-Fragebogen erhalten Sie pro Seite 5 Fragen. Solange Sie eine Seite bearbeiten, können Sie auch Änderungen in Ihren Antworten vornehmen. Erst wenn Sie alle Fragen auf der Seite beantwortet haben und auf "weiter" klicken, speichert das Programm Ihre Antworten und wechselt automatisch zur nächsten Seite.</i18n> </p>
+
+<ul>
+% foreach (@$fra) {
+%   my ($fra_fid, $fra_frage) = (@$_);
+  <li>
+   <p>
+    <%$fra_frage%><br>
+    0%
+%  for (my $i = 0; $i <= 10; ++$i) {
+    <input type='radio' name='frage<%$fra_fid%>' value='<%$i%>'>
+%  }
+    100%
+   </p>
+  </li>
+% }
+</ul>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

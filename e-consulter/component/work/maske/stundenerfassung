@@ -1,0 +1,296 @@
+<%args>
+$dbh
+$projektid
+$uid
+$datum => undef
+$pos => undef
+$auftrag => undef
+$loeschen => undef
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+  my $current = Contavia::Date::current;
+  $current->tag(1);
+  $datum = $datum ? new Contavia::Date($datum) : $current;
+  $datum->tag(1);
+  my $endedatum = $datum->naechster_monat->voriger_tag;
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+   select atr_nummer, atr_tid, tpr_titel, atr_aid, auf_name,
+          atr_tagessatz, atr_personentage, atr_status
+     from auftrag, teilprojekt, aufgabe
+    where atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+      and atr_status <= 5
+      and tpr_pid = atr_pid
+      and tpr_tid = atr_tid
+      and auf_pid = atr_pid
+      and auf_tid = atr_tid
+      and auf_aid = atr_aid
+    order by atr_nummer
+EOF
+
+  my $atr_personentage = $dbh->selectrow_array( <<"EOF" ) if $auftrag;
+   select atr_personentage
+     from auftrag
+    where atr_nummer = $auftrag
+EOF
+
+  my $tae_stunden = $dbh->selectrow_array( <<"EOF" ) if $auftrag;
+   select sum(tae_stunden)
+     from taetigkeit
+    where tae_auftrag = $auftrag;
+EOF
+
+  my $tae = $dbh->selectall_arrayref( <<"EOF", {}, $datum->qpgdate, $endedatum->qpgdate );
+   select tae_auftrag, tae_datum, tae_lfdnr, tae_freigabedatum,
+          tae_stunden, tae_beschreibung
+     from taetigkeit, auftrag
+    where tae_datum_bis is null
+      and tae_datum between ? and ?
+      and atr_nummer = tae_auftrag
+      and atr_pid = $projektid
+      and atr_uid = '$uid'
+      and atr_freigabe is not null
+    order by tae_datum, tae_auftrag, tae_lfdnr
+EOF
+
+  my $startdatum = new Contavia::Date($dbh->selectrow_array( <<"EOF" ));
+   select min(apl_startdatum)
+     from aufgabenplan, auftrag
+    where atr_uid = '$uid'
+      and apl_pid = atr_pid
+      and apl_tid = atr_tid
+      and apl_aid = atr_aid
+EOF
+
+  $startdatum->tag(1);
+  my $vormonat = $current->voriger_monat;
+  $startdatum = $current if $vormonat->cmp($startdatum) < 0;
+
+</%perl>
+
+<table>
+ <tr>
+  <td>
+   <h1><i18n>Stundenerfassung</i18n></h1>
+  </td>
+  <td>
+   <& '/select_monat', name     => 'datum',
+                       von      => $startdatum,
+                       bis      => $current,
+                       selected => $datum &>
+  </td>
+ </tr>
+</table>
+
+<table>
+ <tr>
+  <td>
+	<i18n>
+   Auftrag
+	</i18n>
+  </td>
+  <td colspan='2'>
+   <& '/select', name     => 'auftrag',
+                 values   => [
+                               map
+                               {
+                                 my ($atr_nummer, undef,
+                                     $tpr_titel, undef, $auf_name) = @$_;
+                                 [ $atr_nummer,
+                                   "$atr_nummer $tpr_titel - $auf_name"]
+                               } @$atr
+                             ],
+                 selected => $auftrag &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+	<i18n>
+   Auftrag
+	</i18n>
+  </td>
+  <td align='right'>
+   <%formatnumber($atr_personentage, 2, $ARGS{lang})%> PT
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+	<i18n>
+   ist
+	</i18n>
+  </td>
+  <td align='right'<%$tae_stunden/8 > $atr_personentage && ' bgcolor=\'#FFAAAA\''%>>
+   <%formatnumber($tae_stunden/8, 2, $ARGS{lang})%> PT
+  </td>
+ </tr>
+</table>
+
+% if ($auftrag) {
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Tag
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Std.
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <th bgcolor='#ccccff'>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+
+  foreach (@$tae)
+  {
+    my ($tae_auftrag, $tae_datum, $tae_lfdnr, $tae_freigabedatum,
+        $tae_stunden, $tae_beschreibung) = @$_;
+
+    $tae_datum = new Contavia::Date($tae_datum);
+
+    my $tae_key = sprintf("%d-%d", $tae_auftrag, $tae_lfdnr);
+
+    if ($tae_key eq $pos) {
+
+ </%perl>
+
+  <tr>
+   <td bgcolor='#cccccc'>
+    <input type='hidden' name='tae_key' value='<%$tae_key%>'>
+   </td>
+   <td>
+    <input type='text' name='tag' size='2' value='<%$tae_datum->tag%>'>
+    <& '/setfocus', name => 'tag' &>
+   </td>
+   <td>
+    <input type='text' name='stunden' size='4'
+           value='<%formatnumber($tae_stunden, 2, $ARGS{lang})%>'>
+   </td>
+   <td align='right'>
+    <%$tae_auftrag%>
+   </td>
+   <td>
+    <input type='text' name='beschreibung' size='40'
+           value='<%$tae_beschreibung%>'>
+   </td>
+  </tr>
+
+%   } else {  # if ($tae_key eq $pos)
+
+ <tr>
+  <td bgcolor='#cccccc'>
+% unless ($tae_freigabedatum) {
+   <input type='radio' name='pos' value='<%$tae_key%>'>
+% }
+  </td>
+  <td align='right'>
+   <%$tae_datum->tag%>
+  </td>
+  <td align='right'>
+   <%formatnumber($tae_stunden, 2, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%$tae_auftrag%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+ </tr>
+
+%   } # if ($tae_key eq $pos)
+%
+% } # foreach (@$tae)
+
+% unless ($pos) {
+
+ <tr>
+  <td bgcolor='#cccccc'>
+   &nbsp;
+  </td>
+  <td>
+   <input type='text' name='tag' size='2'>
+   <& '/setfocus', name => 'tag' &>
+  </td>
+  <td>
+   <input type='text' name='stunden' size='4'>
+  </td>
+  <td>
+   <%$auftrag%>
+  </td>
+  <td>
+   <input type='text' name='beschreibung' size='40'>
+  </td>
+ </tr>
+
+% }
+</table>
+
+% } # if ($auftrag)
+
+<p class='button'>
+ <input type='submit' name='speichern'      value='<i18n>speichern</i18n>'>
+ <input type='submit' name='freigeben'      value='<i18n>speichern und freigeben</i18n>'>
+ <input type='submit' name='allesfreigeben' value='<i18n>alles freigeben</i18n>'>
+ <input type='submit' name='bearbeiten'     value='<i18n>bearbeiten</i18n>'>
+%
+% if ($pos) {
+%   if ($loeschen) {
+%
+ <input type='hidden' name='loeschen_key'   value='<%$pos%>'>
+ <input type='submit' name='loeschen_ok'    value='<i18n>wirklich löschen?</i18n>'>
+%
+%   } else {
+%
+ <input type='submit' name='loeschen'       value='<i18n>löschen</i18n>'>
+%
+%   }
+%
+% }
+</p>
+
+<h2><i18n>Erläuterung</i18n></h2>
+
+<p>
+	<i18n>
+ Wenn Sie einen Auftrag ausgewählt haben, erhalten Sie als Überblick die
+ Anzahl der Personentage, die beauftragt wurden, und den ist-Aufwand, den Sie
+ bisher erfaßt haben.
+	</i18n>
+</p>
+
+<p>
+	<i18n>
+ In der Tabelle ist eine Auflistung aller Aufwände, die Sie für den ausgewählten
+ Monat über alle Aufträge erfaßt haben.
+	</i18n>
+</p>
+
+<p>
+	<i18n>
+ Aufwände, die Sie noch nicht freigegeben haben, können Sie bearbeiten. Diese
+ erkennen Sie an dem Auswahlfeld in der 1. Spalte. Ist die Spalte leer, haben
+ Sie den Aufwand bereits freigegeben. Eine weitere Bearbeitung ist dann nicht
+ mehr möglich.
+	</i18n>
+</p>

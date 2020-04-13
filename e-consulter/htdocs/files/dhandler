@@ -1,0 +1,82 @@
+<%flags>
+  inherit => undef
+</%flags>
+<%args>
+  $sid
+  $a => undef
+</%args>
+<%init>
+  use EConsulter;
+  use MIME::Types 'by_suffix';
+
+  my $econsulter = new EConsulter;
+  my $dbh = $econsulter->connect();
+</%init>
+<%perl>
+  my ($path, $filename, $sth, $uid);
+
+  # Hole Datei von den Anhaengen
+  if ($a) {
+    my $anh_id = $m->dhandler_arg;
+
+    $sth = $dbh->prepare('
+      select ben_uid
+        from benutzer
+       where ben_sessid=?');
+
+    $sth->execute($sid);
+
+    return if (not $sth->fetchrow_array);
+
+    $sth = $dbh->prepare('
+      select anh_uid, anh_filename
+        from anhaenge
+       where anh_id=?');
+
+    $sth->execute($anh_id);
+    ($uid, $filename) = $sth->fetchrow_array();
+
+    $path = "$ENV{MAINDIR}/daten/anhaenge/$uid/$filename";
+  }
+  else {
+    my ($projektid, $folder, $file) = split('/', $m->dhandler_arg);
+
+    $sth = $dbh->prepare(<<"EOF");
+      select fil_name
+        from files
+       where fil_prjid=(select rol_pid
+                          from rolle
+                         where rol_uid=(select ben_uid
+                                          from benutzer
+                                         where ben_sessid=?)
+                           and rol_pid=?)
+         and fil_id=?
+EOF
+    $sth->execute($sid, $projektid, $file);
+    $filename = $sth->fetchrow_array();
+
+    $path = "$ENV{MAINDIR}/daten/$projektid/$folder/$filename";
+  }
+
+
+  if ($filename) {
+    my $l;
+    my $data;
+
+    open(FILE, "<$path") or die ("could not open: $path");
+    while ($l = <FILE>) {
+      $data .= $l;
+    }
+    close(FILE);
+
+    my $type = by_suffix($filename);
+    unless ($type) {
+      my $mm = new File::MMagic;
+      $type = $mm->checktype_contents($data);
+    }
+
+    $r->content_type($$type[0]);
+    $r->headers_out->add("Content-Disposition", "attachment; filename=\"$filename\"");
+    $m->out($data);
+  }
+</%perl>

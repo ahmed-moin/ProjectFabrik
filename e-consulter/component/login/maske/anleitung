@@ -1,0 +1,9 @@
+<%args>
+@menu
+</%args>
+
+<& '/masketitel', titel => 'Anleitung',
+                  maske => 'anleitung',
+                  menu  => \@menu &>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

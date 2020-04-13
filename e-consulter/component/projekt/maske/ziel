@@ -1,0 +1,104 @@
+<%args>
+@menu
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  my ($prj_ziel, $prj_start, $prj_ende) =
+    $dbh->selectrow_array( <<"EOF" );
+    select prj_ziel, prj_start, prj_ende
+      from projekt
+     where prj_id=$projektid
+EOF
+
+  my $pziel = $dbh->selectall_arrayref( <<"EOF" );
+    select prj_ziel, prj_zielreihenfolge
+      from prjziel
+     where prj_id = $projektid
+   union
+    select pzs_bezeichnung, 0
+      from prjzielstamm
+     where not exists (
+       select 1
+         from prjziel
+        where prj_id = $projektid
+          and prj_ziel = pzs_bezeichnung)
+   order by 2 desc
+EOF
+
+#  $pziel = [ @$pziel, @$pzs ];
+
+</%perl>
+
+ <& '/masketitel', titel => 'Ziel',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <p class="label"><i18n>Welches Ergebnis wollen Sie erreichen, wenn Ihr Projekt beendet ist?</i18n></p>
+ <textarea name="prj_ziel"
+           rows="15" cols="60"><%$prj_ziel%></textarea>
+ <br>
+ <br>
+
+ <p class='label'>
+	<i18n>
+  Bitte geben Sie an, wie wichtig die vorgegebenen Ziele sind und erg&auml;nzen
+  Sie bei Bedarf weitere Ziele.
+	</i18n>
+ </p>
+ <br>
+
+ <table>
+% my $zeile = 0;
+% foreach (@$pziel) {
+%   my ($prj_ziel, $prj_zielreihenfolge) = @$_;
+  <tr>
+   <td>&nbsp;</td>
+   <td>
+    <input type='hidden' name='prj_ziel_text' value='<%$prj_ziel%>'>
+    <%$prj_ziel%>
+   </td>
+   <td><img src='images/minus.png' border='0'></td>
+%   for (my $i = 0; $i < 6; ++$i) {
+   <td>
+    <input type='radio'
+           name='prj_ziel_value_<%$zeile%>'
+           value='<%$i%>'<%$prj_zielreihenfolge == $i ? ' checked' : ''%>>
+   </td>
+%   }
+   <td><img src='images/plus.png' border='0'></td>
+  </tr>
+%   ++$zeile;
+% }
+  <tr>
+   <td>&nbsp;</td>
+   <td><input type='text' name='prj_ziel_text_neu' size='30' maxlength='40'></td>
+   <td><img src='images/minus.png' border='0'></td>
+%   for (my $i = 0; $i < 6; ++$i) {
+   <td>
+    <input type='radio'
+           name='prj_ziel_value_neu'
+           value='<%$i%>'>
+   </td>
+%   }
+   <td><img src='images/plus.png' border='0'></td>
+  </tr>
+  <tr>
+   <td colspan='2' align='center'>
+    <input type='submit' name='speichern' value='<i18n>Ziel speichern</i18n>'>
+   </td>
+  </tr>
+ </table>
+
+
+ <br>
+ <br>
+
+ <p class='label'><i18n>Wann soll das Projekt starten?</i18n></p>
+ <& '/inputdatum', name => 'prj_start', value => $prj_start &>
+
+ <p class='label'><i18n>Wann soll das Projekt abgeschlossen sein?</i18n></p>
+ <& '/inputdatum', name => 'prj_ende', value => $prj_ende &>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

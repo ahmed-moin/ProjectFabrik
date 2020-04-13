@@ -1,0 +1,142 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$speichern => undef
+$loeschen => undef
+$neu => undef
+$tagessatz => undef
+$tpr_titel => undef
+$bud_betrag => undef
+$bud_personentage => undef
+$bud_sachkosten => undef
+$bud_investition => undef
+$tpl_tid => undef
+$tid => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Db qw(replace insert quote);
+
+  if ($speichern)
+  {
+    fehler("kein Titel angegeben") if (!$tpl_tid && !$tpr_titel);
+
+    $bud_betrag = $bud_personentage * $tagessatz
+      if ($tagessatz && $bud_personentage && (!$bud_betrag || $bud_betrag == 0));
+
+    $bud_betrag       = 0 unless $bud_betrag;
+    $bud_personentage = 0 unless $bud_personentage;
+    $bud_sachkosten   = 0 unless $bud_sachkosten;
+    $bud_investition  = 0 unless $bud_investition;
+
+    if ($tpl_tid)
+    {
+      replace($dbh, 'budget',
+        { bud_pid          => $projektid,
+          bud_ppl          => $projektplan,
+          bud_tid          => $tpl_tid },
+        { bud_betrag       => $bud_betrag,
+          bud_personentage => $bud_personentage,
+          bud_sachkosten   => $bud_sachkosten,
+          bud_investition  => $bud_investition } );
+    }
+    else
+    {
+      my $tid = $dbh->selectrow_array( <<"EOF" ) || 1;
+       select max(tpr_tid) + 1
+         from teilprojekt
+        where tpr_pid = $projektid
+EOF
+
+      insert($dbh, 'teilprojekt',
+        { tpr_pid    => $projektid,
+          tpr_tid    => $tid,
+          tpr_titel  => quote($tpr_titel),
+          tpr_status => 0 } );
+
+      insert($dbh, 'teilprojektplan',
+        { tpl_pid          => $projektid,
+          tpl_ppl          => $projektplan,
+          tpl_tid          => $tid,
+          tpl_beschreibung => '\'\'' } );
+
+      insert($dbh, 'budget',
+        { bud_pid          => $projektid,
+          bud_ppl          => $projektplan,
+          bud_tid          => $tid,
+          bud_betrag       => $bud_betrag,
+          bud_personentage => $bud_personentage,
+          bud_sachkosten   => $bud_sachkosten,
+          bud_investition  => $bud_investition } );
+    }
+
+    $dbh->commit;
+    $ARGS{tid} = ($tpl_tid ? $tpl_tid : undef);
+  }
+  elsif($loeschen)
+  {
+    $tpl_tid = $tid unless $tpl_tid;
+    fehler("kein Teilprojekt ausgew&auml;hlt") unless $tpl_tid;
+
+    $dbh->do( <<"EOF" );
+     delete from budgetplan
+      where bpl_pid = $projektid
+        and bpl_ppl = $projektplan
+        and bpl_tid = $tpl_tid
+EOF
+
+    $dbh->do( <<"EOF" );
+     delete from aufgabenplan
+      where apl_pid = $projektid
+        and apl_ppl = $projektplan
+        and apl_tid = $tpl_tid
+EOF
+
+    $dbh->do( <<"EOF" );
+     delete from teilprojektplan
+      where tpl_pid = $projektid
+        and tpl_ppl = $projektplan
+        and tpl_tid = $tpl_tid
+EOF
+
+    my $count = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from teilprojektplan
+      where tpl_pid = $projektid
+        and tpl_ppl = $projektplan
+EOF
+
+    unless ($count > 0)
+    {
+      $dbh->do( <<"EOF" );
+       delete from budget
+        where bud_pid = $projektid
+          and bud_tid = $tpl_tid
+EOF
+
+      $dbh->do( <<"EOF" );
+       delete from aufgabe
+        where auf_pid = $projektid
+          and auf_tid = $tpl_tid
+EOF
+
+      $dbh->do( <<"EOF" );
+       delete from teilprojekt
+        where tpr_pid = $projektid
+          and tpr_tid = $tpl_tid
+EOF
+    }
+
+    $dbh->commit;
+    $ARGS{tid} = undef;
+  }
+  elsif ($neu)
+  {
+    $ARGS{tid} = undef;
+  }
+
+  return \%ARGS;
+
+</%perl>

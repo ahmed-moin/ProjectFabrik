@@ -1,0 +1,50 @@
+<%args>
+$titel => undef
+$titel_bg => undef
+$titel_img => undef
+$barcolor => undef
+</%args>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+ <head>
+% if ($titel) {
+  <title><% $titel %></title>
+% }
+
+  <link rel=stylesheet type="text/css" href=/ptool.css>
+
+  <script language="JavaScript" src="/ptool.js" type="text/javascript">
+  </script>
+
+ </head>
+
+ <body leftmargin=0 topmargin=0 rightmargin=0
+       marginwidth=0 marginheight=0 bgcolor=white>
+
+  <table cellspacing=0 cellpadding=0 border=0 height=100% width=100%>
+   <tr>
+% if ($barcolor) {
+    <td bgcolor='#000080'>
+     <& '/bar', width => 20, height => 60, color => $barcolor &>
+% } elsif ($titel_bg) {
+    <td background='<% $titel_bg %>'>
+     &nbsp;
+% } else {
+    <td bgcolor='#000080'>
+% }
+    </td>
+    <td bgcolor='#000080' width='80%' align='left'
+      style='border-left-width:10; border-style:solid; border-color:#000080'>
+% if ($titel_img) {
+     <a href='/'><img src='<% $titel_img %>' border='0'></a>
+% } else {
+     <font face='Arial' size='20' color='white'><% $titel %></font>
+% }
+    </td>
+   </tr>
+
+   <tr>
+    <td bgcolor='#C0C0C0' valign='top' align='right' rowspan='2' height='100%'>
+
+<!-------------------------------- Menü -------------------------------->
+

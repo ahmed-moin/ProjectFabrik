@@ -1,0 +1,9 @@
+<%args>
+$maske
+@menu
+</%args>
+
+  <p class='button'>
+    <& '/zurueck_button', %ARGS &>
+    <& '/weiter_button',  %ARGS &>
+  </p>

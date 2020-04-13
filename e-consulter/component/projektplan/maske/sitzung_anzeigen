@@ -1,0 +1,93 @@
+<%args>
+$dbh
+$projektid
+$sid => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  my $sit = $dbh->selectall_arrayref( "
+    select sit_sid, sit_titel, sit_datum
+      from sitzung
+     where sit_pid = $projektid" );
+
+  my ($sit_titel, $sit_datum, $sit_ort, $sit_text)
+    = $dbh->selectrow_array( "
+    select sit_titel, sit_datum, sit_ort, sit_text
+      from sitzung
+     where sit_pid = $projektid
+       and sit_sid = $sid" ) if $sid > 0;
+
+</%perl>
+
+<h1>Sitzung</h1>
+
+<table width='100%'>
+ <tr>
+  <th class='label' width='10%'>
+   Sitzung
+  </th>
+  <td>
+   <& '/select', name     => 'sid',
+                 values   => [ (map {
+
+                   my ($sit_sid, $sit_titel, $sit_datum) = @$_;
+
+                   $sit_datum = new Contavia::Date($sit_datum)->format;
+                   [ $sit_sid, "$sit_datum / $sit_titel" ];
+
+                 } @$sit) ],
+                 selected => $sid &>
+  </td>
+ </tr>
+
+% if ($sid) {
+
+ <tr>
+  <th class='label'>
+   Datum
+  </th>
+  <td>
+   <%new Contavia::Date($sit_datum)->preformat%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Titel
+  </th>
+  <td>
+   <%$sit_titel%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Ort
+  </th>
+  <td>
+   <%$sit_ort%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Bericht
+  </th>
+  <td>
+   <%$sit_text%>
+  </td>
+ </tr>
+
+% }
+</table>
+
+% if ($sit) {
+<p class='label'>
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='neu'  value='neu'>
+ <input type='submit' name='teilnehmer' value='Teilnehmer'>
+ <input type='submit' name='loeschen'  value='löschen'>
+</p>
+% }

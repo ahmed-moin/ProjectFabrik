@@ -1,0 +1,34 @@
+<%args>
+$dbh
+$projektid
+$sel_datum => undef
+$geprueft => undef
+$ungeprueft => undef
+$atr_nummer => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($geprueft)
+  {
+    $dbh->do( "update auftragbericht
+      set abr_geprueft = CURRENT_DATE
+      where abr_nummer = ?
+        and abr_datum  = ?", {}, $atr_nummer, $sel_datum)
+      || fehler("interner Fehler bei prüfen von Auftrag $atr_nummer vom $sel_datum");
+
+    $dbh->commit();
+  }
+  elsif ($ungeprueft)
+  {
+    $dbh->do( "update auftragbericht
+      set abr_geprueft = NULL
+      where abr_nummer = ?
+        and abr_datum  = ?", {}, $atr_nummer, $sel_datum)
+      || fehler("interner Fehler bei unprüfen von Auftrag $atr_nummer vom $sel_datum");
+
+    $dbh->commit();
+  }
+
+</%perl>

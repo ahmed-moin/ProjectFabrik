@@ -1,0 +1,29 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'todo',
+             dlabel   => 'todo',
+             menu     => 'todo' },
+           { maske    => 'todo_zeitplan',
+             dlabel   => 'Zeitplan prüfen',
+             menu     => 'todo' },
+           { maske    => 'todo_auftrag',
+             dlabel   => 'Auftrag prüfen',
+             menu     => 'todo' },
+           { maske    => 'todo_freigabe',
+             dlabel   => 'Freigaben',
+             menu     => 'todo' },
+           { maske    => 'todo_budget',
+             dlabel   => 'Budget prüfen',
+             menu     => 'todo' },
+           { maske    => 'todo_bericht',
+             dlabel   => 'Bericht',
+             menu     => 'todo' },
+           @$menu_footer
+         ];
+
+</%perl>

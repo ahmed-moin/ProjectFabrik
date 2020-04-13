@@ -1,0 +1,10 @@
+<%perl>
+
+$ARGS{projektid}  = undef;
+$ARGS{folgemaske} = 'projekte';
+$ARGS{menu} = undef;
+
+return \%ARGS;
+
+</%perl>
+

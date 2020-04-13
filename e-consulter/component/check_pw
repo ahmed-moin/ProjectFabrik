@@ -1,0 +1,33 @@
+<%args>
+$uid
+$password
+$dbh
+</%args>
+<%perl>
+
+my $sth = $dbh->prepare( <<"EOF" );
+     select ben_projekt, ben_personal, ben_admin
+       from benutzer
+      where ben_uid = ?
+        and ben_password = ?
+        and not ben_blacklisted
+EOF
+$sth->execute($uid, $password);
+
+my @row = $sth->fetchrow_array();
+
+$dbh->insert('login',
+  { log_zeit => 'CURRENT_TIMESTAMP',
+    log_servername => $dbh->quote($ENV{SERVER_NAME}),
+    log_uri        => $dbh->quote($ENV{REQUEST_URI}),
+    log_ssl        => $ENV{SERVER_PORT} == 80 ? '\'f\'' : '\'t\'',
+    log_ip         => $dbh->quote($ENV{REMOTE_ADDR}),
+    log_uid        => $dbh->quote($ARGS{uid}),
+    log_ok         => @row ? '\'t\'' : '\'f\'' } );
+$dbh->commit;
+
+die '<fehler><i18n>Anmeldung fehlgeschlagen</i18n></fehler>' unless @row;
+
+return @row;
+
+</%perl>

@@ -1,0 +1,27 @@
+<%args>
+$dbh
+</%args>
+<%perl>
+
+if ($ARGS{sessid})
+{
+  $dbh->do( <<"EOF" );
+   update benutzer
+      set ben_sessid = null
+    where ben_sessid = '$ARGS{sessid}'
+EOF
+
+  $dbh->commit;
+
+  $ARGS{uid}        = undef;
+  $ARGS{sessid}     = undef;
+  $ARGS{maske}      = undef;
+  $ARGS{folgemaske} = undef;
+  $ARGS{projektid}  = undef;
+  $ARGS{menu}       = undef;
+
+  return \%ARGS;
+}
+
+</%perl>
+

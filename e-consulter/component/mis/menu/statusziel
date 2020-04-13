@@ -1,0 +1,40 @@
+<%args>
+$menu_head
+$menu_footer
+$projektid
+$dbh
+$folgemaske
+</%args>
+<%perl>
+  my @zmenu;
+
+  if ($folgemaske =~ /statusziel(\d+)/)
+  {
+    my $n = $1;
+
+    my ($prz_titel, $prz_kostenvergleich) =
+          $dbh->selectrow_array( <<"EOF" );
+      select prz_titel, prz_kostenvergleich
+        from projektziel
+       where prz_pid = $projektid
+         and prz_zid = $n
+EOF
+
+    push @zmenu, { maske  => "statusziel${n}",
+                   dlabel => $prz_titel,
+                   menu   => 'statusziel' };
+    push @zmenu, { maske  => "statusziel${n}_kosten",
+                   dlabel => 'Kostenvergleich',
+                   menu   => 'statusziel' } if ($prz_kostenvergleich);
+    push @zmenu, { maske  => "statusziel${n}_tabelle",
+                   dlabel => 'Tabelle',
+                   menu   => 'statusziel' };
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           @zmenu,
+           @$menu_footer
+         ];
+
+</%perl>

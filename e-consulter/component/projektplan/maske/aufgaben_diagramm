@@ -1,0 +1,25 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+</%args>
+<%perl>
+
+use Contavia qw(fehler);
+
+fehler("kein Teilprojekt ausgew&auml;hlt") unless $tid;
+
+my $tpr_titel = $dbh->selectrow_array( <<"EOF" );
+  select tpr_titel
+    from teilprojekt
+   where tpr_pid = $projektid
+     and tpr_tid = $tid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => "Aufgaben&uuml;bersicht zum Teilprojekt '$tpr_titel'" &>
+
+<& '/aufgabendiagramm', dbh => $dbh, projektid => $projektid, projektplan => $projektplan,
+  tid => $tid &>

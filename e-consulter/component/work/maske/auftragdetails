@@ -1,0 +1,267 @@
+<%args>
+$uid
+$dbh
+$projektid
+$waehrung => ''
+$atr_nummer => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" );
+    select atr_nummer
+      from auftrag
+     where atr_pid = $projektid
+       and atr_uid = '$uid'
+       and atr_status <= 5
+     order by atr_nummer
+EOF
+
+  my $ppl = $m->comp('/get_projektplan', dbh => $dbh, projektid => $projektid)
+      if $atr_nummer;
+
+  my ($atr_datum, $atr_tid, $atr_aid,
+      $atr_tagessatz, $atr_personentage,
+      $tpr_titel, $auf_name) = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select atr_datum, atr_tid, atr_aid,
+           atr_tagessatz, atr_personentage, tpr_titel, auf_name
+      from auftrag, teilprojekt, aufgabe
+     where atr_pid = $projektid
+       and atr_nummer = $atr_nummer
+       and atr_pid = tpr_pid
+       and atr_tid = tpr_tid
+       and atr_pid = auf_pid
+       and atr_tid = auf_tid
+       and atr_aid = auf_aid
+EOF
+
+  my $tae_pt_erfasst = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select sum(tae_stunden)
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+EOF
+
+  my $tae_pt_freigegeben = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select sum(tae_stunden)
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+       and tae_freigabedatum is not null
+EOF
+
+  my $tae_pt_geprueft = $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select sum(tae_stunden)
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+       and tae_geprueft is not null
+EOF
+
+  my ($apl_startdatum, $apl_endedatum, $apl_beschreibung) =
+        $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select apl_startdatum, apl_endedatum, apl_beschreibung
+      from aufgabenplan
+      where apl_pid = $projektid
+        and apl_ppl = $ppl
+        and apl_tid = $atr_tid
+        and apl_aid = $atr_aid
+EOF
+
+  my ($ist_startdatum, $ist_endedatum) =
+        $dbh->selectrow_array( <<"EOF" ) if $atr_nummer;
+    select min(tae_datum), max(tae_datum)
+      from taetigkeit
+     where tae_auftrag = $atr_nummer
+EOF
+
+</%perl>
+<h1>Auftragdetails</h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <th class='label' width='20%'>
+	<i18n>
+   Nummer
+	</i18n>
+  </th>
+  <td width='80%'>
+   <& '/select', name     => 'atr_nummer',
+                 values   => $atr,
+                 getvalue => sub {
+                                   my $value = shift;
+                                   ($value->[0], $value->[0]);
+                                 },
+                 selected => $atr_nummer &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Auftragsdatum
+	</i18n>
+  </th>
+  <td>
+   <%new Contavia::Date($atr_datum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <td>
+   <%$tpr_titel%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Aufgabe
+	</i18n>
+  </th>
+  <td>
+   <%$auf_name%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Tagessatz
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($atr_tagessatz, 2, $ARGS{lang}) %> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   beauftragte PT
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($atr_personentage, 2, $ARGS{lang}) %>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   erfasste PT
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($tae_pt_erfasst, 2, $ARGS{lang}) %>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   freigegebene PT
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($tae_pt_freigegeben, 2, $ARGS{lang}) %>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   gepr&uuml;fte PT
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($tae_pt_geprueft, 2, $ARGS{lang}) %>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   Auftragssumme
+	</i18n>
+  </th>
+  <td>
+   <% formatnumber($atr_personentage * $atr_tagessatz, 2, $ARGS{lang}) %> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th colspan='2'>
+	<i18n>
+   Aufgabenbeschreibung
+	</i18n>
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+% $apl_beschreibung =~ s/\n/<br>/g;
+   <%$apl_beschreibung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th colspan='2'>
+	<i18n>
+   Zeitplan
+	</i18n>
+  </th>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   geplantes Startdatum
+	</i18n>
+  </th>
+  <td>
+   <%new Contavia::Date($apl_startdatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   ist Startdatum
+	</i18n>
+  </th>
+  <td>
+   <%new Contavia::Date($ist_startdatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   geplantes Endedatum
+	</i18n>
+  </th>
+  <td>
+   <%new Contavia::Date($apl_endedatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+	<i18n>
+   ist Endedatum
+	</i18n>
+  </th>
+  <td>
+   (<%new Contavia::Date($ist_endedatum)->format%>)
+  </td>
+ </tr>
+</table>
+<%perl>
+$ARGS{atr_nummer} = undef;
+return \%ARGS;
+</%perl>

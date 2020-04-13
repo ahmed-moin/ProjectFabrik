@@ -1,0 +1,131 @@
+<%args>
+$dbh
+</%args>
+<%attr>
+titel => 'Kurzportrait'
+titel_imgg => '/cgi-bin/titel?KURZPORTRAIT&e-consulter'
+titel_img => '/cgi-bin/titel?E-Consulter&Kurzportrait'
+</%attr>
+<%init>
+
+  $m->dhandler_arg =~ /^([^-]+)[-\/]([^-]+)\.hms$/ || return 404;
+  my ($sessid, $uid) = ($1, $2);
+
+  # lese einen Benutzersatz, welcher als Sessionid die übergebene
+  # Sessionid hat. Aber nur wenn es mindestens ein Projekt gibt,
+  # an dem sowohl der Anfragende als auch der Angefragte vorhanden sind
+  my $n = $dbh->selectrow_array( <<"EOF" );
+   select 1
+     from benutzer
+    where ben_sessid = '$sessid'
+      and exists (
+        select 1
+          from rolle r1, rolle r2
+         where r1.rol_uid = ben_uid
+           and r2.rol_uid = '$uid'
+           and r1.rol_pid = r2.rol_pid)
+EOF
+
+  return 403 unless $n;  # forbidden
+
+  my ($ben_vorname, $ben_nachname, $ben_titel, $ben_anrede,
+      $ben_telefon, $ben_telefax, $ben_handy, $ben_email) =
+      $dbh->selectrow_array( <<"EOF" );
+    select ben_vorname, ben_nachname, ben_titel, ben_anrede,
+           ben_telefon, ben_telefax, ben_handy, ben_email
+      from benutzer
+     where ben_uid = '$uid'
+EOF
+
+  my $bld = $dbh->selectrow_array( <<"EOF" );
+   select 1
+     from bild
+    where bld_uid = '$uid'
+EOF
+
+</%init>
+
+  <table border='1'>
+   <tr>
+    <td>
+% if ($bld) {
+     <img src='/bild/<%$sessid%>-<%$uid%>.hms'>
+% }
+    </td>
+
+    <td style='vertical-align:top'>
+
+     <table>
+       <tr>
+        <th style='text-align:left'>
+         Name
+        </th>
+        <td>
+         <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%>
+        </td>
+       </tr>
+
+       <tr>
+        <th style='text-align:left'>
+         Telefon
+        </th>
+        <td>
+         <%$ben_telefon%>
+        </td>
+       </tr>
+
+       <tr>
+        <th style='text-align:left'>
+         Telefax
+        </th>
+        <td>
+         <%$ben_telefax%>
+        </td>
+       </tr>
+
+       <tr>
+        <th style='text-align:left'>
+         Handy
+        </th>
+        <td>
+         <%$ben_handy%>
+        </td>
+       </tr>
+
+       <tr>
+        <th style='text-align:left'>
+         E-Mail
+        </th>
+        <td>
+         <a href='mailto:<%$ben_email%>'><%$ben_email%></a>
+        </td>
+       </tr>
+     </table>
+
+    </td>
+
+  </table>
+
+<%method preprocess>
+<%args>
+$dbh
+</%args>
+<%perl>
+
+  $m->dhandler_arg =~ /^([^-]+)-([^-]+)\.hms$/ || return 404;
+  my ($sessid, $uid) = ($1, $2);
+
+  if ($uid)
+  {
+    my @ben = $dbh->selectrow_array( <<"EOF" );
+      select ben_vorname, ben_nachname
+        from benutzer
+       where ben_uid = '$uid'
+EOF
+    $ARGS{titel} = "$ben[0] $ben[1]" if @ben;
+  }
+
+  return \%ARGS;
+
+</%perl>
+</%method>

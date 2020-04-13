@@ -1,0 +1,353 @@
+<%args>
+@menu
+$uid
+$dbh
+$sel_gta_lfdnr => undef
+$gta_art => undef
+</%args>
+<%once>
+
+  use Data::Dumper;
+
+  my ($bra, %bra, $auf, %auf, $pos);
+
+  my %art = (
+    1 => '<i18n>freiberuflich</i18n>',
+    2 => '<i18n>fest Vollzeit</i18n>',
+    3 => '<i18n>fest Teilzeit</i18n>',
+    4 => '<i18n>Praktikum</i18n>',
+    5 => '<i18n>Diplomarbeit</i18n>',
+	7 => '<i18n>Manager auf Zeit</i18n>',
+    6 => '<i18n>sonstiges</i18n>',
+  );
+
+  my %verguetungsart = (
+    1 => '<i18n>Tagessatz (Netto)</i18n>',
+    2 => '<i18n>Jahresgehalt (Brutto)</i18n>',
+    3 => '<i18n>Stundensatz (Brutto)</i18n>'
+  );
+
+  my %art_verguetungsart = (
+    1 => 1,
+    2 => 2,
+    3 => 2,
+    4 => 3,
+    5 => undef,
+    6 => 1,
+	7 => 1,
+  );
+
+</%once>
+<%perl>
+
+  my $gta = $dbh->selectall_arrayref( <<"EOF" );
+    select gta_lfdnr, gta_aufgabe,
+           gta_verguetung, gta_verguetungart,
+           gta_ort, gta_bemerkung, gta_art
+      from gestaet
+     where gta_benuid   = '$uid'
+     order by gta_lfdnr
+EOF
+
+  my $sth_gpo = $dbh->prepare( <<"EOF" );
+    select gpo_position, pos_bezeichnung
+      from gespos, pos
+     where gpo_benuid   = '$uid'
+       and gpo_gtalfdnr    = ?
+       and gpo_position = pos_id
+EOF
+
+  my $sth_gbr = $dbh->prepare( <<"EOF" );
+    select gbr_branche, bra_bezeichnung
+      from gesbra, branche
+     where gbr_benuid   = '$uid'
+       and gbr_gtalfdnr    = ?
+       and gbr_branche = bra_id
+EOF
+
+  unless ($bra)
+  {
+    $bra = $dbh->selectall_arrayref( <<"EOF" ) unless $bra;
+      select bra_id, bra_bezeichnung
+        from branche
+       order by bra_id
+EOF
+
+    # umkopieren in ein Hash
+    $bra{$_->[0]} = $_->[1] foreach (@$bra);
+  }
+
+  unless ($auf)
+  {
+    $auf = $dbh->selectall_arrayref( <<"EOF" );
+      select auf_id, auf_bezeichnung
+        from aufkat
+       order by auf_id
+EOF
+
+    # umkopieren in ein Hash
+    $auf{$_->[0]} = $_->[1] foreach (@$auf);
+  }
+
+  unless ($pos)
+  {
+    $pos = $dbh->selectall_arrayref( <<"EOF" ) unless $pos;
+      select pos_id, pos_bezeichnung
+        from pos
+       order by pos_id
+EOF
+  }
+
+  my @sel;
+
+</%perl>
+
+  <& '/masketitel', titel => 'gesuchter T&auml;tigkeitsbereich',
+                    maske => $ARGS{folgemaske},
+                    menu  => \@menu &>
+
+  <table width='100%'>
+
+   <%perl>
+
+     foreach (@$gta) {
+       my ($gta_lfdnr, $gta_aufgabe, $gta_verguetung,
+           $gta_verguetungart, $gta_ort, $gta_bemerkung,
+           $gta_art) = @$_;
+
+       $gta_verguetung =~ s/\$/EUR/;
+       if ($ARGS{lang} eq 'de') {
+         $gta_verguetung =~ tr/,\./\.,/;
+       }
+       my $gpo = $dbh->selectall_arrayref($sth_gpo, {}, $gta_lfdnr);
+       my $gbr = $dbh->selectall_arrayref($sth_gbr, {}, $gta_lfdnr);
+
+       if ($gta_lfdnr == $sel_gta_lfdnr)
+       {
+         @sel = (@$_, $gpo, $gbr);
+         next;
+       }
+
+       my $auf_bezeichnung = $auf{$gta_aufgabe} if $gta_aufgabe;
+
+   </%perl>
+   <tr>
+    <td>
+     <input type='radio' name='auswahl' value='<%$gta_lfdnr%>'>
+    </td>
+    <th class='label'>
+    <i18n> Art der Anstellung</i18n>
+    </th>
+    <td>
+     <%$art{$gta_art}%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Branche </i18n>
+    </th>
+    <td>
+%    foreach (@$gbr) {
+%      my ($gbr_branche, $bra_bezeichnung) = @$_;
+      <%$bra_bezeichnung%><br>
+%    }
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Position </i18n>
+    </th>
+    <td>
+%    foreach (@$gpo) {
+%      my ($gpo_position, $pos_bezeichnung) = @$_;
+      <%$pos_bezeichnung%><br>
+%    }
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Aufgabe </i18n>
+    </th>
+    <td>
+     <%$auf_bezeichnung%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Verg&uuml;tung </i18n>
+    </th>
+    <td>
+     <%$verguetungsart{$gta_verguetungart}%>: <%$gta_verguetung%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Einsatzort </i18n>
+    </th>
+    <td>
+     <%$gta_ort%>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n> Bemerkung </i18n>
+    </th>
+    <td><pre><%$gta_bemerkung%></pre></td>
+   </tr>
+
+   <tr>
+    <td colspan='3'>
+     <hr>
+    </td>
+   </tr>
+
+   <%perl>
+     }
+
+     my ($gta_lfdnr, $gta_aufgabe, $gta_verguetung,
+         $gta_verguetungart, $gta_ort, $gta_bemerkung,
+         $_gta_art, $gpo, $gbr) = @sel;
+     $gta_art = $_gta_art if $_gta_art;
+     $gta_verguetung =~ s/\$//;   # $-Zeichen loeschen, da Spaltentyp = money
+
+     if ($ARGS{lang} eq 'de') {
+       $gta_verguetung =~ s/\,//g;  # engl. Tausendertrenner löschen
+       $gta_verguetung =~ tr/\./,/; # engl. Komma in dt. wandeln
+     }
+
+     my $auf_bezeichnung = $auf{$gta_aufgabe} if $gta_aufgabe;
+   </%perl>
+
+   <tr>
+    <td>
+%    if ($gta_lfdnr) {
+     <input type='hidden' name='gta_lfdnr' value='<%$gta_lfdnr%>'>
+%    }
+    </td>
+    <th class='label'>
+	<i18n> Art der Anstellung </i18n>
+    </th>
+    <td>
+%    if ($gta_art) {
+     <%$art{$gta_art}%>
+     <input type='hidden' name='gta_art' value='<%$gta_art%>'>
+     <input type='hidden' name='gta' value='1'>
+%    } else {
+	<i18n>Bitte w&auml;hlen Sie die Art der Anstellung und dr&uuml;cken Sie speichern, um weitere Angaben einzugeben.</i18n><br>
+%    foreach my $i (1,2,3,7,4,5,6) {
+     <input type='radio'
+            name='gta_art'
+            value='<%$i%>'><%$art{$i}%> <br>
+%      }
+%    }
+    </td>
+   </tr>
+
+%   if ($gta_art) {
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n>Branche (Mehrfachnennung durch festhalten der Strg-Taste m&ouml;glich) </i18n>
+    </th>
+    <td>
+     <select multiple name='gbr_branche' size='7'>
+      <%perl>
+       foreach (@$bra) {
+        my ($id, $bra_bezeichnung) = @$_;
+      </%perl>
+      <option value='<%$id%>'<% (grep { $_->[0] == $id } @$gbr) ? ' selected' : ''%>><%$bra_bezeichnung%>
+%    }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n>Positition (Mehrfachnennung durch festhalten der Strg-Taste m&ouml;glich)</i18n>
+    </th>
+    <td>
+     <select multiple name='gpo_position' size='5'>
+      <%perl>
+       foreach (@$pos) {
+        my ($id, $pos_bezeichnung) = @$_;
+      </%perl>
+      <option value='<%$id%>'<% (grep { $_->[0] == $id } @$gpo) ? ' selected' : ''%>><%$pos_bezeichnung%>
+%    }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n>Aufgabe</i18n>
+    </th>
+    <td>
+     <select name='gta_aufgabe'>
+      <option>
+      <%perl>
+       foreach (@$auf) {
+        my ($id, $auf_bezeichnung) = @$_;
+      </%perl>
+      <option value='<%$id%>'<%$gta_aufgabe == $id ? ' selected' : ''%>><%$auf_bezeichnung%>
+%    }
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+     <i18n>Verg&uuml;tung</i18n> <% $verguetungsart{$art_verguetungsart{$gta_art}} %>
+     <input type='hidden' name='gta_verguetungart'
+            value='<%$art_verguetungsart{$gta_art}%>'>
+    </th>
+    <td>
+     <input type='text' name='gta_verguetung'
+            value='<%$gta_verguetung%>' size='10' maxlength='20'> EUR
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n>Einsatzort</i18n>
+    </th>
+    <td valign='top'>
+     <textarea name='gta_ort' rows='3' cols='50'><%$gta_ort%></textarea>
+    </td>
+   </tr>
+
+   <tr>
+    <td> </td>
+    <th class='label'>
+	<i18n>Bemerkung</i18n>
+    </th>
+    <td>
+     <textarea name='gta_bemerkung' rows='3' cols='50'><%$gta_bemerkung%></textarea>
+    </td>
+   </tr>
+%   }
+
+  </table>
+
+  <p class='button'>
+  <input type='submit' name='speichern' value='<i18n>Speichern</i18n>'>
+  <input type='submit' name='bearbeiten' value='<i18n>Auswahl bearbeiten</i18n>'>
+  <input type='submit' name='loeschen' value='<i18n>Auswahl l&ouml;schen</i18n>'>
+  </p>
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

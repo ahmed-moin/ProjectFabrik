@@ -1,0 +1,50 @@
+<%args>
+@menu
+$uid
+$dbh
+$projektid
+$angebotnummer
+</%args>
+<%once>
+  my %grund = (
+    1 => '<i18n>Angebot zu teuer</i18n>',
+    2 => '<i18n>Anforderung falsch interpretiert</i18n>',
+    3 => '<i18n>interne Priorisierung hat sich verändert</i18n>',
+    4 => '<i18n>Projekt zurückgestellt</i18n>',
+    5 => '<i18n>für einen anderen Anbieter entschiedenen</i18n>' );
+
+  my %vorgehen = (
+    1 => '<i18n>Kontaktaufnahme per Telefon</i18n>',
+    2 => '<i18n>Kontaktaufnahme per E-Mail</i18n>',
+    3 => '<i18n>Kontaktaufnahme per Fax</i18n>',
+    4 => '<i18n>Termin zu einem persönlichen Gespräch</i18n>',
+    5 => '<i18n>keine weitere Kontaktaufnahme</i18n>' );
+</%once>
+
+<h1><i18n>Angebot ablehnen</i18n></h1>
+
+   <i18n>Wir würden uns freuen, wenn Sie uns Ihre Gründe für Ihre
+   Ablehnung mitteilen könnten</i18n> <br>
+
+% while ( my ($key, $value) = each (%grund) ) {
+   <input type='checkbox' name='grund' value='<%$key%>'> <%$value%><br>
+% }
+
+   <hr>
+
+  <i18n> Wie möchten Sie weiter vorgehen?</i18n> <br>
+% while ( my ($key, $value) = each (%vorgehen) ) {
+   <input type='radio' name='vorgehen' value='<%$key%>'> <%$value %><br>
+% }
+
+   <hr>
+
+   <i18n>weitere Bemerkungen</i18n> <br>
+
+   <textarea name='begruendung' rows='10' cols='60'></textarea>
+
+<input type='hidden' name='angebotnummer' value='<%$angebotnummer%>'>
+<p class='button'>
+ <input type='submit' name='ablehnen_definition' value='<i18n>Ablehnen und zur Definition</i18n>'>
+ <input type='submit' name='ablehnen_anfrage' value='<i18n>Ablehnen und neue Anfrage</i18n>'>
+</p>

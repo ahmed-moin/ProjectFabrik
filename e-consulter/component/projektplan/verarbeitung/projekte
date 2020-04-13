@@ -1,0 +1,25 @@
+<%args>
+$oeffnen => undef
+$projekt => undef
+</%args>
+<%perl>
+  use Contavia qw(fehler);
+
+  if ($oeffnen)
+  {
+    fehler 'kein Projekt ausgewählt' unless $projekt;
+  }
+
+  if ($projekt && $projekt != $ARGS{projektid})
+  {
+    $ARGS{projektid}   = $projekt;
+    $ARGS{projektplan} = undef;
+    $ARGS{folgemaske}  = 'projektuebersicht';
+    $ARGS{menu}        = 'projekt';
+    $ARGS{tid}         = undef;
+    $ARGS{aid}         = undef;
+  }
+
+  return \%ARGS;
+
+</%perl>

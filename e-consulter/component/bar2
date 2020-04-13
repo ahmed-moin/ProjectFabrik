@@ -1,0 +1,24 @@
+<%args>
+$width1
+$width2
+$height
+@color1 => (0, 0, 0)
+@color2 => (0, 0, 0)
+$alt => undef
+</%args>
+<!-- width1=<%$width1%> width2=<%$width2%> -->
+<%perl>
+  if ($height)
+  {
+
+    my $color1 = sprintf('%02x%02x%02x', @color1);
+    my $color2 = sprintf('%02x%02x%02x', @color2);
+
+    $width1 = $width1 > 0 && $width1 < 1 ? 1 : int($width1);
+    $width2 = $width2 > 0 && $width2 < 1 ? 1 : int($width2);
+
+    ($width1, $width2, $height) = (int($width1), int($width2), int($height));
+
+</%perl>
+<img src='/cgi-bin/bar2?<% "$width1&amp;$width2&amp;y=$height&amp;c1=$color1&amp;c2=$color2" %>'<% $alt ? " alt='$alt'" : '' %>>\
+% }

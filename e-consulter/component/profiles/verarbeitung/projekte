@@ -1,0 +1,12 @@
+<%args>
+$oeffnen => undef
+</%args>
+<%perl>
+
+  if ($oeffnen)
+  {
+    $ARGS{folgemaske} = 'profile';
+    return \%ARGS;
+  }
+
+</%perl>

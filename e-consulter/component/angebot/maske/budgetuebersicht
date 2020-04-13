@@ -1,0 +1,34 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%perl>
+  # ermittele aktuellen Projektplan
+  $ARGS{projektplan} = $m->comp('/get_projektplan', dbh => $dbh,
+    projektid => $projektid, aktuellneu => 1);
+
+</%perl>
+
+<& '/masketitel', titel => 'Budget&uuml;bersicht' &>
+
+% if ($ARGS{projektplan}) {
+
+<& '/budgetuebersicht', %ARGS &>
+
+<p class='button'>
+ <input type='submit' name='angebot_erstellen' value='Angebot aus Budgetplan erstellen'>
+</p>
+
+% } else {
+
+  <p>
+  Kein Projektplan vorhanden.
+  </p>
+
+  <p>
+  Zur Angebotserstellung ist ein Projektplan erforderlich. Dieser kann
+  im <a href='projektplan.hms'>Projektplantool</a> erstellt werden.
+  </p>
+
+% }
+

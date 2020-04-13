@@ -1,0 +1,6 @@
+<%args>
+$name
+</%args>
+<script language='JavaScript'>
+ document.forms[0].<%$name%>.focus()
+</script>

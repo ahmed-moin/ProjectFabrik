@@ -1,0 +1,45 @@
+<%args>
+$dbh
+$neu => undef
+$oeffnen => undef
+$schliessen => undef
+$projekt => undef
+$loeschen => undef
+$uid
+</%args>
+<%perl>
+  my $prj_status = $dbh->selectrow_array( <<"EOF" ) if ($projekt);
+    select prj_status
+      from projekt
+     where prj_id = $projekt
+EOF
+
+  if ($oeffnen)
+  {
+    die '<fehler>kein Projekt ausgew&auml;hlt</fehler>' unless ( $projekt );
+
+    $ARGS{projektid}  = $projekt;
+    $ARGS{folgemaske} = 'zusammenfassung';
+  }
+  elsif ($loeschen)
+  {
+    die '<fehler>kein Projekt ausgew&auml;hlt</fehler>' unless ( $projekt );
+    die '<fehler>Projekt kann nicht gel&ouml;scht werden</fehler>' unless ( $prj_status <= 3 );
+
+    $dbh->do( <<"EOF" );
+      update projekt
+         set prj_status = -1
+       where prj_id = $projekt
+EOF
+
+    $dbh->commit;
+    $ARGS{projektid} = undef;
+  }
+  elsif ($projekt)
+  {
+    $ARGS{projektid} = $projekt;
+  }
+
+  return \%ARGS;
+
+</%perl>

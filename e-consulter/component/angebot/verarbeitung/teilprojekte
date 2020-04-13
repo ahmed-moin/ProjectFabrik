@@ -1,0 +1,65 @@
+<%args>
+$dbh
+$projektid
+$tid => undef
+$speichern => undef
+$loeschen => undef
+$angebot => undef
+$titel => undef
+$titel_old => undef
+$betrag => undef
+$betrag_old => undef
+$personentage => undef
+$personentage_old => undef
+</%args>
+<%once>
+  my ($sth_deltpr, $sth_delbud);
+</%once>
+<%perl>
+
+  use Contavia::Db qw(quote replace);
+
+  if ($speichern)
+  {
+    if ($titel ne $titel_old)
+    {
+      replace($dbh, 'teilprojekt',
+        { tpr_pid => $projektid,
+          tpr_tid => $tid },
+        { tpr_titel => quote($titel),
+          tpr_status => 1} );
+    }
+
+    if ($betrag != $betrag_old || $personentage != $personentage_old)
+    {
+      replace($dbh, 'budget',
+        { bud_pid => $projektid,
+          bud_tid => $tid,
+          bud_angebot => $angebot },
+        { bud_betrag => $betrag,
+          bud_personentage => $personentage } );
+    }
+  }
+  elsif ($loeschen)
+  {
+    $sth_deltpr = $dbh->prepare( <<"EOF" ) unless $sth_deltpr;
+     delete from teilprojekt
+      where tpr_pid = ?
+        and tpr_tid = ?
+EOF
+
+    $sth_delbud = $dbh->prepare( <<"EOF" ) unless $sth_delbud;
+     delete from budget
+      where bud_pid = ?
+        and bud_tid = ?
+        and bud_angebot = ?
+EOF
+
+    $sth_delbud->execute($projektid, $tid, $angebot);
+    $sth_deltpr->execute($projektid, $tid);
+
+  }
+
+  $dbh->commit;
+
+</%perl>

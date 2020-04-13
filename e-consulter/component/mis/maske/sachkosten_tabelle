@@ -1,0 +1,8 @@
+<%args>
+$waehrung
+</%args>
+
+<h1><i18n>Sachkosten</i18n> - <%$waehrung%></h1>
+
+<& 'budgetaufwand_tabelle', %ARGS,
+                            art => 3 &>

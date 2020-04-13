@@ -1,0 +1,61 @@
+<%doc>
+  Projekt               neues Firmenkonzept
+  Teilprojekt           Admin
+  Programmiert          Tommi Mäkitalo, Contavia AG
+  Datum                 Mai 2001
+
+  Beschreibung
+    Profilanzeiger
+
+  Version Autor Datum         Beschreibung
+  0.1     TM    Mai 2001
+
+</%doc>
+<%attr>
+
+  tool       => 'profiles'
+  titel      => 'Projektfabrik GmbH'
+  barcolor   => [255, 0, 0]
+  titel_img  => '/cgi-bin/titel?Die%20Projektfabrik%20GmbH'
+  #logo       => '/images/logo/p_logo.gif'
+  logo       => undef
+  defmaske   => 'login'
+  startmaske => 'projekte'
+  startmenu  => undef
+
+</%attr>
+<%method getmenu>
+<%args>
+$sessid => undef
+</%args>
+<%perl>
+
+  if (!$sessid)
+  {
+    return
+    (
+        { maske  => 'login',
+          label  => 'Login' },
+    );
+  }
+  else
+  {
+    return ();
+  }
+
+</%perl>
+</%method>
+
+<%method getmenu_head>
+<%perl>
+  return
+  (
+#    { maske  => 'projekte',
+#      label  => 'Projekt' },
+    { maske  => 'profile',
+      label  => 'Profile' },
+#    { maske  => 'qualifikation',
+#      label  => 'Qualifikation' },
+  );
+</%perl>
+</%method>

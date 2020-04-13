@@ -1,0 +1,2750 @@
+--
+-- PostgreSQL database dump
+--
+
+SET client_encoding = 'SQL_ASCII';
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS 'Standard public schema';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = true;
+
+--
+-- Name: account; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE account (
+    acc_zeit timestamp with time zone NOT NULL,
+    acc_servername character varying NOT NULL,
+    acc_uri character varying NOT NULL,
+    acc_ssl boolean NOT NULL,
+    acc_ip inet NOT NULL,
+    acc_uid character varying,
+    acc_pid integer,
+    acc_maske character varying
+);
+
+
+ALTER TABLE public.account OWNER TO postgres;
+
+--
+-- Name: anh_id_seq; Type: SEQUENCE; Schema: public; Owner: e-consulter
+--
+
+CREATE SEQUENCE anh_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.anh_id_seq OWNER TO "e-consulter";
+
+--
+-- Name: anhaenge; Type: TABLE; Schema: public; Owner: e-consulter; Tablespace: 
+--
+
+CREATE TABLE anhaenge (
+    anh_uid character varying(50) NOT NULL,
+    anh_filename character varying(300) NOT NULL,
+    anh_id integer NOT NULL,
+    anh_beschreibung character varying(500),
+    anh_ins_time timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.anhaenge OWNER TO "e-consulter";
+
+--
+-- Name: assantwort; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE assantwort (
+    ant_uid character varying NOT NULL,
+    ant_fid integer NOT NULL,
+    ant_fragezeit timestamp with time zone NOT NULL,
+    ant_antwortzeit timestamp with time zone,
+    ant_antwort integer
+);
+
+
+ALTER TABLE public.assantwort OWNER TO postgres;
+
+--
+-- Name: assfrage; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE assfrage (
+    fra_fid integer NOT NULL,
+    fra_lang character(2) NOT NULL,
+    fra_seite integer NOT NULL,
+    fra_kid character(1) NOT NULL,
+    fra_positiv boolean NOT NULL,
+    fra_frage character varying NOT NULL
+);
+
+
+ALTER TABLE public.assfrage OWNER TO postgres;
+
+--
+-- Name: asskategorie; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE asskategorie (
+    akt_kid character(1) NOT NULL,
+    akt_name character varying NOT NULL
+);
+
+
+ALTER TABLE public.asskategorie OWNER TO postgres;
+
+--
+-- Name: aufgabe; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE aufgabe (
+    auf_pid integer NOT NULL,
+    auf_tid integer NOT NULL,
+    auf_aid integer NOT NULL,
+    auf_name character varying NOT NULL
+);
+
+
+ALTER TABLE public.aufgabe OWNER TO postgres;
+
+--
+-- Name: aufgabenplan; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE aufgabenplan (
+    apl_pid integer NOT NULL,
+    apl_ppl integer NOT NULL,
+    apl_tid integer NOT NULL,
+    apl_aid integer NOT NULL,
+    apl_startdatum date,
+    apl_endedatum date,
+    apl_dauer double precision,
+    apl_beschreibung text NOT NULL,
+    apl_abhaengig integer,
+    apl_aufwand double precision,
+    apl_milestone boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.aufgabenplan OWNER TO postgres;
+
+--
+-- Name: aufkat; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE aufkat (
+    auf_id integer NOT NULL,
+    auf_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.aufkat OWNER TO postgres;
+
+--
+-- Name: auftrag; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE auftrag (
+    atr_nummer integer NOT NULL,
+    atr_datum date NOT NULL,
+    atr_uid character varying NOT NULL,
+    atr_pid integer NOT NULL,
+    atr_tid integer NOT NULL,
+    atr_aid integer NOT NULL,
+    atr_tagessatz numeric(12,2) NOT NULL,
+    atr_btagessatz numeric(12,2) NOT NULL,
+    atr_personentage numeric(12,2) NOT NULL,
+    atr_sachkosten numeric(12,2) DEFAULT 0 NOT NULL,
+    atr_investition numeric(12,2) DEFAULT 0 NOT NULL,
+    atr_status integer DEFAULT 1 NOT NULL,
+    atr_freigabe date
+);
+
+
+ALTER TABLE public.auftrag OWNER TO postgres;
+
+--
+-- Name: auftragbericht; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE auftragbericht (
+    abr_nummer integer NOT NULL,
+    abr_datum date NOT NULL,
+    abr_realisierung integer NOT NULL,
+    abr_text text NOT NULL,
+    abr_geprueft date,
+    abr_fertigbis date
+);
+
+
+ALTER TABLE public.auftragbericht OWNER TO postgres;
+
+--
+-- Name: ausbildung; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE ausbildung (
+    aus_benuid character varying NOT NULL,
+    aus_lfdnr integer NOT NULL,
+    aus_katid integer,
+    aus_fachid integer,
+    aus_institut character varying,
+    aus_bezeichnung character varying,
+    aus_abschluss character varying,
+    aus_datvon date,
+    aus_datbis date,
+    aus_bemerkung character varying,
+    aus_nomonth boolean DEFAULT false
+);
+
+
+ALTER TABLE public.ausbildung OWNER TO postgres;
+
+--
+-- Name: auskat; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE auskat (
+    akt_id integer NOT NULL,
+    akt_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.auskat OWNER TO postgres;
+
+--
+-- Name: bemerkung; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE bemerkung (
+    bem_uid character varying NOT NULL,
+    bem_bewertung integer NOT NULL,
+    bem_fehl text NOT NULL,
+    bem_ausgepraegt text NOT NULL,
+    bem_kurz text NOT NULL,
+    bem_bemerkung text NOT NULL
+);
+
+
+ALTER TABLE public.bemerkung OWNER TO postgres;
+
+--
+-- Name: benutzer; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE benutzer (
+    ben_uid character varying NOT NULL,
+    ben_nuid integer,
+    ben_frmid integer,
+    ben_password character varying,
+    ben_reqid character varying,
+    ben_sessid character varying,
+    ben_projekt boolean NOT NULL,
+    ben_personal boolean NOT NULL,
+    ben_nutzungsbedingungen boolean,
+    ben_anrede character varying NOT NULL,
+    ben_titel character varying,
+    ben_vorname character varying NOT NULL,
+    ben_nachname character varying NOT NULL,
+    ben_funktion character varying,
+    ben_bereich character varying,
+    ben_strasse character varying,
+    ben_land character(3),
+    ben_plz character varying,
+    ben_ort character varying,
+    ben_gebdat date,
+    ben_nationalitaet character(3),
+    ben_telefon character varying,
+    ben_telefax character varying,
+    ben_handy character varying,
+    ben_email character varying NOT NULL,
+    ben_lupdate date,
+    ben_bemerkung text,
+    ben_admin boolean DEFAULT false NOT NULL,
+    ben_projektleiter boolean DEFAULT false NOT NULL,
+    ben_kunde boolean DEFAULT false NOT NULL,
+    ben_expire date,
+    ben_status integer DEFAULT 0,
+    ben_ref character varying,
+    ben_assdel boolean DEFAULT false,
+    ben_frmid_owned integer,
+    ben_blacklisted boolean DEFAULT false,
+    ben_blackreason character varying(400)
+);
+
+
+ALTER TABLE public.benutzer OWNER TO postgres;
+
+--
+-- Name: bericht; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE bericht (
+    ber_pid integer NOT NULL,
+    ber_datum date NOT NULL,
+    ber_text text NOT NULL
+);
+
+
+ALTER TABLE public.bericht OWNER TO postgres;
+
+--
+-- Name: bild; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE bild (
+    bld_uid character varying NOT NULL,
+    bld_lfdnr integer NOT NULL,
+    bld_mime character varying NOT NULL,
+    bld_bild text NOT NULL
+);
+
+
+ALTER TABLE public.bild OWNER TO postgres;
+
+--
+-- Name: bistaet; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE bistaet (
+    bta_benuid character varying NOT NULL,
+    bta_lfdnr smallint NOT NULL,
+    bta_branche integer,
+    bta_position integer,
+    bta_aufgabe integer,
+    bta_firma character varying,
+    bta_bemerkung text,
+    bta_datvon date,
+    bta_datbis date,
+    bta_nomonth boolean DEFAULT false
+);
+
+
+ALTER TABLE public.bistaet OWNER TO postgres;
+
+--
+-- Name: bombe; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE bombe (
+    bmb_pid integer NOT NULL,
+    bmb_ppl integer NOT NULL,
+    bmb_tid integer NOT NULL,
+    bmb_apl_tid integer NOT NULL,
+    bmb_apl_aid integer NOT NULL
+);
+
+
+ALTER TABLE public.bombe OWNER TO postgres;
+
+--
+-- Name: branche; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE branche (
+    bra_id integer NOT NULL,
+    bra_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.branche OWNER TO postgres;
+
+--
+-- Name: budget; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE budget (
+    bud_pid integer NOT NULL,
+    bud_tid integer NOT NULL,
+    bud_ppl integer NOT NULL,
+    bud_betrag numeric(12,2) NOT NULL,
+    bud_personentage double precision NOT NULL,
+    bud_sachkosten numeric(12,2) NOT NULL,
+    bud_investition numeric(12,2) NOT NULL
+);
+
+
+ALTER TABLE public.budget OWNER TO postgres;
+
+--
+-- Name: budgetplan; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE budgetplan (
+    bpl_pid integer NOT NULL,
+    bpl_ppl integer NOT NULL,
+    bpl_tid integer NOT NULL,
+    bpl_aid integer NOT NULL,
+    bpl_datum date NOT NULL,
+    bpl_betrag numeric(12,2) NOT NULL,
+    bpl_personentage double precision NOT NULL,
+    bpl_sachkosten numeric(12,2) NOT NULL,
+    bpl_investition numeric(12,2) NOT NULL
+);
+
+
+ALTER TABLE public.budgetplan OWNER TO postgres;
+
+--
+-- Name: fehler; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE fehler (
+    err_ref integer NOT NULL,
+    err_msg text NOT NULL,
+    err_arg text,
+    err_env text,
+    err_date timestamp with time zone DEFAULT "timestamp"('now'::text) NOT NULL,
+    err_kommentar text
+);
+
+
+ALTER TABLE public.fehler OWNER TO postgres;
+
+--
+-- Name: fil_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE fil_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.fil_id_seq OWNER TO postgres;
+
+--
+-- Name: files; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE files (
+    fil_id integer NOT NULL,
+    fil_folid integer,
+    fil_prjid integer NOT NULL,
+    fil_name character varying(500),
+    fil_comment character varying(100),
+    fil_ins_by character varying(80),
+    fil_ins_time timestamp without time zone,
+    fil_deleted integer DEFAULT 0,
+    fil_del_by character varying(80),
+    fil_del_time timestamp without time zone
+);
+
+
+ALTER TABLE public.files OWNER TO postgres;
+
+--
+-- Name: firma; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE firma (
+    frm_id integer NOT NULL,
+    frm_firma character varying NOT NULL,
+    frm_strasse character varying,
+    frm_land character varying,
+    frm_plz character varying,
+    frm_ort character varying,
+    frm_telefon character varying,
+    frm_telefax character varying,
+    frm_ustid character varying,
+    frm_homepage character varying,
+    frm_mutterkonzern character varying,
+    frm_braid integer
+);
+
+
+ALTER TABLE public.firma OWNER TO postgres;
+
+--
+-- Name: firmenlogo; Type: TABLE; Schema: public; Owner: e-consulter; Tablespace: 
+--
+
+CREATE TABLE firmenlogo (
+    flg_uid character varying NOT NULL,
+    flg_lfdnr integer NOT NULL,
+    flg_mime character varying NOT NULL,
+    flg_bild character varying(785) NOT NULL
+);
+
+
+ALTER TABLE public.firmenlogo OWNER TO "e-consulter";
+
+--
+-- Name: fol_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE fol_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.fol_id_seq OWNER TO postgres;
+
+--
+-- Name: folder; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE folder (
+    fol_id integer NOT NULL,
+    fol_prjid integer NOT NULL,
+    fol_name character varying(80),
+    fol_ins_by character varying(80),
+    fol_ins_time timestamp without time zone,
+    fol_parent integer,
+    fol_deleted integer DEFAULT 0,
+    fol_del_by character varying(80),
+    fol_del_time timestamp without time zone
+);
+
+
+ALTER TABLE public.folder OWNER TO postgres;
+
+--
+-- Name: gesbra; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE gesbra (
+    gbr_benuid character varying NOT NULL,
+    gbr_gtalfdnr smallint NOT NULL,
+    gbr_branche integer NOT NULL
+);
+
+
+ALTER TABLE public.gesbra OWNER TO postgres;
+
+--
+-- Name: gespos; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE gespos (
+    gpo_benuid character varying NOT NULL,
+    gpo_gtalfdnr smallint NOT NULL,
+    gpo_position integer NOT NULL
+);
+
+
+ALTER TABLE public.gespos OWNER TO postgres;
+
+--
+-- Name: gestaet; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE gestaet (
+    gta_benuid character varying NOT NULL,
+    gta_lfdnr smallint NOT NULL,
+    gta_branche integer,
+    gta_aufgabe integer,
+    gta_verguetung money,
+    gta_verguetungart smallint,
+    gta_ort text,
+    gta_bemerkung text,
+    gta_art smallint NOT NULL
+);
+
+
+ALTER TABLE public.gestaet OWNER TO postgres;
+
+--
+-- Name: kosten; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE kosten (
+    kos_auftrag integer NOT NULL,
+    kos_lfdnr integer NOT NULL,
+    kos_art integer NOT NULL,
+    kos_datum date NOT NULL,
+    kos_betrag numeric(8,2) NOT NULL,
+    kos_bbetrag numeric(8,2) NOT NULL,
+    kos_beschreibung character varying NOT NULL,
+    kos_erfasst date NOT NULL,
+    kos_freigabe date,
+    kos_geprueft date
+);
+
+
+ALTER TABLE public.kosten OWNER TO postgres;
+
+--
+-- Name: login; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE login (
+    log_zeit timestamp with time zone NOT NULL,
+    log_servername character varying NOT NULL,
+    log_uri character varying NOT NULL,
+    log_ssl boolean NOT NULL,
+    log_ip inet NOT NULL,
+    log_uid character varying,
+    log_ok boolean NOT NULL
+);
+
+
+ALTER TABLE public.login OWNER TO postgres;
+
+--
+-- Name: pga_forms; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_forms (
+    formname character varying,
+    formsource text
+);
+
+
+ALTER TABLE public.pga_forms OWNER TO contavia;
+
+--
+-- Name: pga_layout; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_layout (
+    tablename character varying,
+    nrcols smallint,
+    colnames text,
+    colwidth text
+);
+
+
+ALTER TABLE public.pga_layout OWNER TO contavia;
+
+--
+-- Name: pga_queries; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_queries (
+    queryname character varying,
+    querytype character(1),
+    querycommand text,
+    querytables text,
+    querylinks text,
+    queryresults text,
+    querycomments text
+);
+
+
+ALTER TABLE public.pga_queries OWNER TO contavia;
+
+--
+-- Name: pga_reports; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_reports (
+    reportname character varying,
+    reportsource text,
+    reportbody text,
+    reportprocs text,
+    reportoptions text
+);
+
+
+ALTER TABLE public.pga_reports OWNER TO contavia;
+
+--
+-- Name: pga_schema; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_schema (
+    schemaname character varying,
+    schematables text,
+    schemalinks text
+);
+
+
+ALTER TABLE public.pga_schema OWNER TO contavia;
+
+--
+-- Name: pga_scripts; Type: TABLE; Schema: public; Owner: contavia; Tablespace: 
+--
+
+CREATE TABLE pga_scripts (
+    scriptname character varying,
+    scriptsource text
+);
+
+
+ALTER TABLE public.pga_scripts OWNER TO contavia;
+
+--
+-- Name: pos; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE pos (
+    pos_id integer NOT NULL,
+    pos_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.pos OWNER TO postgres;
+
+--
+-- Name: prjbereich; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjbereich (
+    prj_id integer NOT NULL,
+    prj_bereich character varying NOT NULL
+);
+
+
+ALTER TABLE public.prjbereich OWNER TO postgres;
+
+--
+-- Name: prjbereichstamm; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjbereichstamm (
+    pbs_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.prjbereichstamm OWNER TO postgres;
+
+--
+-- Name: prjqual; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjqual (
+    pqa_pid integer NOT NULL,
+    pqa_qualid integer NOT NULL
+);
+
+
+ALTER TABLE public.prjqual OWNER TO postgres;
+
+--
+-- Name: prjteameigenschaft; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjteameigenschaft (
+    prj_id integer NOT NULL,
+    prj_eigenschaft character varying NOT NULL
+);
+
+
+ALTER TABLE public.prjteameigenschaft OWNER TO postgres;
+
+--
+-- Name: prjteameigenschaftstamm; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjteameigenschaftstamm (
+    pes_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.prjteameigenschaftstamm OWNER TO postgres;
+
+--
+-- Name: prjziel; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjziel (
+    prj_id integer NOT NULL,
+    prj_ziel character varying NOT NULL,
+    prj_zielreihenfolge integer
+);
+
+
+ALTER TABLE public.prjziel OWNER TO postgres;
+
+--
+-- Name: prjzielstamm; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE prjzielstamm (
+    pzs_bezeichnung character varying NOT NULL
+);
+
+
+ALTER TABLE public.prjzielstamm OWNER TO postgres;
+
+--
+-- Name: projekt; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE projekt (
+    prj_id integer NOT NULL,
+    prj_titel character varying NOT NULL,
+    prj_kurztitel character varying,
+    prj_kurzbeschreibung text,
+    prj_statusquo text,
+    prj_verbesserung text,
+    prj_aufmerksam text DEFAULT ''::text NOT NULL,
+    prj_bemerkung text,
+    prj_eigenleistung integer,
+    prj_start date,
+    prj_ende date,
+    prj_crdate date,
+    prj_lupdate date,
+    prj_ziel text,
+    prj_rolle integer,
+    prj_reaktionszeit integer,
+    prj_reaktionsart smallint,
+    prj_entscheidungszeit date,
+    prj_telefon character varying,
+    prj_telefax character varying,
+    prj_email character varying,
+    prj_waehrung character varying,
+    prj_beschreibung text,
+    prj_branche integer,
+    prj_status integer,
+    CONSTRAINT projekt_prj_eigenleistung CHECK (((prj_eigenleistung IS NULL) OR ((prj_eigenleistung >= 0) AND (prj_eigenleistung <= 100))))
+);
+
+
+ALTER TABLE public.projekt OWNER TO postgres;
+
+--
+-- Name: projekta; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE projekta (
+    prj_id integer NOT NULL,
+    prj_titel character varying NOT NULL,
+    prj_kurzbeschreibung text,
+    prj_statusquo text,
+    prj_verbesserung text,
+    prj_aufmerksam text DEFAULT ''::text NOT NULL,
+    prj_bemerkung text,
+    prj_eigenleistung integer,
+    prj_start date,
+    prj_ende date,
+    prj_crdate date,
+    prj_lupdate date,
+    prj_ziel text,
+    prj_rolle integer,
+    prj_reaktionszeit integer,
+    prj_reaktionsart smallint,
+    prj_entscheidungszeit date,
+    prj_telefon character varying,
+    prj_telefax character varying,
+    prj_email character varying,
+    prj_waehrung character varying,
+    prj_beschreibung text,
+    CONSTRAINT projekt_prj_eigenleistung CHECK (((prj_eigenleistung IS NULL) OR ((prj_eigenleistung >= 0) AND (prj_eigenleistung <= 100))))
+);
+
+
+ALTER TABLE public.projekta OWNER TO postgres;
+
+--
+-- Name: projektplan; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE projektplan (
+    ppl_pid integer NOT NULL,
+    ppl_nummer integer NOT NULL,
+    ppl_datum date NOT NULL,
+    ppl_text text NOT NULL,
+    ppl_angebotdatum date,
+    ppl_angebottext text,
+    ppl_angebotbis date,
+    ppl_auftrag date,
+    ppl_ablehnung date,
+    ppl_ablehnungsgrund integer,
+    ppl_ablehnungstext text,
+    ppl_vorgehen integer
+);
+
+
+ALTER TABLE public.projektplan OWNER TO postgres;
+
+--
+-- Name: projektziel; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE projektziel (
+    prz_pid integer NOT NULL,
+    prz_zid integer NOT NULL,
+    prz_titel character varying NOT NULL,
+    prz_einheit character varying NOT NULL,
+    prz_kostenvergleich boolean NOT NULL,
+    prz_personentagevergleich boolean NOT NULL,
+    prz_sachkostenvergleich boolean NOT NULL,
+    prz_investitionsvergleich boolean NOT NULL
+);
+
+
+ALTER TABLE public.projektziel OWNER TO postgres;
+
+--
+-- Name: qual; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE qual (
+    qua_id integer NOT NULL,
+    qua_oberid integer,
+    qua_bezeichnung character varying NOT NULL,
+    qua_rank boolean NOT NULL
+);
+
+
+ALTER TABLE public.qual OWNER TO postgres;
+
+--
+-- Name: qualrank; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE qualrank (
+    qra_benuid character varying NOT NULL,
+    qra_qualid integer NOT NULL,
+    qra_rank smallint,
+    qra_bemerkung text
+);
+
+
+ALTER TABLE public.qualrank OWNER TO postgres;
+
+--
+-- Name: referenz; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE referenz (
+    ref_benuid character varying NOT NULL,
+    ref_lfdnr integer NOT NULL,
+    ref_firma character varying,
+    ref_projekt character varying,
+    ref_ansprechpartner character varying,
+    ref_kontakt character varying
+);
+
+
+ALTER TABLE public.referenz OWNER TO postgres;
+
+--
+-- Name: rolle; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE rolle (
+    rol_uid character varying NOT NULL,
+    rol_rolid integer NOT NULL,
+    rol_vorgesetzter character varying,
+    rol_pid integer NOT NULL,
+    rol_admin boolean NOT NULL,
+    rol_kunde boolean NOT NULL,
+    rol_mitarbeiter boolean NOT NULL
+);
+
+
+ALTER TABLE public.rolle OWNER TO postgres;
+
+--
+-- Name: sitzung; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE sitzung (
+    sit_pid integer NOT NULL,
+    sit_sid integer NOT NULL,
+    sit_titel character varying NOT NULL,
+    sit_datum date NOT NULL,
+    sit_ort character varying NOT NULL,
+    sit_text text NOT NULL
+);
+
+
+ALTER TABLE public.sitzung OWNER TO postgres;
+
+--
+-- Name: sitzungsprotokoll; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE sitzungsprotokoll (
+    stp_pid integer NOT NULL,
+    stp_sid integer NOT NULL,
+    stp_version integer NOT NULL,
+    stp_datum date NOT NULL,
+    stp_status integer NOT NULL,
+    stp_text text NOT NULL
+);
+
+
+ALTER TABLE public.sitzungsprotokoll OWNER TO postgres;
+
+--
+-- Name: sitzungsteilnehmer; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE sitzungsteilnehmer (
+    stt_pid integer NOT NULL,
+    stt_sid integer NOT NULL,
+    stt_lfdnr integer NOT NULL,
+    stt_uid character varying,
+    stt_name character varying
+);
+
+
+ALTER TABLE public.sitzungsteilnehmer OWNER TO postgres;
+
+--
+-- Name: sysgroup; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW sysgroup AS
+    SELECT projekt.prj_kurztitel AS grp_name, 'x'::bpchar AS grp_passwd, (projekt.prj_id + 10000) AS grp_gid FROM projekt WHERE (projekt.prj_kurztitel IS NOT NULL);
+
+
+ALTER TABLE public.sysgroup OWNER TO postgres;
+
+--
+-- Name: sysgroupmember; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW sysgroupmember AS
+    SELECT (projekt.prj_id + 10000) AS grp_gid, benutzer.ben_uid AS pwd_uid FROM ((benutzer JOIN rolle ON (((rolle.rol_uid)::text = (benutzer.ben_uid)::text))) JOIN projekt ON ((projekt.prj_id = rolle.rol_pid))) WHERE (benutzer.ben_nuid IS NOT NULL);
+
+
+ALTER TABLE public.sysgroupmember OWNER TO postgres;
+
+--
+-- Name: syspasswd; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW syspasswd AS
+    SELECT benutzer.ben_uid AS pwd_name, 'x'::character varying AS pwd_passwd, (benutzer.ben_nuid + 10000) AS pwd_uid, '/u/e-con/daten'::character varying AS pwd_homedir, '/bin/bash'::character varying AS pwd_shell, (((benutzer.ben_vorname)::text || (' '::character varying)::text) || (benutzer.ben_nachname)::text) AS pwd_gecos, 10000 AS pwd_gid, benutzer.ben_expire AS pwd_expire, true AS pwd_enabled FROM benutzer WHERE (benutzer.ben_nuid IS NOT NULL);
+
+
+ALTER TABLE public.syspasswd OWNER TO postgres;
+
+--
+-- Name: taetigkeit; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE taetigkeit (
+    tae_auftrag integer NOT NULL,
+    tae_lfdnr integer NOT NULL,
+    tae_uid character varying NOT NULL,
+    tae_datum date NOT NULL,
+    tae_datum_bis date,
+    tae_stunden numeric(9,2) NOT NULL,
+    tae_beschreibung character varying NOT NULL,
+    tae_erfasst date NOT NULL,
+    tae_freigabedatum date,
+    tae_geprueft date
+);
+
+
+ALTER TABLE public.taetigkeit OWNER TO postgres;
+
+--
+-- Name: tbericht; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE tbericht (
+    brt_pid integer NOT NULL,
+    brt_tid integer NOT NULL,
+    brt_datum date NOT NULL,
+    brt_text text NOT NULL
+);
+
+
+ALTER TABLE public.tbericht OWNER TO postgres;
+
+--
+-- Name: teilprojekt; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE teilprojekt (
+    tpr_pid integer NOT NULL,
+    tpr_tid integer NOT NULL,
+    tpr_titel character varying NOT NULL,
+    tpr_status integer NOT NULL,
+    tpr_verantwortlich character varying
+);
+
+
+ALTER TABLE public.teilprojekt OWNER TO postgres;
+
+--
+-- Name: teilprojektagg; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE teilprojektagg (
+    tpa_pid integer NOT NULL,
+    tpa_ppl integer NOT NULL,
+    tpa_taid integer NOT NULL,
+    tpa_titel character varying NOT NULL
+);
+
+
+ALTER TABLE public.teilprojektagg OWNER TO postgres;
+
+--
+-- Name: teilprojektplan; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE teilprojektplan (
+    tpl_pid integer NOT NULL,
+    tpl_ppl integer NOT NULL,
+    tpl_tid integer NOT NULL,
+    tpl_taid integer,
+    tpl_beschreibung text NOT NULL,
+    tpl_start date,
+    tpl_ende date
+);
+
+
+ALTER TABLE public.teilprojektplan OWNER TO postgres;
+
+--
+-- Name: teilprojektrealisierung; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE teilprojektrealisierung (
+    tpe_pid integer NOT NULL,
+    tpe_zid integer NOT NULL,
+    tpe_tid integer NOT NULL,
+    tpe_datum date NOT NULL,
+    tpe_realisierung double precision NOT NULL
+);
+
+
+ALTER TABLE public.teilprojektrealisierung OWNER TO postgres;
+
+--
+-- Name: teilprojektziel; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE teilprojektziel (
+    tpz_pid integer NOT NULL,
+    tpz_ppl integer NOT NULL,
+    tpz_zid integer NOT NULL,
+    tpz_tid integer NOT NULL,
+    tpz_ziel double precision NOT NULL
+);
+
+
+ALTER TABLE public.teilprojektziel OWNER TO postgres;
+
+--
+-- Name: translate; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE translate (
+    lfdnr integer NOT NULL,
+    n integer,
+    de text NOT NULL,
+    en text
+);
+
+
+ALTER TABLE public.translate OWNER TO postgres;
+
+--
+-- Name: vaufwand; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vaufwand AS
+    (SELECT auftrag.atr_pid AS pid, auftrag.atr_tid AS tid, auftrag.atr_aid AS aid, 1 AS art, taetigkeit.tae_datum AS datum, ((taetigkeit.tae_stunden * auftrag.atr_tagessatz) / (8)::numeric) AS aufwand, ((taetigkeit.tae_stunden * auftrag.atr_btagessatz) / (8)::numeric) AS baufwand, taetigkeit.tae_geprueft AS freigabe FROM auftrag, taetigkeit WHERE (auftrag.atr_nummer = taetigkeit.tae_auftrag) UNION ALL SELECT auftrag.atr_pid AS pid, auftrag.atr_tid AS tid, auftrag.atr_aid AS aid, 2 AS art, taetigkeit.tae_datum AS datum, (taetigkeit.tae_stunden / (8)::numeric) AS aufwand, (taetigkeit.tae_stunden / (8)::numeric) AS baufwand, taetigkeit.tae_geprueft AS freigabe FROM auftrag, taetigkeit WHERE (auftrag.atr_nummer = taetigkeit.tae_auftrag)) UNION ALL SELECT auftrag.atr_pid AS pid, auftrag.atr_tid AS tid, auftrag.atr_aid AS aid, kosten.kos_art AS art, kosten.kos_datum AS datum, kosten.kos_betrag AS aufwand, kosten.kos_bbetrag AS baufwand, kosten.kos_geprueft AS freigabe FROM (kosten JOIN auftrag ON ((kosten.kos_auftrag = auftrag.atr_nummer)));
+
+
+ALTER TABLE public.vaufwand OWNER TO postgres;
+
+--
+-- Name: vmilestone; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vmilestone AS
+    SELECT aufgabenplan.apl_pid AS pid, aufgabenplan.apl_ppl AS ppl, aufgabenplan.apl_tid AS tid, aufgabenplan.apl_aid AS aid, aufgabenplan.apl_endedatum AS datum, min(auftrag.atr_status) AS status FROM (aufgabenplan LEFT JOIN auftrag ON ((((auftrag.atr_pid = aufgabenplan.apl_pid) AND (auftrag.atr_tid = aufgabenplan.apl_tid)) AND (auftrag.atr_aid = aufgabenplan.apl_aid)))) WHERE aufgabenplan.apl_milestone GROUP BY aufgabenplan.apl_pid, aufgabenplan.apl_ppl, aufgabenplan.apl_tid, aufgabenplan.apl_aid, aufgabenplan.apl_endedatum;
+
+
+ALTER TABLE public.vmilestone OWNER TO postgres;
+
+--
+-- Name: vbombe; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vbombe AS
+    SELECT bombe.bmb_pid AS pid, bombe.bmb_ppl AS ppl, bombe.bmb_tid AS tid, min(vmilestone.status) AS status, min(aufgabenplan.apl_startdatum) AS datum FROM ((bombe LEFT JOIN vmilestone ON ((((vmilestone.pid = bombe.bmb_pid) AND (vmilestone.tid = bombe.bmb_apl_tid)) AND (vmilestone.aid = bombe.bmb_apl_aid)))) LEFT JOIN aufgabenplan ON ((((aufgabenplan.apl_pid = bombe.bmb_pid) AND (aufgabenplan.apl_ppl = bombe.bmb_ppl)) AND (aufgabenplan.apl_tid = bombe.bmb_tid)))) GROUP BY bombe.bmb_pid, bombe.bmb_ppl, bombe.bmb_tid;
+
+
+ALTER TABLE public.vbombe OWNER TO postgres;
+
+--
+-- Name: vbudget; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vbudget AS
+    ((SELECT budgetplan.bpl_pid AS pid, budgetplan.bpl_tid AS tid, budgetplan.bpl_aid AS aid, budgetplan.bpl_ppl AS ppl, 1 AS art, budgetplan.bpl_datum AS datum, budgetplan.bpl_betrag AS budget, projektplan.ppl_auftrag AS freigabe FROM (budgetplan JOIN projektplan ON (((projektplan.ppl_pid = budgetplan.bpl_pid) AND (projektplan.ppl_nummer = budgetplan.bpl_ppl)))) UNION ALL SELECT budgetplan.bpl_pid AS pid, budgetplan.bpl_tid AS tid, budgetplan.bpl_aid AS aid, budgetplan.bpl_ppl AS ppl, 2 AS art, budgetplan.bpl_datum AS datum, budgetplan.bpl_personentage AS budget, projektplan.ppl_auftrag AS freigabe FROM (budgetplan JOIN projektplan ON (((projektplan.ppl_pid = budgetplan.bpl_pid) AND (projektplan.ppl_nummer = budgetplan.bpl_ppl))))) UNION ALL SELECT budgetplan.bpl_pid AS pid, budgetplan.bpl_tid AS tid, budgetplan.bpl_aid AS aid, budgetplan.bpl_ppl AS ppl, 3 AS art, budgetplan.bpl_datum AS datum, budgetplan.bpl_sachkosten AS budget, projektplan.ppl_auftrag AS freigabe FROM (budgetplan JOIN projektplan ON (((projektplan.ppl_pid = budgetplan.bpl_pid) AND (projektplan.ppl_nummer = budgetplan.bpl_ppl))))) UNION ALL SELECT budgetplan.bpl_pid AS pid, budgetplan.bpl_tid AS tid, budgetplan.bpl_aid AS aid, budgetplan.bpl_ppl AS ppl, 4 AS art, budgetplan.bpl_datum AS datum, budgetplan.bpl_investition AS budget, projektplan.ppl_auftrag AS freigabe FROM (budgetplan JOIN projektplan ON (((projektplan.ppl_pid = budgetplan.bpl_pid) AND (projektplan.ppl_nummer = budgetplan.bpl_ppl))));
+
+
+ALTER TABLE public.vbudget OWNER TO postgres;
+
+--
+-- Name: vbudgetg; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vbudgetg AS
+    ((SELECT budget.bud_pid AS pid, budget.bud_tid AS tid, 1 AS art, budget.bud_betrag AS budget, projektplan.ppl_nummer AS ppl, projektplan.ppl_auftrag AS freigabe FROM (budget JOIN projektplan ON (((budget.bud_pid = projektplan.ppl_pid) AND (budget.bud_ppl = projektplan.ppl_nummer)))) UNION SELECT budget.bud_pid AS pid, budget.bud_tid AS tid, 2 AS art, budget.bud_personentage AS budget, projektplan.ppl_nummer AS ppl, projektplan.ppl_auftrag AS freigabe FROM (budget JOIN projektplan ON (((budget.bud_pid = projektplan.ppl_pid) AND (budget.bud_ppl = projektplan.ppl_nummer))))) UNION SELECT budget.bud_pid AS pid, budget.bud_tid AS tid, 3 AS art, budget.bud_sachkosten AS budget, projektplan.ppl_nummer AS ppl, projektplan.ppl_auftrag AS freigabe FROM (budget JOIN projektplan ON (((budget.bud_pid = projektplan.ppl_pid) AND (budget.bud_ppl = projektplan.ppl_nummer))))) UNION SELECT budget.bud_pid AS pid, budget.bud_tid AS tid, 4 AS art, budget.bud_investition AS budget, projektplan.ppl_nummer AS ppl, projektplan.ppl_auftrag AS freigabe FROM (budget JOIN projektplan ON (((budget.bud_pid = projektplan.ppl_pid) AND (budget.bud_ppl = projektplan.ppl_nummer))));
+
+
+ALTER TABLE public.vbudgetg OWNER TO postgres;
+
+--
+-- Name: verfuegbarkeit; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE verfuegbarkeit (
+    vfu_benuid character varying NOT NULL,
+    vfu_lfdnr smallint NOT NULL,
+    vfu_datvon date,
+    vfu_datbis date,
+    vfu_bemerkung character varying(300)
+);
+
+
+ALTER TABLE public.verfuegbarkeit OWNER TO postgres;
+
+--
+-- Name: vkunde; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE vkunde (
+    vkn_benuid character varying NOT NULL,
+    vkn_lfdnr smallint NOT NULL,
+    vkn_firma character varying NOT NULL
+);
+
+
+ALTER TABLE public.vkunde OWNER TO postgres;
+
+--
+-- Name: vteilprojekt; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW vteilprojekt AS
+    SELECT teilprojektagg.tpa_pid AS pid, teilprojektagg.tpa_ppl AS ppl, ('A'::text || text(teilprojektagg.tpa_taid)) AS taid, teilprojektplan.tpl_tid AS tid, teilprojektagg.tpa_titel AS titel FROM (teilprojektagg JOIN teilprojektplan ON ((((teilprojektplan.tpl_pid = teilprojektagg.tpa_pid) AND (teilprojektplan.tpl_ppl = teilprojektagg.tpa_ppl)) AND (teilprojektplan.tpl_taid = teilprojektagg.tpa_taid)))) UNION SELECT teilprojektplan.tpl_pid AS pid, teilprojektplan.tpl_ppl AS ppl, text(teilprojektplan.tpl_tid) AS taid, teilprojektplan.tpl_tid AS tid, teilprojekt.tpr_titel AS titel FROM (teilprojektplan JOIN teilprojekt ON (((teilprojektplan.tpl_pid = teilprojekt.tpr_pid) AND (teilprojektplan.tpl_tid = teilprojekt.tpr_tid)))) WHERE (teilprojektplan.tpl_taid IS NULL);
+
+
+ALTER TABLE public.vteilprojekt OWNER TO postgres;
+
+--
+-- Name: anhaenge_pkey; Type: CONSTRAINT; Schema: public; Owner: e-consulter; Tablespace: 
+--
+
+ALTER TABLE ONLY anhaenge
+    ADD CONSTRAINT anhaenge_pkey PRIMARY KEY (anh_uid, anh_filename);
+
+
+ALTER INDEX public.anhaenge_pkey OWNER TO "e-consulter";
+
+--
+-- Name: assantwort_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY assantwort
+    ADD CONSTRAINT assantwort_pkey PRIMARY KEY (ant_uid, ant_fid);
+
+
+ALTER INDEX public.assantwort_pkey OWNER TO postgres;
+
+--
+-- Name: assfrage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY assfrage
+    ADD CONSTRAINT assfrage_pkey PRIMARY KEY (fra_fid, fra_lang);
+
+
+ALTER INDEX public.assfrage_pkey OWNER TO postgres;
+
+--
+-- Name: asskategorie_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY asskategorie
+    ADD CONSTRAINT asskategorie_pkey PRIMARY KEY (akt_kid);
+
+
+ALTER INDEX public.asskategorie_pkey OWNER TO postgres;
+
+--
+-- Name: aufgabe_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY aufgabe
+    ADD CONSTRAINT aufgabe_pkey PRIMARY KEY (auf_pid, auf_tid, auf_aid);
+
+
+ALTER INDEX public.aufgabe_pkey OWNER TO postgres;
+
+--
+-- Name: aufgabenplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY aufgabenplan
+    ADD CONSTRAINT aufgabenplan_pkey PRIMARY KEY (apl_pid, apl_ppl, apl_tid, apl_aid);
+
+
+ALTER INDEX public.aufgabenplan_pkey OWNER TO postgres;
+
+--
+-- Name: aufkat_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY aufkat
+    ADD CONSTRAINT aufkat_pkey PRIMARY KEY (auf_id);
+
+
+ALTER INDEX public.aufkat_pkey OWNER TO postgres;
+
+--
+-- Name: auftrag_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY auftrag
+    ADD CONSTRAINT auftrag_pkey PRIMARY KEY (atr_nummer);
+
+
+ALTER INDEX public.auftrag_pkey OWNER TO postgres;
+
+--
+-- Name: auftragbericht_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY auftragbericht
+    ADD CONSTRAINT auftragbericht_pkey PRIMARY KEY (abr_nummer, abr_datum);
+
+
+ALTER INDEX public.auftragbericht_pkey OWNER TO postgres;
+
+--
+-- Name: ausbildung_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY ausbildung
+    ADD CONSTRAINT ausbildung_pkey PRIMARY KEY (aus_benuid, aus_lfdnr);
+
+
+ALTER INDEX public.ausbildung_pkey OWNER TO postgres;
+
+--
+-- Name: auskat_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY auskat
+    ADD CONSTRAINT auskat_pkey PRIMARY KEY (akt_id);
+
+
+ALTER INDEX public.auskat_pkey OWNER TO postgres;
+
+--
+-- Name: bemerkung_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY bemerkung
+    ADD CONSTRAINT bemerkung_pkey PRIMARY KEY (bem_uid);
+
+
+ALTER INDEX public.bemerkung_pkey OWNER TO postgres;
+
+--
+-- Name: benutzer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY benutzer
+    ADD CONSTRAINT benutzer_pkey PRIMARY KEY (ben_uid);
+
+
+ALTER INDEX public.benutzer_pkey OWNER TO postgres;
+
+--
+-- Name: bericht_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY bericht
+    ADD CONSTRAINT bericht_pkey PRIMARY KEY (ber_pid, ber_datum);
+
+
+ALTER INDEX public.bericht_pkey OWNER TO postgres;
+
+--
+-- Name: bild_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY bild
+    ADD CONSTRAINT bild_pkey PRIMARY KEY (bld_uid, bld_lfdnr);
+
+
+ALTER INDEX public.bild_pkey OWNER TO postgres;
+
+--
+-- Name: bistaet_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY bistaet
+    ADD CONSTRAINT bistaet_pkey PRIMARY KEY (bta_benuid, bta_lfdnr);
+
+
+ALTER INDEX public.bistaet_pkey OWNER TO postgres;
+
+--
+-- Name: bombe_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY bombe
+    ADD CONSTRAINT bombe_pkey PRIMARY KEY (bmb_pid, bmb_ppl, bmb_tid, bmb_apl_tid, bmb_apl_aid);
+
+
+ALTER INDEX public.bombe_pkey OWNER TO postgres;
+
+--
+-- Name: branche_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY branche
+    ADD CONSTRAINT branche_pkey PRIMARY KEY (bra_id);
+
+
+ALTER INDEX public.branche_pkey OWNER TO postgres;
+
+--
+-- Name: budget_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY budget
+    ADD CONSTRAINT budget_pkey PRIMARY KEY (bud_pid, bud_tid, bud_ppl);
+
+
+ALTER INDEX public.budget_pkey OWNER TO postgres;
+
+--
+-- Name: budgetplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY budgetplan
+    ADD CONSTRAINT budgetplan_pkey PRIMARY KEY (bpl_pid, bpl_ppl, bpl_tid, bpl_aid, bpl_datum);
+
+
+ALTER INDEX public.budgetplan_pkey OWNER TO postgres;
+
+--
+-- Name: fehler_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY fehler
+    ADD CONSTRAINT fehler_pkey PRIMARY KEY (err_ref);
+
+
+ALTER INDEX public.fehler_pkey OWNER TO postgres;
+
+--
+-- Name: firma_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY firma
+    ADD CONSTRAINT firma_pkey PRIMARY KEY (frm_id);
+
+
+ALTER INDEX public.firma_pkey OWNER TO postgres;
+
+--
+-- Name: firmenlogo_pkey; Type: CONSTRAINT; Schema: public; Owner: e-consulter; Tablespace: 
+--
+
+ALTER TABLE ONLY firmenlogo
+    ADD CONSTRAINT firmenlogo_pkey PRIMARY KEY (flg_uid, flg_lfdnr);
+
+
+ALTER INDEX public.firmenlogo_pkey OWNER TO "e-consulter";
+
+--
+-- Name: gesbra_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY gesbra
+    ADD CONSTRAINT gesbra_pkey PRIMARY KEY (gbr_benuid, gbr_gtalfdnr, gbr_branche);
+
+
+ALTER INDEX public.gesbra_pkey OWNER TO postgres;
+
+--
+-- Name: gespos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY gespos
+    ADD CONSTRAINT gespos_pkey PRIMARY KEY (gpo_benuid, gpo_gtalfdnr, gpo_position);
+
+
+ALTER INDEX public.gespos_pkey OWNER TO postgres;
+
+--
+-- Name: gestaet_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY gestaet
+    ADD CONSTRAINT gestaet_pkey PRIMARY KEY (gta_benuid, gta_lfdnr);
+
+
+ALTER INDEX public.gestaet_pkey OWNER TO postgres;
+
+--
+-- Name: kosten_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY kosten
+    ADD CONSTRAINT kosten_pkey PRIMARY KEY (kos_auftrag, kos_lfdnr);
+
+
+ALTER INDEX public.kosten_pkey OWNER TO postgres;
+
+--
+-- Name: pos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY pos
+    ADD CONSTRAINT pos_pkey PRIMARY KEY (pos_id);
+
+
+ALTER INDEX public.pos_pkey OWNER TO postgres;
+
+--
+-- Name: prjbereich_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjbereich
+    ADD CONSTRAINT prjbereich_pkey PRIMARY KEY (prj_id, prj_bereich);
+
+
+ALTER INDEX public.prjbereich_pkey OWNER TO postgres;
+
+--
+-- Name: prjbereichstamm_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjbereichstamm
+    ADD CONSTRAINT prjbereichstamm_pkey PRIMARY KEY (pbs_bezeichnung);
+
+
+ALTER INDEX public.prjbereichstamm_pkey OWNER TO postgres;
+
+--
+-- Name: prjqual_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjqual
+    ADD CONSTRAINT prjqual_pkey PRIMARY KEY (pqa_pid, pqa_qualid);
+
+
+ALTER INDEX public.prjqual_pkey OWNER TO postgres;
+
+--
+-- Name: prjteameigenschaft_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjteameigenschaft
+    ADD CONSTRAINT prjteameigenschaft_pkey PRIMARY KEY (prj_id, prj_eigenschaft);
+
+
+ALTER INDEX public.prjteameigenschaft_pkey OWNER TO postgres;
+
+--
+-- Name: prjteameigenschaftstamm_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjteameigenschaftstamm
+    ADD CONSTRAINT prjteameigenschaftstamm_pkey PRIMARY KEY (pes_bezeichnung);
+
+
+ALTER INDEX public.prjteameigenschaftstamm_pkey OWNER TO postgres;
+
+--
+-- Name: prjziel_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjziel
+    ADD CONSTRAINT prjziel_pkey PRIMARY KEY (prj_id, prj_ziel);
+
+
+ALTER INDEX public.prjziel_pkey OWNER TO postgres;
+
+--
+-- Name: prjzielstamm_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY prjzielstamm
+    ADD CONSTRAINT prjzielstamm_pkey PRIMARY KEY (pzs_bezeichnung);
+
+
+ALTER INDEX public.prjzielstamm_pkey OWNER TO postgres;
+
+--
+-- Name: projekt_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY projekt
+    ADD CONSTRAINT projekt_pkey PRIMARY KEY (prj_id);
+
+
+ALTER INDEX public.projekt_pkey OWNER TO postgres;
+
+--
+-- Name: projekta_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY projekta
+    ADD CONSTRAINT projekta_pkey PRIMARY KEY (prj_id);
+
+
+ALTER INDEX public.projekta_pkey OWNER TO postgres;
+
+--
+-- Name: projektplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY projektplan
+    ADD CONSTRAINT projektplan_pkey PRIMARY KEY (ppl_pid, ppl_nummer);
+
+
+ALTER INDEX public.projektplan_pkey OWNER TO postgres;
+
+--
+-- Name: projektziel_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY projektziel
+    ADD CONSTRAINT projektziel_pkey PRIMARY KEY (prz_pid, prz_zid);
+
+
+ALTER INDEX public.projektziel_pkey OWNER TO postgres;
+
+--
+-- Name: qual_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY qual
+    ADD CONSTRAINT qual_pkey PRIMARY KEY (qua_id);
+
+
+ALTER INDEX public.qual_pkey OWNER TO postgres;
+
+--
+-- Name: qualrank_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY qualrank
+    ADD CONSTRAINT qualrank_pkey PRIMARY KEY (qra_benuid, qra_qualid);
+
+
+ALTER INDEX public.qualrank_pkey OWNER TO postgres;
+
+--
+-- Name: referenz_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY referenz
+    ADD CONSTRAINT referenz_pkey PRIMARY KEY (ref_benuid, ref_lfdnr);
+
+
+ALTER INDEX public.referenz_pkey OWNER TO postgres;
+
+--
+-- Name: rolle_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY rolle
+    ADD CONSTRAINT rolle_pkey PRIMARY KEY (rol_pid, rol_uid);
+
+
+ALTER INDEX public.rolle_pkey OWNER TO postgres;
+
+--
+-- Name: sitzung_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sitzung
+    ADD CONSTRAINT sitzung_pkey PRIMARY KEY (sit_pid, sit_sid);
+
+
+ALTER INDEX public.sitzung_pkey OWNER TO postgres;
+
+--
+-- Name: sitzungsprotokoll_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sitzungsprotokoll
+    ADD CONSTRAINT sitzungsprotokoll_pkey PRIMARY KEY (stp_pid, stp_sid, stp_version);
+
+
+ALTER INDEX public.sitzungsprotokoll_pkey OWNER TO postgres;
+
+--
+-- Name: sitzungsteilnehmer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sitzungsteilnehmer
+    ADD CONSTRAINT sitzungsteilnehmer_pkey PRIMARY KEY (stt_pid, stt_sid, stt_lfdnr);
+
+
+ALTER INDEX public.sitzungsteilnehmer_pkey OWNER TO postgres;
+
+--
+-- Name: taetigkeit_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY taetigkeit
+    ADD CONSTRAINT taetigkeit_pkey PRIMARY KEY (tae_auftrag, tae_lfdnr);
+
+
+ALTER INDEX public.taetigkeit_pkey OWNER TO postgres;
+
+--
+-- Name: tbericht_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY tbericht
+    ADD CONSTRAINT tbericht_pkey PRIMARY KEY (brt_pid, brt_tid, brt_datum);
+
+
+ALTER INDEX public.tbericht_pkey OWNER TO postgres;
+
+--
+-- Name: teilprojekt_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY teilprojekt
+    ADD CONSTRAINT teilprojekt_pkey PRIMARY KEY (tpr_pid, tpr_tid);
+
+
+ALTER INDEX public.teilprojekt_pkey OWNER TO postgres;
+
+--
+-- Name: teilprojektagg_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY teilprojektagg
+    ADD CONSTRAINT teilprojektagg_pkey PRIMARY KEY (tpa_pid, tpa_ppl, tpa_taid);
+
+
+ALTER INDEX public.teilprojektagg_pkey OWNER TO postgres;
+
+--
+-- Name: teilprojektplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY teilprojektplan
+    ADD CONSTRAINT teilprojektplan_pkey PRIMARY KEY (tpl_pid, tpl_ppl, tpl_tid);
+
+
+ALTER INDEX public.teilprojektplan_pkey OWNER TO postgres;
+
+--
+-- Name: teilprojektrealisierung_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY teilprojektrealisierung
+    ADD CONSTRAINT teilprojektrealisierung_pkey PRIMARY KEY (tpe_pid, tpe_zid, tpe_tid, tpe_datum);
+
+
+ALTER INDEX public.teilprojektrealisierung_pkey OWNER TO postgres;
+
+--
+-- Name: teilprojektziel_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY teilprojektziel
+    ADD CONSTRAINT teilprojektziel_pkey PRIMARY KEY (tpz_pid, tpz_ppl, tpz_zid, tpz_tid);
+
+
+ALTER INDEX public.teilprojektziel_pkey OWNER TO postgres;
+
+--
+-- Name: translate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY translate
+    ADD CONSTRAINT translate_pkey PRIMARY KEY (lfdnr);
+
+
+ALTER INDEX public.translate_pkey OWNER TO postgres;
+
+--
+-- Name: verfuegbarkeit_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY verfuegbarkeit
+    ADD CONSTRAINT verfuegbarkeit_pkey PRIMARY KEY (vfu_benuid, vfu_lfdnr);
+
+
+ALTER INDEX public.verfuegbarkeit_pkey OWNER TO postgres;
+
+--
+-- Name: vkunde_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY vkunde
+    ADD CONSTRAINT vkunde_pkey PRIMARY KEY (vkn_benuid, vkn_lfdnr);
+
+
+ALTER INDEX public.vkunde_pkey OWNER TO postgres;
+
+--
+-- Name: account_ix1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX account_ix1 ON account USING btree (acc_uid, acc_zeit);
+
+
+ALTER INDEX public.account_ix1 OWNER TO postgres;
+
+--
+-- Name: anhaenge_anh_id; Type: INDEX; Schema: public; Owner: e-consulter; Tablespace: 
+--
+
+CREATE INDEX anhaenge_anh_id ON anhaenge USING btree (anh_id);
+
+
+ALTER INDEX public.anhaenge_anh_id OWNER TO "e-consulter";
+
+--
+-- Name: auftrag_ix1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX auftrag_ix1 ON auftrag USING btree (atr_uid);
+
+
+ALTER INDEX public.auftrag_ix1 OWNER TO postgres;
+
+--
+-- Name: benutzer_ix1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX benutzer_ix1 ON benutzer USING btree (ben_nuid);
+
+
+ALTER INDEX public.benutzer_ix1 OWNER TO postgres;
+
+--
+-- Name: fil_id_index; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE UNIQUE INDEX fil_id_index ON files USING btree (fil_id);
+
+
+ALTER INDEX public.fil_id_index OWNER TO postgres;
+
+--
+-- Name: fol_id_index; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE UNIQUE INDEX fol_id_index ON folder USING btree (fol_id);
+
+
+ALTER INDEX public.fol_id_index OWNER TO postgres;
+
+--
+-- Name: login_ix1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX login_ix1 ON login USING btree (log_zeit, log_uid);
+
+
+ALTER INDEX public.login_ix1 OWNER TO postgres;
+
+--
+-- Name: translate_ix1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX translate_ix1 ON translate USING btree (de);
+
+
+ALTER INDEX public.translate_ix1 OWNER TO postgres;
+
+--
+-- Name: RI_ConstraintTrigger_2596161; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER "<unnamed>"
+    AFTER INSERT OR UPDATE ON prjziel
+    FROM projekt
+    NOT DEFERRABLE INITIALLY IMMEDIATE
+    FOR EACH ROW
+    EXECUTE PROCEDURE "RI_FKey_check_ins"('<unnamed>', 'prjziel', 'projekt', 'UNSPECIFIED', 'prj_id', 'prj_id');
+
+
+--
+-- Name: RI_ConstraintTrigger_2596162; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER "<unnamed>"
+    AFTER INSERT OR UPDATE ON prjziel
+    FROM projekt
+    NOT DEFERRABLE INITIALLY IMMEDIATE
+    FOR EACH ROW
+    EXECUTE PROCEDURE "RI_FKey_check_ins"('<unnamed>', 'prjziel', 'projekt', 'UNSPECIFIED', 'prj_id', 'prj_id');
+
+
+--
+-- Name: RI_ConstraintTrigger_2596163; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER "<unnamed>"
+    AFTER INSERT OR UPDATE ON prjziel
+    FROM projekt
+    NOT DEFERRABLE INITIALLY IMMEDIATE
+    FOR EACH ROW
+    EXECUTE PROCEDURE "RI_FKey_check_ins"('<unnamed>', 'prjziel', 'projekt', 'UNSPECIFIED', 'prj_id', 'prj_id');
+
+
+--
+-- Name: RI_ConstraintTrigger_2596164; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER "<unnamed>"
+    AFTER INSERT OR UPDATE ON prjziel
+    FROM projekt
+    NOT DEFERRABLE INITIALLY IMMEDIATE
+    FOR EACH ROW
+    EXECUTE PROCEDURE "RI_FKey_check_ins"('<unnamed>', 'prjziel', 'projekt', 'UNSPECIFIED', 'prj_id', 'prj_id');
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- Name: account; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE account FROM PUBLIC;
+REVOKE ALL ON TABLE account FROM postgres;
+GRANT ALL ON TABLE account TO postgres;
+GRANT ALL ON TABLE account TO "e-consulter";
+GRANT ALL ON TABLE account TO comvalue;
+
+
+--
+-- Name: assantwort; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE assantwort FROM PUBLIC;
+REVOKE ALL ON TABLE assantwort FROM postgres;
+GRANT ALL ON TABLE assantwort TO postgres;
+GRANT ALL ON TABLE assantwort TO "e-consulter";
+GRANT ALL ON TABLE assantwort TO comvalue;
+
+
+--
+-- Name: assfrage; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE assfrage FROM PUBLIC;
+REVOKE ALL ON TABLE assfrage FROM postgres;
+GRANT ALL ON TABLE assfrage TO postgres;
+GRANT ALL ON TABLE assfrage TO "e-consulter";
+GRANT ALL ON TABLE assfrage TO comvalue;
+
+
+--
+-- Name: asskategorie; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE asskategorie FROM PUBLIC;
+REVOKE ALL ON TABLE asskategorie FROM postgres;
+GRANT ALL ON TABLE asskategorie TO postgres;
+GRANT ALL ON TABLE asskategorie TO "e-consulter";
+GRANT ALL ON TABLE asskategorie TO comvalue;
+
+
+--
+-- Name: aufgabe; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE aufgabe FROM PUBLIC;
+REVOKE ALL ON TABLE aufgabe FROM postgres;
+GRANT ALL ON TABLE aufgabe TO postgres;
+GRANT ALL ON TABLE aufgabe TO "e-consulter";
+GRANT ALL ON TABLE aufgabe TO comvalue;
+
+
+--
+-- Name: aufgabenplan; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE aufgabenplan FROM PUBLIC;
+REVOKE ALL ON TABLE aufgabenplan FROM postgres;
+GRANT ALL ON TABLE aufgabenplan TO postgres;
+GRANT ALL ON TABLE aufgabenplan TO "e-consulter";
+GRANT ALL ON TABLE aufgabenplan TO comvalue;
+
+
+--
+-- Name: aufkat; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE aufkat FROM PUBLIC;
+REVOKE ALL ON TABLE aufkat FROM postgres;
+GRANT ALL ON TABLE aufkat TO postgres;
+GRANT ALL ON TABLE aufkat TO "e-consulter";
+GRANT ALL ON TABLE aufkat TO comvalue;
+
+
+--
+-- Name: auftrag; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE auftrag FROM PUBLIC;
+REVOKE ALL ON TABLE auftrag FROM postgres;
+GRANT ALL ON TABLE auftrag TO postgres;
+GRANT ALL ON TABLE auftrag TO "e-consulter";
+GRANT ALL ON TABLE auftrag TO comvalue;
+
+
+--
+-- Name: auftragbericht; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE auftragbericht FROM PUBLIC;
+REVOKE ALL ON TABLE auftragbericht FROM postgres;
+GRANT ALL ON TABLE auftragbericht TO postgres;
+GRANT ALL ON TABLE auftragbericht TO "e-consulter";
+GRANT ALL ON TABLE auftragbericht TO comvalue;
+
+
+--
+-- Name: ausbildung; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE ausbildung FROM PUBLIC;
+REVOKE ALL ON TABLE ausbildung FROM postgres;
+GRANT ALL ON TABLE ausbildung TO postgres;
+GRANT ALL ON TABLE ausbildung TO "e-consulter";
+GRANT ALL ON TABLE ausbildung TO comvalue;
+
+
+--
+-- Name: auskat; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE auskat FROM PUBLIC;
+REVOKE ALL ON TABLE auskat FROM postgres;
+GRANT ALL ON TABLE auskat TO postgres;
+GRANT ALL ON TABLE auskat TO "e-consulter";
+GRANT ALL ON TABLE auskat TO comvalue;
+
+
+--
+-- Name: bemerkung; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE bemerkung FROM PUBLIC;
+REVOKE ALL ON TABLE bemerkung FROM postgres;
+GRANT ALL ON TABLE bemerkung TO postgres;
+GRANT ALL ON TABLE bemerkung TO "e-consulter";
+GRANT ALL ON TABLE bemerkung TO comvalue;
+
+
+--
+-- Name: benutzer; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE benutzer FROM PUBLIC;
+REVOKE ALL ON TABLE benutzer FROM postgres;
+GRANT ALL ON TABLE benutzer TO postgres;
+GRANT ALL ON TABLE benutzer TO "e-consulter";
+GRANT ALL ON TABLE benutzer TO comvalue;
+
+
+--
+-- Name: bericht; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE bericht FROM PUBLIC;
+REVOKE ALL ON TABLE bericht FROM postgres;
+GRANT ALL ON TABLE bericht TO postgres;
+GRANT ALL ON TABLE bericht TO "e-consulter";
+GRANT ALL ON TABLE bericht TO comvalue;
+
+
+--
+-- Name: bild; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE bild FROM PUBLIC;
+REVOKE ALL ON TABLE bild FROM postgres;
+GRANT ALL ON TABLE bild TO postgres;
+GRANT ALL ON TABLE bild TO "e-consulter";
+GRANT ALL ON TABLE bild TO comvalue;
+
+
+--
+-- Name: bistaet; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE bistaet FROM PUBLIC;
+REVOKE ALL ON TABLE bistaet FROM postgres;
+GRANT ALL ON TABLE bistaet TO postgres;
+GRANT ALL ON TABLE bistaet TO "e-consulter";
+GRANT ALL ON TABLE bistaet TO comvalue;
+
+
+--
+-- Name: bombe; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE bombe FROM PUBLIC;
+REVOKE ALL ON TABLE bombe FROM postgres;
+GRANT ALL ON TABLE bombe TO postgres;
+GRANT ALL ON TABLE bombe TO "e-consulter";
+GRANT ALL ON TABLE bombe TO comvalue;
+
+
+--
+-- Name: branche; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE branche FROM PUBLIC;
+REVOKE ALL ON TABLE branche FROM postgres;
+GRANT ALL ON TABLE branche TO postgres;
+GRANT ALL ON TABLE branche TO "e-consulter";
+GRANT ALL ON TABLE branche TO comvalue;
+
+
+--
+-- Name: budget; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE budget FROM PUBLIC;
+REVOKE ALL ON TABLE budget FROM postgres;
+GRANT ALL ON TABLE budget TO postgres;
+GRANT ALL ON TABLE budget TO "e-consulter";
+GRANT ALL ON TABLE budget TO comvalue;
+
+
+--
+-- Name: budgetplan; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE budgetplan FROM PUBLIC;
+REVOKE ALL ON TABLE budgetplan FROM postgres;
+GRANT ALL ON TABLE budgetplan TO postgres;
+GRANT ALL ON TABLE budgetplan TO "e-consulter";
+GRANT ALL ON TABLE budgetplan TO comvalue;
+
+
+--
+-- Name: fehler; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE fehler FROM PUBLIC;
+REVOKE ALL ON TABLE fehler FROM postgres;
+GRANT ALL ON TABLE fehler TO postgres;
+GRANT ALL ON TABLE fehler TO "e-consulter";
+GRANT ALL ON TABLE fehler TO comvalue;
+
+
+--
+-- Name: fil_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE fil_id_seq FROM PUBLIC;
+REVOKE ALL ON TABLE fil_id_seq FROM postgres;
+GRANT ALL ON TABLE fil_id_seq TO postgres;
+GRANT ALL ON TABLE fil_id_seq TO "e-consulter";
+
+
+--
+-- Name: files; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE files FROM PUBLIC;
+REVOKE ALL ON TABLE files FROM postgres;
+GRANT ALL ON TABLE files TO postgres;
+GRANT ALL ON TABLE files TO "e-consulter";
+
+
+--
+-- Name: firma; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE firma FROM PUBLIC;
+REVOKE ALL ON TABLE firma FROM postgres;
+GRANT ALL ON TABLE firma TO postgres;
+GRANT ALL ON TABLE firma TO "e-consulter";
+GRANT ALL ON TABLE firma TO comvalue;
+
+
+--
+-- Name: fol_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE fol_id_seq FROM PUBLIC;
+REVOKE ALL ON TABLE fol_id_seq FROM postgres;
+GRANT ALL ON TABLE fol_id_seq TO postgres;
+GRANT ALL ON TABLE fol_id_seq TO "e-consulter";
+
+
+--
+-- Name: folder; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE folder FROM PUBLIC;
+REVOKE ALL ON TABLE folder FROM postgres;
+GRANT ALL ON TABLE folder TO postgres;
+GRANT ALL ON TABLE folder TO "e-consulter";
+
+
+--
+-- Name: gesbra; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE gesbra FROM PUBLIC;
+REVOKE ALL ON TABLE gesbra FROM postgres;
+GRANT ALL ON TABLE gesbra TO postgres;
+GRANT ALL ON TABLE gesbra TO "e-consulter";
+GRANT ALL ON TABLE gesbra TO comvalue;
+
+
+--
+-- Name: gespos; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE gespos FROM PUBLIC;
+REVOKE ALL ON TABLE gespos FROM postgres;
+GRANT ALL ON TABLE gespos TO postgres;
+GRANT ALL ON TABLE gespos TO "e-consulter";
+GRANT ALL ON TABLE gespos TO comvalue;
+
+
+--
+-- Name: gestaet; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE gestaet FROM PUBLIC;
+REVOKE ALL ON TABLE gestaet FROM postgres;
+GRANT ALL ON TABLE gestaet TO postgres;
+GRANT ALL ON TABLE gestaet TO "e-consulter";
+GRANT ALL ON TABLE gestaet TO comvalue;
+
+
+--
+-- Name: kosten; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE kosten FROM PUBLIC;
+REVOKE ALL ON TABLE kosten FROM postgres;
+GRANT ALL ON TABLE kosten TO postgres;
+GRANT ALL ON TABLE kosten TO "e-consulter";
+GRANT ALL ON TABLE kosten TO comvalue;
+
+
+--
+-- Name: login; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE login FROM PUBLIC;
+REVOKE ALL ON TABLE login FROM postgres;
+GRANT ALL ON TABLE login TO postgres;
+GRANT ALL ON TABLE login TO "e-consulter";
+GRANT ALL ON TABLE login TO comvalue;
+
+
+--
+-- Name: pga_forms; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_forms FROM PUBLIC;
+REVOKE ALL ON TABLE pga_forms FROM contavia;
+GRANT ALL ON TABLE pga_forms TO contavia;
+GRANT ALL ON TABLE pga_forms TO PUBLIC;
+GRANT ALL ON TABLE pga_forms TO "e-consulter";
+GRANT ALL ON TABLE pga_forms TO comvalue;
+
+
+--
+-- Name: pga_layout; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_layout FROM PUBLIC;
+REVOKE ALL ON TABLE pga_layout FROM contavia;
+GRANT ALL ON TABLE pga_layout TO contavia;
+GRANT ALL ON TABLE pga_layout TO PUBLIC;
+GRANT ALL ON TABLE pga_layout TO "e-consulter";
+GRANT ALL ON TABLE pga_layout TO comvalue;
+
+
+--
+-- Name: pga_queries; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_queries FROM PUBLIC;
+REVOKE ALL ON TABLE pga_queries FROM contavia;
+GRANT ALL ON TABLE pga_queries TO contavia;
+GRANT ALL ON TABLE pga_queries TO PUBLIC;
+GRANT ALL ON TABLE pga_queries TO "e-consulter";
+GRANT ALL ON TABLE pga_queries TO comvalue;
+
+
+--
+-- Name: pga_reports; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_reports FROM PUBLIC;
+REVOKE ALL ON TABLE pga_reports FROM contavia;
+GRANT ALL ON TABLE pga_reports TO contavia;
+GRANT ALL ON TABLE pga_reports TO PUBLIC;
+GRANT ALL ON TABLE pga_reports TO "e-consulter";
+GRANT ALL ON TABLE pga_reports TO comvalue;
+
+
+--
+-- Name: pga_schema; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_schema FROM PUBLIC;
+REVOKE ALL ON TABLE pga_schema FROM contavia;
+GRANT ALL ON TABLE pga_schema TO contavia;
+GRANT ALL ON TABLE pga_schema TO PUBLIC;
+GRANT ALL ON TABLE pga_schema TO "e-consulter";
+GRANT ALL ON TABLE pga_schema TO comvalue;
+
+
+--
+-- Name: pga_scripts; Type: ACL; Schema: public; Owner: contavia
+--
+
+REVOKE ALL ON TABLE pga_scripts FROM PUBLIC;
+REVOKE ALL ON TABLE pga_scripts FROM contavia;
+GRANT ALL ON TABLE pga_scripts TO contavia;
+GRANT ALL ON TABLE pga_scripts TO PUBLIC;
+GRANT ALL ON TABLE pga_scripts TO "e-consulter";
+GRANT ALL ON TABLE pga_scripts TO comvalue;
+
+
+--
+-- Name: pos; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE pos FROM PUBLIC;
+REVOKE ALL ON TABLE pos FROM postgres;
+GRANT ALL ON TABLE pos TO postgres;
+GRANT ALL ON TABLE pos TO "e-consulter";
+GRANT ALL ON TABLE pos TO comvalue;
+
+
+--
+-- Name: prjbereich; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjbereich FROM PUBLIC;
+REVOKE ALL ON TABLE prjbereich FROM postgres;
+GRANT ALL ON TABLE prjbereich TO postgres;
+GRANT ALL ON TABLE prjbereich TO "e-consulter";
+GRANT ALL ON TABLE prjbereich TO comvalue;
+
+
+--
+-- Name: prjbereichstamm; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjbereichstamm FROM PUBLIC;
+REVOKE ALL ON TABLE prjbereichstamm FROM postgres;
+GRANT ALL ON TABLE prjbereichstamm TO postgres;
+GRANT ALL ON TABLE prjbereichstamm TO "e-consulter";
+GRANT ALL ON TABLE prjbereichstamm TO comvalue;
+
+
+--
+-- Name: prjqual; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjqual FROM PUBLIC;
+REVOKE ALL ON TABLE prjqual FROM postgres;
+GRANT ALL ON TABLE prjqual TO postgres;
+GRANT ALL ON TABLE prjqual TO "e-consulter";
+GRANT ALL ON TABLE prjqual TO comvalue;
+
+
+--
+-- Name: prjteameigenschaft; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjteameigenschaft FROM PUBLIC;
+REVOKE ALL ON TABLE prjteameigenschaft FROM postgres;
+GRANT ALL ON TABLE prjteameigenschaft TO postgres;
+GRANT ALL ON TABLE prjteameigenschaft TO "e-consulter";
+GRANT ALL ON TABLE prjteameigenschaft TO comvalue;
+
+
+--
+-- Name: prjteameigenschaftstamm; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjteameigenschaftstamm FROM PUBLIC;
+REVOKE ALL ON TABLE prjteameigenschaftstamm FROM postgres;
+GRANT ALL ON TABLE prjteameigenschaftstamm TO postgres;
+GRANT ALL ON TABLE prjteameigenschaftstamm TO "e-consulter";
+GRANT ALL ON TABLE prjteameigenschaftstamm TO comvalue;
+
+
+--
+-- Name: prjziel; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjziel FROM PUBLIC;
+REVOKE ALL ON TABLE prjziel FROM postgres;
+GRANT ALL ON TABLE prjziel TO postgres;
+GRANT ALL ON TABLE prjziel TO "e-consulter";
+GRANT ALL ON TABLE prjziel TO comvalue;
+
+
+--
+-- Name: prjzielstamm; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE prjzielstamm FROM PUBLIC;
+REVOKE ALL ON TABLE prjzielstamm FROM postgres;
+GRANT ALL ON TABLE prjzielstamm TO postgres;
+GRANT ALL ON TABLE prjzielstamm TO "e-consulter";
+GRANT ALL ON TABLE prjzielstamm TO comvalue;
+
+
+--
+-- Name: projekt; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE projekt FROM PUBLIC;
+REVOKE ALL ON TABLE projekt FROM postgres;
+GRANT ALL ON TABLE projekt TO postgres;
+GRANT ALL ON TABLE projekt TO "e-consulter";
+GRANT ALL ON TABLE projekt TO comvalue;
+
+
+--
+-- Name: projekta; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE projekta FROM PUBLIC;
+REVOKE ALL ON TABLE projekta FROM postgres;
+GRANT ALL ON TABLE projekta TO postgres;
+GRANT ALL ON TABLE projekta TO "e-consulter";
+GRANT ALL ON TABLE projekta TO comvalue;
+
+
+--
+-- Name: projektplan; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE projektplan FROM PUBLIC;
+REVOKE ALL ON TABLE projektplan FROM postgres;
+GRANT ALL ON TABLE projektplan TO postgres;
+GRANT ALL ON TABLE projektplan TO "e-consulter";
+GRANT ALL ON TABLE projektplan TO comvalue;
+
+
+--
+-- Name: projektziel; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE projektziel FROM PUBLIC;
+REVOKE ALL ON TABLE projektziel FROM postgres;
+GRANT ALL ON TABLE projektziel TO postgres;
+GRANT ALL ON TABLE projektziel TO "e-consulter";
+GRANT ALL ON TABLE projektziel TO comvalue;
+
+
+--
+-- Name: qual; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE qual FROM PUBLIC;
+REVOKE ALL ON TABLE qual FROM postgres;
+GRANT ALL ON TABLE qual TO postgres;
+GRANT ALL ON TABLE qual TO "e-consulter";
+GRANT ALL ON TABLE qual TO comvalue;
+
+
+--
+-- Name: qualrank; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE qualrank FROM PUBLIC;
+REVOKE ALL ON TABLE qualrank FROM postgres;
+GRANT ALL ON TABLE qualrank TO postgres;
+GRANT ALL ON TABLE qualrank TO "e-consulter";
+GRANT ALL ON TABLE qualrank TO comvalue;
+
+
+--
+-- Name: referenz; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE referenz FROM PUBLIC;
+REVOKE ALL ON TABLE referenz FROM postgres;
+GRANT ALL ON TABLE referenz TO postgres;
+GRANT ALL ON TABLE referenz TO "e-consulter";
+GRANT ALL ON TABLE referenz TO comvalue;
+
+
+--
+-- Name: rolle; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE rolle FROM PUBLIC;
+REVOKE ALL ON TABLE rolle FROM postgres;
+GRANT ALL ON TABLE rolle TO postgres;
+GRANT ALL ON TABLE rolle TO "e-consulter";
+GRANT ALL ON TABLE rolle TO comvalue;
+
+
+--
+-- Name: sitzung; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE sitzung FROM PUBLIC;
+REVOKE ALL ON TABLE sitzung FROM postgres;
+GRANT ALL ON TABLE sitzung TO postgres;
+GRANT ALL ON TABLE sitzung TO "e-consulter";
+GRANT ALL ON TABLE sitzung TO comvalue;
+
+
+--
+-- Name: sitzungsprotokoll; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE sitzungsprotokoll FROM PUBLIC;
+REVOKE ALL ON TABLE sitzungsprotokoll FROM postgres;
+GRANT ALL ON TABLE sitzungsprotokoll TO postgres;
+GRANT ALL ON TABLE sitzungsprotokoll TO "e-consulter";
+GRANT ALL ON TABLE sitzungsprotokoll TO comvalue;
+
+
+--
+-- Name: sitzungsteilnehmer; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE sitzungsteilnehmer FROM PUBLIC;
+REVOKE ALL ON TABLE sitzungsteilnehmer FROM postgres;
+GRANT ALL ON TABLE sitzungsteilnehmer TO postgres;
+GRANT ALL ON TABLE sitzungsteilnehmer TO "e-consulter";
+GRANT ALL ON TABLE sitzungsteilnehmer TO comvalue;
+
+
+--
+-- Name: sysgroup; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE sysgroup FROM PUBLIC;
+REVOKE ALL ON TABLE sysgroup FROM postgres;
+GRANT ALL ON TABLE sysgroup TO postgres;
+GRANT ALL ON TABLE sysgroup TO "e-consulter";
+
+
+--
+-- Name: sysgroupmember; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE sysgroupmember FROM PUBLIC;
+REVOKE ALL ON TABLE sysgroupmember FROM postgres;
+GRANT ALL ON TABLE sysgroupmember TO postgres;
+GRANT ALL ON TABLE sysgroupmember TO "e-consulter";
+
+
+--
+-- Name: syspasswd; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE syspasswd FROM PUBLIC;
+REVOKE ALL ON TABLE syspasswd FROM postgres;
+GRANT ALL ON TABLE syspasswd TO postgres;
+GRANT ALL ON TABLE syspasswd TO "e-consulter";
+
+
+--
+-- Name: taetigkeit; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE taetigkeit FROM PUBLIC;
+REVOKE ALL ON TABLE taetigkeit FROM postgres;
+GRANT ALL ON TABLE taetigkeit TO postgres;
+GRANT ALL ON TABLE taetigkeit TO "e-consulter";
+GRANT ALL ON TABLE taetigkeit TO comvalue;
+
+
+--
+-- Name: tbericht; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE tbericht FROM PUBLIC;
+REVOKE ALL ON TABLE tbericht FROM postgres;
+GRANT ALL ON TABLE tbericht TO postgres;
+GRANT ALL ON TABLE tbericht TO "e-consulter";
+GRANT ALL ON TABLE tbericht TO comvalue;
+
+
+--
+-- Name: teilprojekt; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE teilprojekt FROM PUBLIC;
+REVOKE ALL ON TABLE teilprojekt FROM postgres;
+GRANT ALL ON TABLE teilprojekt TO postgres;
+GRANT ALL ON TABLE teilprojekt TO "e-consulter";
+GRANT ALL ON TABLE teilprojekt TO comvalue;
+
+
+--
+-- Name: teilprojektagg; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE teilprojektagg FROM PUBLIC;
+REVOKE ALL ON TABLE teilprojektagg FROM postgres;
+GRANT ALL ON TABLE teilprojektagg TO postgres;
+GRANT ALL ON TABLE teilprojektagg TO "e-consulter";
+GRANT ALL ON TABLE teilprojektagg TO comvalue;
+
+
+--
+-- Name: teilprojektplan; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE teilprojektplan FROM PUBLIC;
+REVOKE ALL ON TABLE teilprojektplan FROM postgres;
+GRANT ALL ON TABLE teilprojektplan TO postgres;
+GRANT ALL ON TABLE teilprojektplan TO "e-consulter";
+GRANT ALL ON TABLE teilprojektplan TO comvalue;
+
+
+--
+-- Name: teilprojektrealisierung; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE teilprojektrealisierung FROM PUBLIC;
+REVOKE ALL ON TABLE teilprojektrealisierung FROM postgres;
+GRANT ALL ON TABLE teilprojektrealisierung TO postgres;
+GRANT ALL ON TABLE teilprojektrealisierung TO "e-consulter";
+GRANT ALL ON TABLE teilprojektrealisierung TO comvalue;
+
+
+--
+-- Name: teilprojektziel; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE teilprojektziel FROM PUBLIC;
+REVOKE ALL ON TABLE teilprojektziel FROM postgres;
+GRANT ALL ON TABLE teilprojektziel TO postgres;
+GRANT ALL ON TABLE teilprojektziel TO "e-consulter";
+GRANT ALL ON TABLE teilprojektziel TO comvalue;
+
+
+--
+-- Name: translate; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE translate FROM PUBLIC;
+REVOKE ALL ON TABLE translate FROM postgres;
+GRANT ALL ON TABLE translate TO postgres;
+GRANT ALL ON TABLE translate TO "e-consulter";
+GRANT ALL ON TABLE translate TO comvalue;
+GRANT ALL ON TABLE translate TO PUBLIC;
+
+
+--
+-- Name: vaufwand; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vaufwand FROM PUBLIC;
+REVOKE ALL ON TABLE vaufwand FROM postgres;
+GRANT ALL ON TABLE vaufwand TO postgres;
+GRANT ALL ON TABLE vaufwand TO "e-consulter";
+
+
+--
+-- Name: vmilestone; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vmilestone FROM PUBLIC;
+REVOKE ALL ON TABLE vmilestone FROM postgres;
+GRANT ALL ON TABLE vmilestone TO postgres;
+GRANT ALL ON TABLE vmilestone TO "e-consulter";
+
+
+--
+-- Name: vbombe; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vbombe FROM PUBLIC;
+REVOKE ALL ON TABLE vbombe FROM postgres;
+GRANT ALL ON TABLE vbombe TO postgres;
+GRANT ALL ON TABLE vbombe TO "e-consulter";
+
+
+--
+-- Name: vbudget; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vbudget FROM PUBLIC;
+REVOKE ALL ON TABLE vbudget FROM postgres;
+GRANT ALL ON TABLE vbudget TO postgres;
+GRANT ALL ON TABLE vbudget TO "e-consulter";
+
+
+--
+-- Name: vbudgetg; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vbudgetg FROM PUBLIC;
+REVOKE ALL ON TABLE vbudgetg FROM postgres;
+GRANT ALL ON TABLE vbudgetg TO postgres;
+GRANT ALL ON TABLE vbudgetg TO "e-consulter";
+
+
+--
+-- Name: verfuegbarkeit; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE verfuegbarkeit FROM PUBLIC;
+REVOKE ALL ON TABLE verfuegbarkeit FROM postgres;
+GRANT ALL ON TABLE verfuegbarkeit TO postgres;
+GRANT ALL ON TABLE verfuegbarkeit TO "e-consulter";
+GRANT ALL ON TABLE verfuegbarkeit TO comvalue;
+
+
+--
+-- Name: vkunde; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vkunde FROM PUBLIC;
+REVOKE ALL ON TABLE vkunde FROM postgres;
+GRANT ALL ON TABLE vkunde TO postgres;
+GRANT ALL ON TABLE vkunde TO "e-consulter";
+GRANT ALL ON TABLE vkunde TO comvalue;
+
+
+--
+-- Name: vteilprojekt; Type: ACL; Schema: public; Owner: postgres
+--
+
+REVOKE ALL ON TABLE vteilprojekt FROM PUBLIC;
+REVOKE ALL ON TABLE vteilprojekt FROM postgres;
+GRANT ALL ON TABLE vteilprojekt TO postgres;
+GRANT ALL ON TABLE vteilprojekt TO "e-consulter";
+
+
+--
+-- PostgreSQL database dump complete
+--
+

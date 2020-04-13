@@ -1,0 +1,28 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ($_->{aktion} eq 'kosten')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske   => 'kostenuebersicht',
+             dlabel  => '&Uuml;bersicht',
+             menu    => 'kosten' },
+           { maske   => 'kostenerfassen',
+             dlabel  => 'Erfassen',
+             menu    => 'kosten' },
+           { maske   => 'kostenbearbeiten',
+             dlabel  => 'Bearbeiten',
+             menu    => 'kosten' },
+           @$menu_footer
+         ];
+</%perl>

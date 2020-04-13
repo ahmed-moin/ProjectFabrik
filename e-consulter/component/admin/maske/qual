@@ -1,0 +1,52 @@
+<%args>
+$dbh
+$qua_bezeichnung => undef
+$qua_rank => undef
+$qua_oberid => undef
+</%args>
+<%perl>
+
+  my $qual =
+    $dbh->selectall_arrayref( "
+        select qua_id, qua_bezeichnung
+          from qual
+         order by qua_bezeichnung" );
+</%perl>
+<h1>Qualifikationen</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Bezeichnung
+  </th>
+  <td>
+   <input type='text' name='qua_bezeichnung' size='60'>
+   <& '/setfocus', name => 'qua_bezeichnung' &>
+  </td>
+ </tr>
+
+ <tr>
+  <th>
+   Übergeordnet
+  </th>
+  <td>
+   <& '/select', name     => 'qua_oberid',
+                 values   => $qual,
+                 selected => $qua_oberid,
+                 submit   => 0 &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   bewertet
+  </th>
+  <td>
+   <input type='checkbox' name='qua_rank' checked>
+  </td>
+ </tr>
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='speichern'>
+</p>

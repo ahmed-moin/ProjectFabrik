@@ -1,0 +1,34 @@
+<%args>
+$width
+$height
+$color => '000'
+@milestone => ()
+@bomb => ()
+$alt => undef
+</%args><%perl>
+
+  if ($width > 0 && $height > 0)
+  {
+    $color = sprintf('%02x%02x%02x', @$color) if ref($color) eq 'ARRAY';
+
+    $width = int($width);
+    $height = int($height);
+
+    my $param = "x=$width&y=$height&fg=$color";
+
+    foreach (@milestone)
+    {
+      my ($x, $color) = @$_;
+      $color = sprintf('%02x%02x%02x', @$color) if ref($color) eq 'ARRAY';
+      $param .= "&m=$x&c=$color";
+    }
+
+    foreach (@bomb)
+    {
+      my ($x, $color) = @$_;
+      $color = sprintf('%02x%02x%02x', @$color) if ref($color) eq 'ARRAY';
+      $param .= "&b=$x&c=$color";
+    }
+
+</%perl><img src='/cgi-bin/zeitbar?<%$param%>'>\
+% }

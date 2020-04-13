@@ -1,0 +1,167 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+</%args>
+<%perl>
+  use Contavia::Db qw(select_hash);
+
+  my $tpr = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+      join teilprojekt
+        on tpl_pid = tpr_pid
+       and tpl_tid = tpr_tid
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan" );
+
+  my ($tpr_titel, $tpr_status, $tpl_beschreibung, $tpr_verantwortlich,
+      $tpl_start, $tpl_ende) = $dbh->selectrow_array( "
+    select tpr_titel, tpr_status, tpl_beschreibung, tpr_verantwortlich,
+           tpl_start, tpl_ende
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_tid = $tid
+       and tpl_pid = tpr_pid
+       and tpl_tid = tpr_tid
+       and tpl_ppl = $projektplan" ) if $tid;
+
+#  Changed 2003-08-29, F. Doerfler
+#
+#  my $projektleiter = $dbh->selectall_arrayref( "
+#    select ben_uid, ben_vorname, ben_nachname
+#      from benutzer
+#     where ben_projektleiter" ) if $tid;
+
+  my $projektleiter = $dbh->selectall_arrayref("
+     select ben_uid, ben_vorname, ben_nachname
+	   from benutzer, rolle
+	  where rol_uid=ben_uid AND rol_pid=$projektid") if $tid;
+
+  my $prz = $dbh->selectall_arrayref( "
+    select prz_zid, prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid <> 0" ) if $tid;
+
+  my %tpz = $dbh->select_hash( "
+    select tpz_zid, tpz_ziel
+      from teilprojektziel
+     where tpz_pid = $projektid
+       and tpz_ppl = $projektplan
+       and tpz_tid = $tid" ) if $tid;
+
+</%perl>
+<%cleanup>
+  $ARGS{tid} = undef;
+  return \%ARGS;
+</%cleanup>
+
+<h1> Teilprojekt Beschreibung </h1>
+
+<table>
+
+% if ($tpr && @$tpr) {
+
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   <& '/select', name     => 'tid',
+                 values   => [
+                   map {
+                     my ($tid, $titel) = @$_;
+                     [ $tid, "$tid $titel" ];
+                   } @$tpr
+                 ],
+                 selected => $tid &>
+  </td>
+ </tr>
+
+% } # if ($tpr && @$tpr)
+
+% if ($tid) {
+ <tr>
+  <th class='label'>
+   Titel
+  </th>
+  <td>
+   <input type='text' name='titel' value='<%$tpr_titel%>' size='50'>
+   <& '/setfocus', name => 'titel' &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Verantwortlich
+  </th>
+  <td>
+   <& '/select', name     => 'verantwortlich',
+                 values   =>
+                 [
+                   map
+                   {
+                     my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                     [ $ben_uid, "$ben_uid: $ben_vorname $ben_nachname" ];
+                   } @$projektleiter
+                 ],
+                 selected => $tpr_verantwortlich,
+                 submit   => 0 &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Start-/Endedatum
+  </th>
+  <td>
+   <& '/inputdatum', name => 'tpl_start', value => $tpl_start &>
+   <& '/inputdatum', name => 'tpl_ende',  value => $tpl_ende &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Beschreibung
+  </th>
+ </tr>
+
+ <tr>
+  <td colspan='2'>
+  <textarea name='beschreibung' rows='10' cols='60'><%$tpl_beschreibung%></textarea>
+  </td>
+ </tr>
+
+% if (@$prz) {
+ <tr>
+  <th class='label'>
+   Zielwerte
+  </th>
+ </tr>
+
+% }
+% foreach (@$prz) {
+%   my ($prz_zid, $prz_titel, $prz_einheit) = @$_;
+ <tr>
+  <td>
+   <%$prz_titel%>
+  </td>
+  <td>
+   <input type='hidden' name='tpz_zid' value='<%$prz_zid%>'>
+   <input type='text' name='tpz_ziel' size='12' value='<%$tpz{$prz_zid}%>'> <%$prz_einheit%>
+  </td>
+ </tr>
+
+% } # foreach(@$prz)
+
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+
+% } else { # if ($tid)
+</table>
+% } # if ($tid)

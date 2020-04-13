@@ -1,0 +1,23 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'personentage_gesamt',
+             dlabel   => 'Gesamt',
+             menu     => 'personentage' },
+           { maske    => 'personentage_kumuliert',
+             dlabel   => 'Kumuliert',
+             menu     => 'personentage' },
+           { maske    => 'personentage_monat',
+             dlabel   => 'Monat',
+             menu     => 'personentage' },
+           { maske    => 'personentage_tabelle',
+             dlabel   => 'Tabelle',
+             menu     => 'personentage' },
+           @$menu_footer
+         ];
+
+</%perl>

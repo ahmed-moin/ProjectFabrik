@@ -1,0 +1,44 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  return [ @$menu_head,
+           { space => 20 },
+           { maske    => 'benutzer_benutzer',
+             dlabel   => 'unbearbeitete',
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_nfrei',
+             dlabel   => 'nicht freigeschaltete',
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_blacklisted',
+             dlabel   => 'Blacklisted',
+             menu     => 'benutzer' },
+           { space    => 'space' },
+           { maske    => 'benutzer_mitarbeiter',
+             dlabel   => 'Mitarbeiter',
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_zmitarbeiter',
+             dlabel   => "zurückgestellte\nMitarbeiter",
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_kunden',
+             dlabel   => 'Kunden',
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_projektleiter',
+             dlabel   => 'Projektleiter',
+             menu     => 'benutzer' },
+           { maske    => 'benutzer_admin',
+             dlabel   => 'Administratoren',
+             menu     => 'benutzer' },
+           { space    => 'space' },
+           { maske    => 'benutzer_alle',
+             dlabel   => 'alle Benutzer',
+             menu     => 'benutzer' },
+           { space    => 'space' },
+           { maske    => 'benutzer_neu',
+             dlabel   => 'Neu',
+             menu     => 'benutzer' },
+           @$menu_footer
+         ];
+
+</%perl>

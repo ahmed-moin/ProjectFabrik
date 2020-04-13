@@ -1,0 +1,35 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  my $admins = $dbh->selectall_arrayref( <<"EOF" );
+   select ben_uid, ben_vorname, ben_nachname
+     from benutzer
+    where ben_admin
+EOF
+
+  my $admin = $dbh->selectrow_array( <<"EOF" );
+   select rol_uid
+     from rolle
+    where rol_pid = $projektid
+      and rol_admin
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Projektleiter' &>
+
+<select name='admin'>
+ <option>
+% foreach (@$admins) {
+%   my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+ <option value='<%$ben_uid%>'<%$ben_uid eq $admin ? ' selected' : ''%>>
+   <%$ben_uid%> <%$ben_vorname%> <%$ben_nachname%>
+% }
+</select>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'>
+</p>

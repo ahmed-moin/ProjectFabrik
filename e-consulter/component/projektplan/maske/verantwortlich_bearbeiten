@@ -1,0 +1,386 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+$aid => undef
+$sel_nummer => undef
+$atr_tagessatz => undef
+$loeschen => undef
+</%args>
+<%once>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+</%once>
+<%perl>
+
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojektplan, teilprojekt
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+EOF
+
+  my $apl = $dbh->selectall_arrayref( <<"EOF" ) if $tid;
+   select apl_aid, auf_name
+     from aufgabenplan, aufgabe
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid = $tid
+      and auf_pid = apl_pid
+      and auf_tid = apl_tid
+      and auf_aid = apl_aid
+EOF
+
+  my ($apl_startdatum, $apl_endedatum) = $dbh->selectrow_array( <<"EOF" ) if $tid && $aid;
+   select apl_startdatum, apl_endedatum
+     from aufgabenplan
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid = $tid
+      and apl_aid = $aid
+EOF
+
+  my ($bpl_betrag, $bpl_personentage, $bpl_sachkosten, $bpl_investition)
+         = $dbh->selectrow_array( <<"EOF" ) if $tid && $aid;
+   select sum(bpl_betrag),
+          sum(bpl_personentage),
+          sum(bpl_sachkosten),
+          sum(bpl_investition)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+      and bpl_aid = $aid
+    group by bpl_aid
+EOF
+
+  my $atr = $dbh->selectall_arrayref( <<"EOF" ) if $tid && $aid;
+   select atr_nummer, atr_uid,
+          atr_tagessatz, atr_btagessatz, atr_personentage,
+          atr_sachkosten, atr_investition,
+          atr_freigabe
+     from auftrag
+    where atr_pid = $projektid
+      and atr_tid = $tid
+      and atr_aid = $aid
+    order by atr_nummer
+EOF
+
+  my $uid = $dbh->selectcol_arrayref( <<"EOF" );
+   select rol_uid
+     from rolle
+    where rol_pid = $projektid
+      and rol_mitarbeiter
+EOF
+
+</%perl>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  $ARGS{aid} = undef;
+
+  return \%ARGS;
+
+</%cleanup>
+
+
+<h1>Verantwortlich</h1>
+
+<table>
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td>
+   <& '/select', name     => 'tid',
+                 values   => [
+                               map
+                               {
+                                 my ($tpl_tid, $tpl_titel) = @$_;
+                                 [$tpl_tid, "$tpl_tid $tpl_titel"]
+                               }
+                               @$tpl
+                             ],
+                 selected => $tid,
+                 width => 400 &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Aufgabe
+  </th>
+  <td>
+   <& '/select', name     => 'aid',
+                 values   => [
+                               map
+                               {
+                                 my ($apl_aid, $auf_name) = @$_;
+                                 [$apl_aid, "$apl_aid $auf_name"]
+                               } @$apl
+                             ],
+                 selected => $aid,
+                 width => 400 &>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Budget
+  </th>
+  <td>
+   <%formatnumber($bpl_betrag, 0, $ARGS{lang})%> <%$waehrung%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Personentage
+  </th>
+  <td>
+   <%$bpl_personentage%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Startdatum
+  </th>
+  <td>
+   <%new Contavia::Date($apl_startdatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Endedatum
+  </th>
+  <td>
+   <%new Contavia::Date($apl_endedatum)->format%>
+  </td>
+ </tr>
+</table>
+
+% if ($aid) {
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th bgcolor='#ccccff'>
+   Nr
+  </th>
+  <th bgcolor='#ccccff'>
+   Verantwortl.
+  </th>
+  <th bgcolor='#ccccff'>
+   Tagessatz<br>Mitarbeiter
+  </th>
+  <th bgcolor='#ccccff'>
+   Tagessatz<br>Kunde
+  </th>
+  <th bgcolor='#ccccff'>
+   PT
+  </th>
+  <th bgcolor='#ccccff'>
+   Sachkosten
+  </th>
+  <th bgcolor='#ccccff'>
+   Investition
+  </th>
+  <th bgcolor='#ccccff'>
+   Auftrag<br>Mitarbeiter
+  </th>
+  <th bgcolor='#ccccff'>
+   Auftrag<br>Kunde
+  </th>
+ </tr>
+
+ <%perl>
+
+  my %sum;
+
+  foreach (@$atr)
+  {
+    my ($atr_nummer, $atr_uid, $atr_tagessatz, $atr_btagessatz,
+        $atr_personentage,
+        $atr_sachkosten, $atr_investition,
+        $atr_freigabe) = @$_;
+
+    $sum{betrag}       += $atr_personentage * $atr_tagessatz;
+    $sum{bbetrag}      += $atr_personentage * $atr_btagessatz;
+    $sum{personentage} += $atr_personentage;
+    $sum{sachkosten}   += $atr_sachkosten;
+    $sum{investition}  += $atr_investition;
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+% if ($atr_nummer == $sel_nummer) {
+   <input type='hidden' name='atr_nummer' value='<%$atr_nummer%>'>
+% } elsif (!$atr_freigabe) {
+   <input type='radio' name='sel_nummer' value='<%$atr_nummer%>'>
+% }
+  </td>
+  <td>
+   <%$atr_nummer%>
+  </td>
+% if ($atr_nummer == $sel_nummer) {
+%#  Auftrag ist zum bearbeiten geöffnet
+
+  <td>
+   <& '.select_uid', uid => $uid, selected => $atr_uid &>
+  </td>
+  <td align='right'>
+   <input type='text' name='atr_tagessatz' value='<%$atr_tagessatz + 0%>' size='8'>
+  </td>
+  <td align='right'>
+   <input type='text' name='atr_btagessatz' value='<%$atr_btagessatz + 0%>' size='8'>
+  </td>
+  <td align='right'>
+   <input type='text' name='atr_personentage' value='<%$atr_personentage%>' size='4'>
+  </td>
+  <td align='right'>
+   <input type='text' name='atr_sachkosten' value='<%$atr_sachkosten%>' size='8'>
+  </td>
+  <td align='right'>
+   <input type='text' name='atr_investition' value='<%$atr_investition%>' size='8'>
+  </td>
+
+% } else {
+
+  <td>
+   <%$atr_uid%>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_tagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_btagessatz, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_sachkosten, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_investition, 0, $ARGS{lang})%></pre>
+  </td>
+
+% }
+
+  <td align='right'>
+   <pre><%formatnumber($atr_tagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($atr_btagessatz * $atr_personentage, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+% }
+% unless ($sel_nummer) {
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+  </td>
+  <td>
+   <& '.select_uid', uid => $uid &>
+  </td>
+  <td>
+   <input type='text' name='atr_tagessatz' size='8'
+          value='<%$atr_tagessatz%>'>
+  </td>
+  <td>
+   <input type='text' name='atr_btagessatz' size='8'
+          value='<%$bpl_personentage > 0 && $bpl_betrag/$bpl_personentage%>'>
+  </td>
+  <td>
+   <input type='text' name='atr_personentage' size='4'
+          value='<%$bpl_personentage - $sum{personentage}%>'>
+  </td>
+  <td>
+   <input type='text' name='atr_sachkosten' size='8'
+          value='<%$bpl_sachkosten - $sum{sachkosten}%>'>
+  </td>
+  <td>
+   <input type='text' name='atr_investition' size='8'
+          value='<%$bpl_investition - $sum{investition}%>'>
+  </td>
+ </tr>
+% }
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th colspan='5' class='label' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{investition}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{betrag}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{bbetrag}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>
+
+<p class='label'>
+% if ($loeschen) {
+ <input type='submit' name='loeschen_ok' value='wirklich löschen'>
+ <input type='submit' name='loeschen_nok' value='nicht löschen'>
+% } else {
+ <input type='submit' name='bearbeiten' value='bearbeiten'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='loeschen' value='löschen'>
+% }
+</p>
+
+<h2>Erläuterung</h2>
+
+<h3>Tagessatz Mitarbeiter</h3>
+
+<p>
+Der Tagessatz Mitarbeiter ist derjenige Tagessatz, welcher der Mitarbeiter
+erhält. Der Tagessatz Kunde ist der Satz, welcher an den Kunden weiter
+berechnet wird.
+</p>
+
+<h3>Auftrag Mitarbeiter/Kunde</h3>
+
+<p>
+Der Auftrag Mitarbeiter ist das, was der Mitarbeiter erhält, wenn er den Auftrag
+ausgeführt hat. Er berechnet sich aus "Tagessatz Mitarbeiter" * PT.
+</p>
+
+<p>
+Der Auftrag Kunde ist das, was von diesem Auftrag an den Kunden
+weiter berechnet wird. Er berechnet sich aus "Tagessatz Kunde" * PT.
+</p>
+
+% } # if ($aid)
+
+<%def .select_uid>
+<%args>
+$uid
+$selected => undef
+</%args>
+   <select name='atr_uid'>
+    <option>
+%    foreach my $uid (@$uid) {
+    <option value='<%$uid%>'<%$selected eq $uid && ' selected'%>> <%$uid%>
+%    }
+   </select>
+</%def>

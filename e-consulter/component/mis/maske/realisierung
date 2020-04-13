@@ -1,0 +1,83 @@
+<%args>
+$projektid
+$dbh
+$stand
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(select_hash);
+
+  my $projektplan = $m->comp('/get_projektplan', %ARGS);
+  $stand = new Contavia::Date($stand);
+  my $standf = $stand->qpgdate;
+
+  # lese alle Teilprojekte
+  my %tpr = select_hash( $dbh, <<"EOF" );
+    select tpr_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpr_pid = $projektid
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+       and tpl_ppl = $projektplan
+     order by tpr_tid
+EOF
+
+  my %tpe = select_hash( $dbh, <<"EOF" );
+    select tpe_tid, tpe_realisierung
+      from teilprojektrealisierung t
+     where tpe_pid = $projektid
+       and tpe_zid = 0
+       and tpe_datum = (select max(tpe_datum)
+          from teilprojektrealisierung m
+         where tpe_pid = t.tpe_pid
+           and tpe_tid = t.tpe_tid
+           and tpe_zid = t.tpe_zid
+           and tpe_datum < $standf)
+EOF
+
+  $m->comp( '/aggregiere', dbh => $dbh,
+        projektid   => $projektid,
+        projektplan => $projektplan,
+        tpr         => \%tpr,
+        werte       => [\%tpe],
+        avg         => 1 );
+
+</%perl>
+
+<& '/masketitel', titel => '<i18n>Status - Realisierungsgrad</i18n>' &>
+
+<table>
+ <tr>
+<& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<table>
+% foreach my $tid (keys %tpr) {
+%   my $titel = $tpr{$tid};
+%   next unless $titel;
+%   my $realisierung = $tpe{$tid} || 0;
+ <tr>
+  <td> <%$titel%> </td>
+  <td>
+   <%perl>
+    $m->comp('/bar', width => int(2 * $realisierung),
+                     height => 15,
+                     color => [0, 0, 128],
+                     alt => "$realisierung%") if $realisierung > 0;
+    $m->comp('/bar', width => int(2 * (100 - $realisierung)), height => 15,
+                     color => [224, 224, 224],
+                     alt => "$realisierung%") if $realisierung < 100;
+   </%perl>
+  </td>
+ </tr>
+% }
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/scale', width => 200, end => 100, unit => '%', step_n => 25, arrow => 0 &>
+  </td>
+ </tr>
+</table>

@@ -1,0 +1,36 @@
+<%args>
+$uid
+$dbh
+$start => undef
+$weiter => undef
+</%args>
+<%perl>
+
+  # ermittele die offenen Fragen und trage die gegebenen Antworten ein
+  my $fid = $dbh->selectcol_arrayref( <<"EOF" );
+   select ant_fid
+     from assantwort
+    where ant_uid = '$uid'
+      and ant_antwortzeit is null
+EOF
+
+  my $sth = $dbh->prepare( <<"EOF" );
+   update assantwort
+      set ant_antwortzeit = CURRENT_TIMESTAMP,
+          ant_antwort = ?
+    where ant_uid = '$uid'
+      and ant_fid = ?
+EOF
+
+  foreach (@$fid)
+  {
+    my $antwort = $ARGS{"frage$_"};
+    $sth->execute($antwort, $_) if defined ($antwort);
+    $ARGS{antworten} = 1;
+  }
+
+  $dbh->commit;
+
+  return \%ARGS;
+
+</%perl>

@@ -1,0 +1,154 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$bezeichnung => 'Angebot'
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+  use Contavia::Date;
+
+  my ($ppl_angebotdatum, $ppl_angebottext, $ppl_angebotbis, $ppl_ablehnung)
+     = $dbh->selectrow_array( <<"EOF" );
+    select ppl_angebotdatum, ppl_angebottext, ppl_angebotbis, ppl_ablehnung
+      from projektplan
+     where ppl_pid    = $projektid
+       and ppl_nummer = $projektplan
+EOF
+
+  my $bud = $dbh->selectall_arrayref( <<"EOF" );
+    select bud_tid, tpr_titel, bud_betrag, bud_personentage,
+           bud_sachkosten, bud_investition
+      from budget, teilprojekt
+     where bud_pid = $projektid
+       and bud_ppl = $projektplan
+       and tpr_pid = bud_pid
+       and tpr_tid = bud_tid
+     order by bud_tid
+EOF
+
+  my %sum;
+  foreach (@$bud)
+  {
+    my ($bud_tid, $tpr_titel, $bud_betrag, $bud_personentage,
+        $bud_sachkosten, $bud_investition) = @$_;
+    $sum{betrag}       += $bud_betrag;
+    $sum{personentage} += $bud_personentage;
+    $sum{sachkosten}   += $bud_sachkosten;
+    $sum{investition}  += $bud_investition;
+  }
+
+</%perl>
+
+<table width='100%'>
+ <tr>
+  <td width='100%'></td>
+  <td>
+   <%$bezeichnung%>&nbsp;nummer
+  </td>
+  <td align='right'>
+   <input type='hidden' name='angebotnummer' value='<%$projektplan%>'>
+   <%"$projektid/$projektplan"%>
+  </td>
+ </tr>
+
+ <tr>
+  <td width='100%'></td>
+  <td>
+   Datum
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_angebotdatum)->format%>
+  </td>
+ </tr>
+
+ <tr>
+  <td width='100%'></td>
+  <td>
+   g&uuml;ltig&nbsp;bis
+  </td>
+  <td align='right'>
+   <%new Contavia::Date($ppl_angebotbis)->format%>
+  </td>
+ </tr>
+</table>
+
+<p>
+%  $ppl_angebottext =~ s/([^\n]+)\n\n/<p>$1<\/p>/g;
+%  $ppl_angebottext =~ s/\n/<br>/g;
+<%$ppl_angebottext%>
+</p>
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   Betrag <%$waehrung%>
+  </th>
+  <th bgcolor='#ccccff'>
+   Personentage
+  </th>
+% if ($sum{sachkosten}) {
+  <th bgcolor='#ccccff'>
+   Sachkosten <%$waehrung%>
+  </th>
+% }
+% if ($sum{investition}) {
+  <th bgcolor='#ccccff'>
+   Investitionen <%$waehrung%>
+  </th>
+% }
+ </tr>
+
+% foreach (@$bud) {
+%   my ($bud_tid, $tpr_titel, $bud_betrag, $bud_personentage,
+%       $bud_sachkosten, $bud_investition) = @$_;
+ <tr>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%$bud_personentage%>
+  </td>
+% if ($sum{sachkosten}) {
+  <td align='right'>
+   <%formatnumber($bud_sachkosten, 0, $ARGS{lang})%>
+  </td>
+% }
+% if ($sum{investition}) {
+  <td align='right'>
+   <%formatnumber($bud_investition, 0, $ARGS{lang})%>
+  </td>
+% }
+ </tr>
+
+% }
+ <tr>
+  <th class='label' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <strong><%formatnumber($sum{betrag}, 0, $ARGS{lang})%></strong>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <strong><%$sum{personentage}%></strong>
+  </td>
+% if ($sum{sachkosten}) {
+  <td align='right' bgcolor='#cccccc'>
+   <strong><%formatnumber($sum{sachkosten}, 0, $ARGS{lang})%></strong>
+  </td>
+% }
+% if ($sum{investition}) {
+  <td align='right' bgcolor='#cccccc'>
+   <strong><%formatnumber($sum{investition}, 0, $ARGS{lang})%></strong>
+  </td>
+% }
+ </tr>
+</table>

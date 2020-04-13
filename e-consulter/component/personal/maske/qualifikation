@@ -1,0 +1,143 @@
+<%args>
+@menu
+$uid
+$dbh
+</%args>
+<%def .baum>
+
+ <%args>
+  $uid
+  $dbh
+  $oberid => undef
+  $oberbezeichnung => undef
+  $level => 0
+ </%args>
+
+ <%perl>
+
+  # lese eingegebene Qualifikationen dieser Ebene
+
+  my $sql = "
+   select qra_qualid, qra_rank, qra_bemerkung,
+          qua_bezeichnung, qua_rank
+     from qualrank, qual
+    where qra_benuid = '$uid'
+      and qra_qualid = qua_id";
+  $sql .= defined ($oberid) ? " and qua_oberid = $oberid"
+                            : " and qua_oberid is null";
+  $sql .= ' order by qra_rank desc';
+  my $qra = $dbh->selectall_arrayref($sql);
+
+  # lese weitere Qualifikationen, die der Benutzer nicht ausgewählt hat
+
+  $sql = "select qua_id, qua_bezeichnung
+     from qual
+    where not exists (
+      select 1
+        from qualrank
+       where qra_benuid = '$uid'
+         and qra_qualid = qua_id)";
+  $sql .= defined ($oberid) ? " and qua_oberid = $oberid"
+                            : " and qua_oberid is null";
+  my $qua = $dbh->selectall_arrayref($sql);
+
+  # Wir geben jetzt zeilenweise die Qualifikationen mit Ranking aus, die der
+  # Benutzer bereits eingegeben hat
+
+  foreach (@$qra)
+  {
+    my ($qra_qualid, $qra_rank, $qra_bemerkung,
+        $qua_bezeichnung, $qua_rank) = @$_;
+    </%perl>
+
+    <tr>
+     <td>
+      <input type='radio' name='auswahl' value='<%$qra_qualid%>'>
+      <input type='hidden' name='qra_qualid' value='<%$qra_qualid%>'>
+     </td>
+
+     <td>
+      <& '/bar', width => $level * 15, height => 5,
+         color => [255, 255, 255] &><img src='/images/20x20ar.gif' alt="->"><%$qua_bezeichnung%>
+     </td>
+%
+%    # hier kommt das Ranking (wenn die Kategirie gerankt werden kann)
+%    if ($qua_rank)
+%    {
+%
+       <td>
+        <img src="/images/minus.gif" alt="-">
+       </td>
+%
+%        for (my $r = 0; $r <= 5; ++$r)
+%        {
+%
+       <td>
+         <input type='radio'
+                name='qra_rank_<%$qra_qualid%>'
+                value='<%$r%>'<%(defined ($qra_rank) && $r == $qra_rank) ? ' checked' : ''%>>
+       </td>
+%
+%        } # for (my $r)
+%
+     <td>
+      <img src="/images/plus.gif" alt="+">
+     </td>
+     <td>
+      <input type='text' name='qra_bemerkung_<%$qra_qualid%>'
+             value='<%$qra_bemerkung%>'>
+     </td>
+%
+%    } # if ($qua_rank)
+%
+    </tr>
+
+%
+%   # das gleiche machen wir rekursiv für untergeordnete Kategorien
+%
+    <& '.baum', uid => $uid,
+                dbh => $dbh,
+                oberid => $qra_qualid,
+                oberbezeichnung => $qua_bezeichnung,
+                level => $level + 1 &>
+    <%perl>
+
+  } # foreach (@$qra)
+
+  if (@$qua)
+  {
+ </%perl>
+ <tr>
+  <td> </td>
+  <td>
+   <& '/bar', width => $level * 15, height => 5,
+      color => [255, 255, 255] &><img src="/images/20x20ar.gif" alt="->"><select
+      name='qra_qualid_new'
+      size='1'
+      style='width:180px'
+      onChange='document.forms[0].submit()'>
+    <option value='0'>(<i18n>weitere</i18n> <%$oberbezeichnung || '<i18n>Hauptkategorie</i18n>'%>)
+%   foreach (@$qua) {
+%     my ($qua_id, $qua_bezeichnung) = @$_;
+    <option value='<%$qua_id%>'><%$qua_bezeichnung%>
+%   }
+   </select>
+  </td>
+ </tr>
+ <%perl>
+  }
+ </%perl>
+
+</%def>
+
+  <& '/masketitel', titel=>'<i18n>Qualifikation</i18n>',
+                          maske => $ARGS{folgemaske},
+                          menu => \@menu &>
+
+  <table>
+  <& '.baum', uid => $uid,
+              dbh => $dbh &>
+  </table>
+
+  <input type='submit' name='loeschen' value='<i18n>Auswahl l&ouml;schen</i18n>'>
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

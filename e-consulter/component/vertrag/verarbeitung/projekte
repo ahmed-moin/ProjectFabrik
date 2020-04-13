@@ -1,0 +1,13 @@
+<%args>
+$oeffnen => undef
+$projektid => undef
+</%args>
+<%perl>
+
+  if ($oeffnen && $projektid)
+  {
+    $ARGS{folgemaske} = 'zusammenfassung';
+    return \%ARGS;
+  }
+
+</%perl>

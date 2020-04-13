@@ -1,0 +1,43 @@
+<%args>
+$projektid
+</%args>
+<%perl>
+  my $version = [
+    [ 1 => 'Version 1' ],
+    [ 2 => 'Version 2' ],
+    [ 3 => 'Version 3' ],
+  ];
+</%perl>
+
+<table width='100%'>
+ <tr>
+  <td>
+   <h1>Sitzungsprotokoll</h1>
+  </td>
+  <td align='right'>
+   <& '/select', name => 'version',
+                 values => $version,
+                 selected => $ARGS{version} &>
+  </td>
+ </tr>
+</table>
+
+<h2>Teilnehmer</h2>
+
+   Walter Work <br>
+   Manfred Manager <br>
+
+<h2>Tagesordnung</h2>
+<ul>
+ <li>Punkt 1</li>
+ <li>Punkt 2
+  <ul>
+   <li>blah</li>
+  </ul>
+ </li>
+</ul>
+
+<h2>Bericht</h2>
+
+<p>blah blah blah</p>
+<p>uhu uhu</p>

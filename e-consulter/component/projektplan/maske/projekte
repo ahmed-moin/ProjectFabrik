@@ -1,0 +1,76 @@
+<%args>
+$dbh
+$uid
+@menu
+$projektid => undef
+$tid => undef
+$aid => undef
+</%args>
+<%once>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my ($sth_prj, $sth_tpr, $sth_auf);
+
+</%once>
+<%perl>
+
+  my $prj = $dbh->selectall_arrayref ( <<"EOF" );
+   select prj_id, prj_titel, prj_waehrung, prj_status
+     from projekt, rolle
+    where prj_id = rol_pid
+      and rol_uid = '$uid'
+      and rol_admin
+     order by prj_id
+EOF
+
+</%perl>
+
+<h1>Projekte</h1>
+
+ <table border='1' width='100%'>
+  <tr>
+   <th bgcolor='#ccccff'>
+   </th>
+   <th bgcolor='#ccccff'>
+    PID
+   </th>
+   <th bgcolor='#ccccff'>
+    Projekt
+   </th>
+   <th bgcolor='#ccccff'>
+    W&auml;hrung
+   </th>
+   <th bgcolor='#ccccff'>
+    Status
+   </th>
+  </tr>
+
+% foreach (@$prj) {
+%   my ($prj_id, $prj_titel, $prj_waehrung, $prj_status) = @$_;
+  <tr>
+   <td>
+    <input type='radio' name='projekt' value='<%$prj_id%>'<%$projektid == $prj_id ? ' checked' : ''%>>
+   </td>
+   <td align='right'>
+    <%$prj_id%>
+   </td>
+   <td>
+    <%$prj_titel%>
+   </td>
+   <td>
+    <%$prj_waehrung%>
+   </td>
+   <td>
+    <%$prj_status{$prj_status}%>
+   </td>
+  </tr>
+
+% }
+ </table>
+
+ <p class='button'>
+  <input type='submit' name='oeffnen' value='&Ouml;ffnen' style='width:3cm'>
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

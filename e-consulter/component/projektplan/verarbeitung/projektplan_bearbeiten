@@ -1,0 +1,31 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$ppl_text => undef
+$prj_titel => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    $dbh->update( 'projekt',
+      { prj_id => $projektid },
+      { prj_titel => $dbh->quote($prj_titel) } );
+
+    $dbh->update( 'projektplan',
+      { ppl_pid     => $projektid,
+        ppl_nummer  => $projektplan },
+      { ppl_text    => $dbh->quote($ppl_text) } );
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'projektplan';
+  }
+
+  return \%ARGS;
+
+</%perl>

@@ -1,0 +1,37 @@
+<%args>
+@menu
+$dbh
+$projektid
+$prj_status => undef
+</%args>
+<%perl>
+
+  my $prj_titel = $dbh->selectrow_array( <<"EOF" ) if $projektid > 0;
+    select prj_titel
+      from projekt
+     where prj_id = $projektid
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => '<i18n>Projekttitel</i18n>',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <input type='text'
+        name='prj_titel'
+        size='40'
+        maxlength='80'
+        value='<%$prj_titel%>'>
+
+% unless ($prj_status) {
+  <p class='button'>
+   <input type='submit' name='weiter' value='<i18n>Weiter</i18n>'>
+  </p>
+% }
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>
+
+ <script language="JavaScript" type="text/javascript">
+    document.forms[0].prj_titel.focus()
+ </script>

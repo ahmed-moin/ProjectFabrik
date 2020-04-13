@@ -1,0 +1,165 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$waehrung
+</%args>
+<%perl>
+
+  use Contavia qw(formatnumber);
+
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpr_pid = $projektid
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+      and tpl_ppl = $projektplan
+EOF
+
+  my %bud = $dbh->select_hash( <<"EOF" );
+   select bud_tid, sum(bud_investition)
+     from budget, projektplan
+    where bud_pid    = $projektid
+      and ppl_pid    = bud_pid
+      and ppl_nummer = bud_ppl
+      and ppl_auftrag is not null
+    group by bud_tid
+EOF
+
+  my %bpl = $dbh->select_hash( <<"EOF" );
+   select bpl_tid, sum(bpl_investition)
+     from budgetplan, projektplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and ppl_pid = bpl_pid
+      and ppl_nummer = bpl_ppl
+    group by bpl_tid
+EOF
+
+  my %ang = $dbh->select_hash( <<"EOF" );
+   select bud_tid, sum(bud_investition)
+     from budget, projektplan
+    where bud_pid    = $projektid
+      and ppl_pid    = bud_pid
+      and ppl_nummer = bud_ppl
+      and ppl_auftrag is null
+      and ppl_ablehnung is null
+    group by bud_tid
+EOF
+
+</%perl>
+<%cleanup>
+$ARGS{tid} = undef;
+return \%ARGS;
+</%cleanup>
+
+<h1>Budgetübersicht - Investition</h1>
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   beauftragt
+  </th>
+  <th bgcolor='#ccccff'>
+   geplant
+  </th>
+  <th bgcolor='#ccccff'>
+   verfügbar
+  </th>
+  <th bgcolor='#ccccff'>
+   offene Angebote
+  </th>
+ </tr>
+
+ <%perl>
+  my %sum;
+
+  foreach (@$tpr)
+  {
+    my ($tpl_tid, $tpr_titel) = @$_;
+
+    $sum{beauftragt} += $bud{$tpl_tid};
+    $sum{geplant}    += $bpl{$tpl_tid};
+    $sum{angebot}    += $ang{$tpl_tid};
+
+ </%perl>
+ <tr>
+  <td bgcolor='#cccccc'>
+   <input type='radio' name='tid'
+          value='<%$tpl_tid%>'<%$tpl_tid == $tid && ' checked'%>>
+  </td>
+  <td>
+   <%$tpl_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bud{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bpl{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($bud{$tpl_tid} - $bpl{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($ang{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+% }
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <th class='summe' colspan='2' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{beauftragt}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{geplant}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{beauftragt} - $sum{geplant}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{angebot}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>
+
+<h2>Erläuterungen</h2>
+
+<h3>Beauftragt</h3>
+
+<p>
+Summe aller vom Kunden beauftragter Angebote des Projektes unabhängig vom Projektplan.
+</p>
+
+<h3>geplant</h3>
+
+<p>
+Summe des aktuellen Budgetplanes. Dieser ist Projektplanspezifisch.
+</p>
+
+<h3>verfügbar</h3>
+
+<p>
+Die Differenz der beiden. Das verfügbare Budget ist das beauftragte Budget, welches noch nicht auf Aufgaben und Zeiträume verteilt wurde. Dieses muß unter "Budget/Budgetplan bearbeiten" geplant werden. Ist der Verfügbare Betrag negativ, wurde mehr geplant als beauftragt. In dem Fall sollte ein Kundenangebot erstellt werden, so daß der Kunde die Möglichkeit erhält, das benötigte Budget zu genehmigen.
+</p>
+
+<h3>offene Angebote</h3>
+
+<p>
+Die Summe aller Angebote, die vom Projektleiter freigegeben sind, aber vom Kunden weder angenommen noch abgelehnt wurden. Gibt der Kunde dem Angebot statt, wird das offene Angebot zum beauftragten Budget.
+</p>

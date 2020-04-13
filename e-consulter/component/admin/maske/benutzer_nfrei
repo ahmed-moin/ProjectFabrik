@@ -1,0 +1,6 @@
+<%args>
+</%args>
+<span style="float:right"><a href="/contacts.csv?cond=nfrei&sessid=<% $ARGS{sessid} %>">download</a></span>
+<h1>nicht freigeschaltete Benutzer</h1>
+<& 'benutzer', cond => 'ben_password is null',
+               %ARGS &>

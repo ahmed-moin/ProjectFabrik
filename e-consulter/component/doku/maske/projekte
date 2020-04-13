@@ -1,0 +1,63 @@
+<%args>
+$dbh
+$uid
+@menu
+$projektid => undef
+</%args>
+<%once>
+
+  my %prj_status = %{$m->comp('/prj_status')};
+
+  my ($sth_prj, $sth_tpr, $sth_auf);
+
+</%once>
+<%perl>
+
+  my $prj = $dbh->selectall_arrayref ( <<"EOF" );
+   select prj_id, prj_titel, prj_status
+     from projekt, rolle
+    where prj_status > 3
+      and prj_id = rol_pid
+      and rol_uid = '$uid'
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projekt ausw&auml;hlen',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+ <table>
+  <tr>
+   <th>
+   </th>
+   <th>
+    Projekt
+   </th>
+   <th>
+    Status
+   </th>
+  </tr>
+
+% foreach (@$prj) {
+%   my ($prj_id, $prj_titel, $prj_status) = @$_;
+  <tr>
+   <td>
+    <input type='radio' name='projekt' value='<%$prj_id%>'>
+   </td>
+   <td>
+    <%$prj_titel%>
+   </td>
+   <td>
+    <%$prj_status{$prj_status}%>
+   </td>
+  </tr>
+
+% }
+ </table>
+
+ <p class='button'>
+  <input type='submit' name='oeffnen' value='&Ouml;ffnen' style='width:3cm'>
+ </p>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

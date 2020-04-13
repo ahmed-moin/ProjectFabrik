@@ -1,0 +1,101 @@
+<%args>
+@menu
+$uid
+$dbh
+</%args>
+<%once>
+  my $branchen;
+</%once>
+<%perl>
+
+  my ($frm_id, $frm_firma, $frm_strasse, $frm_land, $frm_plz, $frm_ort,
+      $frm_telefon, $frm_telefax, $frm_ustid, $frm_homepage, $frm_braid) =
+        $dbh->selectrow_array( <<"EOF" );
+   select frm_id, frm_firma, frm_strasse, frm_land, frm_plz, frm_ort,
+          frm_telefon, frm_telefax, frm_ustid, frm_homepage, frm_braid
+     from benutzer, firma
+    where ben_uid = '$uid'
+      and (ben_frmid = frm_id or frm_id is null)
+EOF
+
+  $branchen = $dbh->selectall_arrayref( <<"EOF" ) unless $branchen;
+    select bra_id, bra_bezeichnung
+    from branche
+    order by bra_bezeichnung
+EOF
+
+
+  $frm_telefon = '+49 (0)' unless $frm_telefon;
+  $frm_telefax = '+49 (0)' unless $frm_telefax;
+  $frm_homepage = 'http://' unless $frm_homepage;
+  $frm_land =~ s/ +$//;
+  $frm_braid = 999 unless $frm_braid;
+
+</%perl>
+
+ <& '/masketitel', titel => 'Firmenstammdaten',
+                   maske => $ARGS{folgemaske},
+                   menu  => \@menu &>
+
+  <input type='hidden' name='frm_id' value='<%$frm_id%>'>
+
+  <p class='label'><i18n>Firma</i18n></p>
+  <input type='text' name='frm_firma' size='40' maxlength='80'
+         value='<%$frm_firma%>'><br>
+
+  <p class='label'><i18n>Stra&szlig;e</i18n></p>
+  <input type='text' name='frm_strasse' size='40' maxlength='80'
+         value='<%$frm_strasse%>'><br>
+
+  <table>
+   <tr>
+    <td>
+     <p class='label'><i18n>Land</i18n></p>
+     <input type='text' name='frm_land' size='3' maxlength='3'
+            value='<%$frm_land%>'>
+    </td>
+    <td>
+     <p class='label'><i18n>PLZ</i18n></p>
+     <input type='text' name='frm_plz' size='6' maxlength='6'
+            value='<% $frm_plz %>'>
+    </td>
+    <td>
+     <p class='label'><i18n>Ort</i18n></p>
+     <input type='text' name='frm_ort' size='20' maxlength='30'
+            value='<% $frm_ort %>'>
+    </td>
+   </tr>
+  </table>
+
+  <table>
+   <tr>
+    <td>
+     <p class='label'><i18n>Telefon</i18n></p>
+     <input type='text' name='frm_telefon' size='15' maxlength='40'
+            value='<% $frm_telefon %>'><br>
+    </td>
+    <td>
+     <p class='label'><i18n>Telefax</i18n></p>
+     <input type='text' name='frm_telefax' size='15' maxlength='40'
+            value='<% $frm_telefax %>'><br>
+    </td>
+   </tr>
+  </table>
+
+  <p class='label'><i18n>Ust-Id</i18n></p>
+  <input type='text' name='frm_ustid' size='30' maxlength='80'
+         value='<% $frm_ustid %>'><br>
+
+  <p class='label'><i18n>Branche</i18n></p>
+  <select name='frm_braid'>
+%   foreach (@$branchen) {
+%     my ($bra_id, $bra_bezeichnung) = @$_;
+      <option value='<%$bra_id%>'<%$bra_id == $frm_braid ? ' selected' : ''%>><%$bra_bezeichnung%>
+%   }
+  </select>
+
+  <p class='label'><i18n>Homepage</i18n></p>
+  <input type='text' name='frm_homepage' size='40' maxlength='80'
+         value='<% $frm_homepage %>'><br>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

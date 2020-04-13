@@ -1,0 +1,13 @@
+<%args>
+@menu => undef
+</%args>
+  <& '/masketitel', titel => '<i18n>Fragebogen</i18n>',
+                    menu  => \@menu,
+                    maske => $ARGS{folgemaske} &>
+
+  <p class='button'>
+   <input type='submit' name='start' value='<i18n>jetzt Starten</i18n>'>
+  </p>
+
+  <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>
+

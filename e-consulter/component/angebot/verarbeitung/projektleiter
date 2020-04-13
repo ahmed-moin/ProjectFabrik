@@ -1,0 +1,28 @@
+<%args>
+$dbh
+$projektid
+$speichern => undef
+$admin => undef
+</%args>
+<%perl>
+
+  use Contavia::Db qw(update replace quote);
+
+  if ($speichern)
+  {
+    update($dbh, 'rolle',
+      { rol_pid         => $projektid },
+      { rol_admin       => quote('f') } );
+
+    replace($dbh, 'rolle',
+      { rol_uid         => quote($admin),
+        rol_pid         => $projektid },
+      { rol_admin       => quote('t') },
+      { rol_rolid       => 0,
+        rol_kunde       => quote('f'),
+        rol_mitarbeiter => quote('f') } ) if $admin;
+
+    $dbh->commit;
+  }
+
+</%perl>

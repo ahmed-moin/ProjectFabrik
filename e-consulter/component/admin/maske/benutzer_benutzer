@@ -1,0 +1,5 @@
+<%args>
+</%args>
+<h1>unbearbeitete Benutzer</h1>
+<& 'benutzer', cond => 'ben_status = 0 and not ben_kunde and not ben_projektleiter and not ben_admin and ben_password is not null',
+               %ARGS &>

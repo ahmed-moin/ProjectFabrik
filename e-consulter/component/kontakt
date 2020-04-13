@@ -1,0 +1,20 @@
+<%args>
+$sessid
+$dbh => undef
+$uid
+$vorname => undef
+$nachname => undef
+</%args>
+<%perl>
+
+  unless ($vorname || $nachname)
+  {
+    ($vorname, $nachname) = $dbh->selectrow_arrayref( "
+      select ben_vorname, ben_nachname
+        from benutzer
+       where ben_uid = '$uid'" );
+  }
+
+</%perl>
+<a href='/person/<%$sessid%>/<%$uid%>/kontakt.hms'
+   target=_blank><%$uid%>: <%$vorname%> <%$nachname%></a>

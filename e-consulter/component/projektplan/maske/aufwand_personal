@@ -1,0 +1,158 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+</%args>
+<%init>
+
+  use Contavia qw(formatnumber formatpt);
+
+  my $tpl = $dbh->selectall_arrayref( "
+    select tpl_tid, tpr_titel
+      from teilprojektplan
+       join teilprojekt
+         on tpl_pid = tpr_pid
+        and tpl_tid = tpr_tid
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan" );
+
+  my $tae = $dbh->selectall_arrayref( "
+    select atr_aid, atr_uid, ben_vorname, ben_nachname, auf_name,
+           sum(tae_stunden) / 8,
+           sum(tae_stunden / 8 * atr_tagessatz),
+           sum(tae_stunden / 8 * atr_btagessatz),
+           sum(atr_personentage),
+           sum(atr_personentage * atr_btagessatz)
+      from taetigkeit
+       join auftrag
+         on tae_auftrag = atr_nummer
+       join benutzer
+         on ben_uid = atr_uid
+       join aufgabe
+         on atr_pid = auf_pid
+        and atr_tid = auf_tid
+        and atr_aid = auf_aid
+     where atr_pid = $projektid
+       and atr_tid = $tid
+       and atr_freigabe is not null
+     group by atr_aid, atr_uid, ben_vorname, ben_nachname, auf_name
+     order by atr_aid" ) if $tid;
+
+  my $aid;
+
+</%init>
+<%cleanup>
+
+  $ARGS{tid} = undef;
+  return \%ARGS;
+
+</%cleanup>
+
+<h1>Aufwandsübersicht - Personal</h1>
+
+Teilprojekt <& '/select', name     => 'tid',
+                          values   => $tpl,
+                          showkey  => 1,
+                          selected => $tid &>
+
+% if ($tid) {
+<table border='1' width='100%'>
+ <tr>
+  <th rowspan='2' bgcolor='#ccccff'>
+   Mitarbeiter
+  </th>
+  <th colspan='2' bgcolor='#ccccff'>
+   Personentage
+  </th>
+  <th colspan='3' bgcolor='#ccccff'>
+   Betrag
+  </th>
+ </tr>
+
+ <tr>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Ist
+  </th>
+  <th bgcolor='#ccccff'>
+   Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   Ist intern
+  </th>
+  <th bgcolor='#ccccff'>
+   Ist extern
+  </th>
+ </tr>
+
+ <%perl>
+   my %sum;
+   foreach (@$tae)
+   {
+     my ($atr_aid, $atr_uid, $ben_vorname, $ben_nachname, $auf_name, $pt, $betrag, $bbetrag,
+         $atr_personentage, $atr_bbetrag) = @$_;
+     my $ben = $ben_vorname || $ben_nachname ? "$ben_vorname $ben_nachname" : $atr_uid;
+
+     $sum{pt}               += $pt;
+     $sum{betrag}           += $betrag;
+     $sum{bbetrag}          += $bbetrag;
+     $sum{atr_personentage} += $atr_personentage;
+     $sum{atr_bbetrag}      += $atr_bbetrag;
+
+ </%perl>
+ 
+%    if ($atr_aid != $aid) {
+ <tr>
+  <td colspan='6' bgcolor='#cccccc'>
+   <b>Aufgabe:</b> <%$atr_aid%> <i><%$auf_name%></i>
+  </td>
+ </tr>
+%    }
+ <tr>
+  <td>
+   <%$ben%>
+  </td>
+  <td align='right'>
+   <%formatpt($atr_personentage)%>
+  </td>
+  <td align='right'>
+   <%formatpt($pt)%>
+  </td>
+  <td align='right'>
+   <%formatnumber($atr_bbetrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bbetrag, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <th class='label' bgcolor='#ccccff'>
+   Summe
+  </th>
+  <td align='right' bgcolor='#ccccff'>
+   <%formatpt($sum{atr_personentage})%>
+  </td>
+  <td align='right' bgcolor='#ccccff'>
+   <%formatpt($sum{pt})%>
+  </td>
+  <td align='right' bgcolor='#ccccff'>
+   <%formatnumber($sum{atr_betrag}, 0, $ARGS{lang})%>
+  </td>
+  <td align='right' bgcolor='#ccccff'>
+   <%formatnumber($sum{betrag}, 0, $ARGS{lang})%>
+  </td>
+  <td align='right' bgcolor='#ccccff'>
+   <%formatnumber($sum{bbetrag}, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+</table>
+% }

@@ -1,0 +1,29 @@
+<%args>
+$menu_head
+$menu_footer
+</%args>
+<%perl>
+  foreach (@$menu_head)
+  {
+    if ($_->{aktion} eq 'angebot')
+    {
+      $_->{selected} = 1;
+      last;
+    }
+  }
+
+  return [ @$menu_head,
+           { space => 20 },
+           { maske  => 'angebot',
+             dlabel  => 'angebot',
+             menu    => 'angebot' },
+           { maske  => 'angebot_annehmen',
+             dlabel  => 'annehmen',
+             menu    => 'angebot' },
+           { maske  => 'angebot_ablehnen',
+             dlabel  => 'ablehnen',
+             menu    => 'angebot' },
+           @$menu_footer
+         ];
+
+</%perl>

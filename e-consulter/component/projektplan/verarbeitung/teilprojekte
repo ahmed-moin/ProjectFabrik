@@ -1,0 +1,132 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$ppl => undef
+$tpr => undef
+$sel_tid => undef
+$bearbeiten => undef
+$neu => undef
+$loeschen_ok => undef
+$zuordnen => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(insert quote);
+
+  if ($bearbeiten)
+  {
+    die "<fehler>kein Teilprojekt ausgew&auml;hlt</fehler>" unless $sel_tid;
+
+    $ARGS{folgemaske} = 'teilprojekt_beschreibung';
+    $ARGS{tid} = $sel_tid;
+    $ARGS{aid} = undef;
+  }
+  elsif ($neu)
+  {
+    my $tid = $dbh->selectrow_array( <<"EOF" ) || 1;
+      select max(tpr_tid) + 1
+        from teilprojekt
+       where tpr_pid = $projektid
+EOF
+
+    $ARGS{folgemaske} = 'teilprojekt_beschreibung';
+    $ARGS{tid} = $tid;
+    $ARGS{aid} = undef;
+  }
+  elsif ($loeschen_ok)
+  {
+    my $tid = $sel_tid if ($sel_tid);
+    die "<fehler>kein Teilprojekt ausgew&auml;hlt</fehler>" unless $tid;
+
+    # prüfe auf vorhandensein von Auftägen an Mitarbeiter
+    my $atr = $dbh->selectrow_array( <<"EOF" );
+     select count(*)
+       from auftrag
+      where atr_pid = $projektid
+        and atr_tid = $tid
+EOF
+
+    die "<fehler>das Teilprojekt enth&auml;lt Auftr&auml;ge</fehler>" if $atr;
+
+    # entferne Aufgaben aus dem Projektplan
+    $dbh->do( <<"EOF" );
+     delete from aufgabenplan
+       where apl_pid     = $projektid
+         and apl_ppl     = $projektplan
+         and apl_tid     = $tid
+EOF
+
+    # entferne Budget aus dem Projektplan
+    $dbh->do( <<"EOF" );
+     delete from budgetplan
+       where bpl_pid     = $projektid
+         and bpl_ppl     = $projektplan
+         and bpl_tid     = $tid
+EOF
+
+    # lösche Aufgaben sofern sie nicht in einem anderen Projektplan benötigt werden
+    $dbh->do( <<"EOF" );
+      delete from aufgabe
+       where auf_pid = $projektid
+         and auf_tid = $tid
+         and not exists (
+          select 1
+            from aufgabenplan
+           where apl_pid = auf_pid
+             and apl_tid = auf_tid
+             and apl_aid = auf_aid)
+         and not exists (
+          select 1
+            from budgetplan
+           where bpl_pid = auf_pid
+             and bpl_tid = auf_tid
+             and bpl_aid = auf_aid)
+EOF
+
+    $dbh->do( <<"EOF" );
+     delete from teilprojektplan
+      where tpl_pid     = $projektid
+        and tpl_ppl     = $projektplan
+        and tpl_tid     = $tid
+EOF
+
+    # Wenn das der letzte Teilprojektplan war, dann können wir
+    # auch das Teilprojekt löschen
+    $dbh->do( <<"EOF" );
+     delete from teilprojekt
+      where tpr_pid     = $projektid
+        and tpr_tid     = $tid
+        and not exists (
+         select 1
+           from teilprojektplan
+          where tpl_pid = tpr_pid
+            and tpl_tid = tpr_tid)
+EOF
+
+    $ARGS{tid} = undef;
+    $ARGS{aid} = undef;
+  }
+  elsif ($zuordnen)
+  {
+    die "<fehler>kein Teilprojekt ausgew&auml;hlt</fehler>" unless $tpr;
+
+    insert ($dbh, 'teilprojektplan',
+      { tpl_pid          => $projektid,
+        tpl_ppl          => $projektplan,
+        tpl_tid          => $tpr,
+        tpl_beschreibung => quote('') } );
+
+  }
+  elsif ($sel_tid && $sel_tid != $ARGS{tid})
+  {
+    $ARGS{tid} = $sel_tid;
+    $ARGS{aid} = undef;
+  }
+
+  $dbh->commit;
+
+  return \%ARGS;
+
+</%perl>

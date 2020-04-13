@@ -1,0 +1,20 @@
+<%args>
+@data
+@titles => ()
+</%args>
+<table border='1'>
+% if (@titles) {
+ <tr>
+%   foreach (@titles) {
+  <th bgcolor='#ccccff'><%$_%></th>
+%   }
+ </tr>
+% }
+% foreach my $l (@data) {
+ <tr>
+%   foreach (@$l) {
+  <td><%$_%></td>
+%   }
+ </tr>
+% }
+</table>

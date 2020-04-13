@@ -1,0 +1,22 @@
+<%args>
+$uid
+</%args>
+
+<& '/masketitel', titel => 'Erstkontakt' &>
+
+<p>Vielen Dank für Ihre Anmeldung.</p>
+
+<p>
+Ihre Benutzerkennung ist <b><%$uid%></b>
+</p>
+
+<p>
+Bitte merken Sie sich Ihre Benutzerkennung.
+</p>
+
+<p>
+Sie bekommen innerhalb der n&auml;chsten Minuten eine Request-ID per e-mail
+zugeschickt.
+Mit dieser und der Benutzerkennung schalten Sie Ihren Account frei.
+Dabei bekommen Sie Ihr pers&ouml;nliches Passwort.
+</p>

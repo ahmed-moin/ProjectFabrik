@@ -1,0 +1,20 @@
+<%args>
+$dbh
+$selstand => undef
+$selmodus => undef
+</%args>
+<%perl>
+
+  if ($selstand && $selstand ne $ARGS{stand})
+  {
+    $ARGS{stand} = $selstand;
+  }
+
+  if ($selmodus && $selmodus ne $ARGS{modus})
+  {
+    $ARGS{modus} = $selmodus;
+  }
+
+  return \%ARGS;
+
+</%perl>

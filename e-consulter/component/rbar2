@@ -1,0 +1,14 @@
+<%args>
+$width1
+$width2
+$height
+@color1 => (0, 0, 0)
+@color2 => (0, 0, 0)
+$alt => undef
+</%args>
+% if ($height) {
+%   my $color1 = sprintf('%02x%02x%02x', @color1);
+%   my $color2 = sprintf('%02x%02x%02x', @color2);
+%   ($width1, $width2, $height) = (int($width1), int($width2), int($height));
+<img src='/cgi-bin/rbar2?<% "$width1&$width2&y=$height&c1=$color1&c2=$color2" %>'<% $alt ? " alt='$alt'" : '' %>>\
+% }

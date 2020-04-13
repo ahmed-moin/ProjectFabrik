@@ -1,0 +1,74 @@
+<%args>
+$dbh
+$err_ref => undef
+</%args>
+<%perl>
+
+  use HTML::Entities;
+
+  my $sel_ref = $dbh->selectall_arrayref(
+    "select err_ref, err_date from fehler order by err_ref" );
+
+  $err_ref = $sel_ref->[-1][0] if @$sel_ref && !$err_ref;
+
+  my ($err_msg, $err_arg, $err_env, $err_date, $err_kommentar) =
+      $dbh->selectrow_array( "
+    select err_msg, err_arg, err_env, err_date, err_kommentar
+      from fehler
+     where err_ref = ?", {}, $err_ref ) if ($err_ref);
+
+  if ($err_msg)
+  {
+    $err_msg       = encode_entities($err_msg);
+    $err_arg       = encode_entities($err_arg);
+    $err_env       = encode_entities($err_env);
+    $err_kommentar = encode_entities($err_kommentar);
+  }
+  else
+  {
+    $err_ref = undef;
+  }
+
+</%perl>
+
+<h1>Systemfehler</h1>
+
+<& '/select', name => 'err_ref',
+              values =>
+              [
+                map
+                {
+                  my ($err_ref, $err_date) = @$_;
+                  [ $err_ref, "$err_ref: $err_date" ]
+                } @$sel_ref
+              ],
+              selected => $err_ref &>
+
+<input type='submit' name='laden' value='neu laden'>
+% if ($err_ref) {
+<input type='submit' name='loeschen' value='löschen'>
+<input type='submit' name='speichern' value='speichern'>
+% }
+
+% if ($err_ref) {
+
+<h2>Kommentar</h2>
+<textarea name='err_kommentar' rows='4' cols='60'><%$err_kommentar%></textarea>
+<& '/setfocus', name => 'err_kommentar' &>
+
+<h2>Fehlermeldung <%$err_ref%></h2>
+<pre>
+<%$err_msg%>
+</pre>
+
+<h2>Parameter</h2>
+<pre>
+<%$err_arg%>
+</pre>
+
+<h2>Umgebung</h2>
+<pre>
+<%$err_env%>
+</pre>
+
+% }

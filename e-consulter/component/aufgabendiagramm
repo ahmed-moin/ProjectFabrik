@@ -1,0 +1,129 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid
+</%args>
+<%perl>
+
+use Contavia::Date;
+
+# ermittele Aufgaben zu dem Teilprojekt
+my $apl = $dbh->selectall_arrayref( <<"EOF" );
+  select auf_name, apl_startdatum, apl_endedatum
+    from aufgabenplan, aufgabe
+   where apl_pid = $projektid
+     and apl_tid = $tid
+     and apl_ppl = $projektplan
+     and auf_pid = apl_pid
+     and auf_tid = apl_tid
+     and auf_aid = apl_aid
+   order by apl_startdatum, apl_endedatum
+EOF
+
+my ($tpl_start, $tpl_ende) = $dbh->selectrow_array( "
+  select tpl_start, tpl_ende
+    from teilprojektplan
+   where tpl_pid = ?
+     and tpl_ppl = ?
+     and tpl_tid = ?", {}, $projektid, $projektplan, $tid );
+$tpl_start = new Contavia::Date($tpl_start);
+$tpl_ende = new Contavia::Date($tpl_ende);
+
+# ermittele Gesamtlaufzeit des Teilprojektes
+my ($start, $ende) = $dbh->selectrow_array( "
+  select min(apl_startdatum), max(apl_endedatum)
+    from aufgabenplan
+   where apl_pid = $projektid
+     and apl_tid = $tid
+     and apl_ppl = $projektplan" );
+
+$start = $start ? new Contavia::Date($start)
+       : $ende  ? new Contavia::Date($ende)
+       : Contavia::Date::current;
+$ende  = $ende  ? new Contavia::Date($ende)
+       : ! $start->is_null ? new Contavia::Date($ende)
+       : Contavia::Date::current;
+
+$start = $tpl_start if ($start->cmp($tpl_start) > 0);
+$ende  = $tpl_ende  if ($ende->cmp($tpl_ende)   < 0);
+
+</%perl>
+
+<table>
+ <tr>
+  <td>
+  </td>
+  <td>
+   <& '/dateline', start => [$start->monat, $start->jahr],
+                   end   => [$ende->monat, $ende->jahr],
+                   width => 30 &>
+  </td>
+ </tr>
+
+% if (!$tpl_start->is_null && !$tpl_ende->is_null) {
+ <tr>
+  <td>
+  </td>
+  <td background='/images/tdbg.png'>
+   <%perl>
+   $m->comp( '/bar', width  => $tpl_start->zinstage - $start->zinstage,
+                     height => 1,
+                     color  => [255, 255, 255] );
+   $m->comp( '/bar', width  => $tpl_ende->zinstage - $tpl_start->zinstage,
+                     height => 5,
+                     color  => [0, 0, 255] );
+   </%perl>
+  </td>
+ </tr>
+% }
+
+ <%perl>
+  my $projektstart = $start->zinstage;
+
+  # Schleife über alle Aufgaben
+  foreach (@$apl)
+  {
+    my ($auf_name, $apl_startdatum, $apl_endedatum) = @$_;
+
+    # ermittele Start und Endezeitpunkt der Aufgabe als Tageszahl
+    my $starttage = new Contavia::Date($apl_startdatum)->zinstage;
+    my $endetage  = new Contavia::Date($apl_endedatum)->zinstage;
+ </%perl>
+
+ <tr>
+  <td>
+   <%$auf_name%>
+  </td>
+  <td background='/images/tdbg.png'>
+   <%perl>
+
+   if ($starttage && $endetage)
+   {
+     $m->comp( '/bar', width => $starttage - $projektstart,
+                       height => 1,
+                       color => [255, 255, 255] );
+     $m->comp( '/bar', width => $endetage - $starttage + 1,
+                       height => 10,
+                       color => [0, 0, 128] );
+   }
+   elsif ($starttage)
+   {
+     $m->comp( '/bar', width => $starttage - $projektstart,
+                       height => 10,
+                       color => [255, 255, 255] );
+     $m->out( '<img src=\'/images/startpfeil.png\'>' );
+   }
+   elsif ($endetage)
+   {
+     $m->comp( '/bar', width => $endetage - $projektstart - 10,
+                       height => 10,
+                       color => [255, 255, 255] );
+     $m->comp( '<img src=\'/images/endepfeil.png\'>' );
+   }
+
+   </%perl>
+  </td>
+ </tr>
+% }
+</table>

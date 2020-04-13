@@ -1,0 +1,19 @@
+<%perl>
+
+  use Contavia::Date;
+
+  my $args = $m->comp( '/verarbeitung/login', %ARGS);
+
+  if (ref($args) eq 'HASH')
+  {
+    if ($args->{sessid})
+    {
+      my $current = Contavia::Date::current;
+      $current->tag(1);
+      $args->{stand} = $current->naechster_monat->voriger_tag->format;
+
+      $ARGS{folgemaske} = 'projekte';
+    }
+    return $args;
+  }
+</%perl>

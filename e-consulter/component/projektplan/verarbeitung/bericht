@@ -1,0 +1,22 @@
+<%args>
+$dbh
+$projektid
+$speichern => undef
+$sel_datum => undef
+$ber_text => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(replace quote);
+
+  if ($speichern)
+  {
+    replace($dbh, 'bericht',
+      { ber_pid => $projektid,
+        ber_datum => new Contavia::Date($sel_datum)->qpgdate },
+      { ber_text => quote($ber_text) } );
+    $dbh->commit;
+  }
+
+</%perl>

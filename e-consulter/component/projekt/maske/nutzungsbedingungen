@@ -1,0 +1,21 @@
+<%args>
+@menu
+$nb => undef
+$uid => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n>Nutzungsbedingungen</i18n>',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+
+<p><i18n>Um Ihre Anfrage beantworten zu können, benötigen wir eine Beschreibung der Aufgabenstellung und eine Anschrift. Die hierbei von Ihnen in die vorbereiteten Masken eingegebenen Daten werden nach den Bestimmungen des Bundesdatenschutzgesetzes und des Teledienstdatenschutzgesetzes vertraulich behandelt und nur zum Zwecke einer Angebotserteilung von uns gespeichert. Sie werden nur bei uns im Haus auf unserer am Sitz der Projektfabrik GmbH eingerichteten Datenverarbeitungsanlage aufbewahrt, nicht an Dritte weitergegeben oder in anderer Weise zugänglich gemacht. Die vollständige Datenlöschung erfolgt automatisch nach Ablauf von drei Monaten, sofern bis dahin auf unseren Lösungsvorschlag keine weitere Rückmeldung erfolgt ist. Auf Wunsch werden die gespeicherten Daten zuvor vollständig bei uns gelöscht.</i18n></p>
+
+<p><i18n>Diese Hinweise und Versicherungen können jederzeit gesondert durch aktivieren der Schaltfläche NUTZUNGSBEDINGUNGEN eingesehen werden.<i18n> </p>
+
+<p><i18n>Wenn Sie mit diesen Bedingungen einverstanden sind, akzeptieren Sie bitte die Nutzungsbedingungen und klicken auf "weiter".</i18n> </p>
+
+% unless ($nb || $uid) {
+<input type='checkbox' name='nbok'><i18n> Nutzungsbedingungen akzeptieren</i18n>
+% }
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,48 @@
+<%args>
+$dbh
+$lfdnr => undef
+</%args>
+<%perl>
+
+  use HTML::Entities;
+
+  my $trn = $dbh->selectall_arrayref( "
+    select lfdnr, n, de, en
+      from translate
+     order by de");
+
+  my ($n, $de, $en) = $dbh->selectrow_array( "
+    select n, de, en
+      from translate
+     where lfdnr = ?", {}, $lfdnr) if $lfdnr;
+
+</%perl>
+
+<h1>Übersetzung</h1>
+
+<select name='lfdnr' onChange='document.forms[0].submit()'>
+ <option>
+% foreach (@$trn) {
+%   my ($_lfdnr, $n, $De, $en) = @$_;
+%   my $enDe = encode_entities($De);
+ <option value='<%$_lfdnr%>'<%$lfdnr eq $_lfdnr && ' selected'%>><%length($enDe) > 50 ? (substr($enDe, 0, 50) . '...') : $enDe%>
+% }
+</select>
+
+<br>
+
+n=<input type='text' name='n' value='<%$n%>' size='5'>
+<br>
+
+deutsch:<br>
+<textarea rows='10' cols='80' name='de'><%encode_entities($de)%></textarea>
+
+<br>
+englisch:<br>
+<textarea rows='10' cols='80' name='en'><%encode_entities($en)%></textarea>
+
+<p class='button'>
+ <input type='submit' name='laden' value='neu laden'>
+ <input type='submit' name='speichern' value='speichern'>
+ <input type='submit' name='loeschen' value='löschen'>
+</p>

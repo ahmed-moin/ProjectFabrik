@@ -1,0 +1,16 @@
+<%args>
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  my $prj_beschreibung = $dbh->selectrow_array( "
+    select prj_beschreibung
+      from projekt
+     where prj_id = $projektid" );
+
+</%perl>
+
+<h1>Projektbeschreibung</h1>
+
+<%$prj_beschreibung%>

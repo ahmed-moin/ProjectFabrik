@@ -1,0 +1,9 @@
+<%args>
+@datum
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  return new Contavia::Date(@datum)->pgdate;
+
+</%perl>

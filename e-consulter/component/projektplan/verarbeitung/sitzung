@@ -1,0 +1,81 @@
+<%args>
+$dbh
+$projektid
+$sid => undef
+$sit_datum => undef
+$sit_titel => undef
+$sit_ort => undef
+$sit_text => undef
+$speichern => undef
+$tspeichern => undef
+$tloeschen => undef
+$stt_name => undef
+$stt_uid => undef
+$stt_lfdnr => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+
+  if ($speichern)
+  {
+    if ($sid > 0)
+    {
+      $dbh->replace( 'sitzung',
+        { sit_pid   => $projektid,
+          sit_sid   => $sid },
+        { sit_titel => $dbh->quote($sit_titel),
+          sit_datum => new Contavia::Date($sit_datum)->qpgdate,
+          sit_ort   => $dbh->quote($sit_ort),
+          sit_text  => $dbh->quote($sit_text) } );
+    }
+    else
+    {
+      $sid = $dbh->selectrow_array( "
+        select max(sit_sid) + 1
+          from sitzung
+         where sit_pid = $projektid" ) || 1;
+
+      $dbh->insert( 'sitzung',
+        { sit_pid   => $projektid,
+          sit_sid   => $sid,
+          sit_titel => $dbh->quote($sit_titel),
+          sit_datum => new Contavia::Date($sit_datum)->qpgdate,
+          sit_ort   => $dbh->quote($sit_ort),
+          sit_text  => $dbh->quote($sit_text) } );
+
+      $ARGS{sid} = $sid;
+    }
+
+    $dbh->commit;
+  }
+  elsif ($tspeichern)
+  {
+    $stt_lfdnr = $dbh->selectrow_array( "
+      select max(stt_lfdnr) + 1
+        from sitzungsteilnehmer
+       where stt_pid = $projektid
+         and stt_sid = $sid" ) || 1;
+    $stt_name =~ s/^$stt_uid: // if $stt_uid;
+    $dbh->insert('sitzungsteilnehmer',
+      { stt_pid   => $projektid,
+        stt_sid   => $sid,
+        stt_lfdnr => $stt_lfdnr,
+        stt_uid   => $dbh->quote($stt_uid),
+        stt_name  => $dbh->quote($stt_name) } );
+    $dbh->commit
+  }
+  elsif ($tloeschen)
+  {
+    fehler("kein Teilnehmer ausgewählt") unless $stt_lfdnr;
+    $dbh->do("
+      delete from sitzungsteilnehmer
+       where stt_pid = $projektid
+         and stt_sid = $sid
+         and stt_lfdnr = $stt_lfdnr" );
+    $dbh->commit
+  }
+
+  return \%ARGS;
+
+</%perl>

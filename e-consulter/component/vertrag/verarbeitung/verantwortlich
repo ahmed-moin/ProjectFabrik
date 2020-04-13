@@ -1,0 +1,21 @@
+<%args>
+$dbh
+$projektid
+$verantwortlich => undef
+$speichern => undef
+$tpl_tid => undef
+</%args>
+
+<%perl>
+
+  if ($speichern)
+  {
+    $dbh->update('teilprojekt',
+      { tpr_pid => $projektid,
+        tpr_tid => $tpl_tid },
+      { tpr_verantwortlich => $dbh->quote($verantwortlich) } );
+
+    $dbh->commit;
+  }
+
+</%perl>

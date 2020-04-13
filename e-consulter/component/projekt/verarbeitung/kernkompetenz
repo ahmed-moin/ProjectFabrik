@@ -1,0 +1,87 @@
+<%args>
+$dbh
+$projektid
+$auswahl => undef
+$loeschen => undef
+$pqa_qualid_new => undef
+$pqa_qualid => undef
+</%args>
+<%perl>
+
+# neue Qualifikationen verarbeiten
+if ($pqa_qualid_new)
+{
+  $pqa_qualid_new = [$pqa_qualid_new] unless ref ($pqa_qualid_new);
+  my $sth = $dbh->prepare(<<"EOF");
+    insert into prjqual(pqa_qualid, pqa_pid)
+      values (?, ?)
+EOF
+  my $sth_sel = $dbh->prepare( "
+    select count(*) from prjqual
+      where pqa_pid = ? and pqa_qualid = ?" );
+
+  foreach my $pqa_qualid (@$pqa_qualid_new)
+  {
+    next unless $pqa_qualid;
+    next unless $dbh->selectrow_array($sth_sel, {}, $projektid, $pqa_qualid) == 0;
+    $sth->execute($pqa_qualid, $projektid);
+  }
+}
+
+# löschen
+if ($loeschen)
+{
+  die "<fehler><i18n>keine Qualifikation zum l&ouml;schen ausgew&auml;hlt</i18n></fehler>"
+    unless $auswahl;
+
+  $auswahl = [$auswahl] unless ref($auswahl);
+  my $sth = $dbh->prepare(<<"EOF");
+    delete from prjqual
+     where pqa_pid    = ?
+       and pqa_qualid = ?
+EOF
+
+  my $sth_sel = $dbh->prepare( "
+    select qua_id
+      from qual
+     where qua_oberid = ?" );
+
+  my $sth_del = $dbh->prepare( "
+    delete from prjqual
+     where pqa_pid = ?
+       and pqa_qualid in
+         (select qua_id
+            from qual
+           where qua_oberid = ?)" );
+
+  foreach my $pqa_qualid (@$auswahl)
+  {
+    next unless $pqa_qualid;
+
+    del_unter($dbh, $sth_sel, $sth_del, $projektid, $pqa_qualid);
+
+    $sth->execute($projektid, $pqa_qualid);
+  }
+}
+
+$dbh->commit;
+
+</%perl>
+<%once>
+
+  # lösche rekursiv alle Qualifikationen, die der angegebenen untergeordnet sind
+  sub del_unter
+  {
+    my ($dbh, $sth_sel, $sth_del, $projektid, $qualid, $count) = @_;
+
+    my @qualid = @{$dbh->selectcol_arrayref($sth_sel, {}, $qualid)};
+
+    foreach my $q (@qualid)
+    {
+      del_unter($dbh, $sth_sel, $sth_del, $projektid, $q);
+    }
+
+    $sth_del->execute($projektid, $qualid);
+  }
+
+</%once>

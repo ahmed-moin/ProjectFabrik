@@ -1,0 +1,73 @@
+<%args>
+$dbh
+$uid
+$bearbeiten => undef
+$loeschen => undef
+$auswahl => undef
+$ref_lfdnr => undef
+$ref_firma => undef
+$ref_projekt => undef
+$ref_ansprechpartner => undef
+$ref_kontakt => undef
+</%args>
+<%perl>
+
+use Contavia::Db qw(insert update quote);
+use Contavia qw(fehler);
+
+$auswahl = $ref_lfdnr unless $auswahl;
+
+# Eingegebene Daten sichern
+if ($ref_firma || $ref_projekt || $ref_ansprechpartner || $ref_kontakt)
+{
+  if ($ref_lfdnr)
+  {
+    update( $dbh, 'referenz',
+            { ref_benuid          => quote($uid),
+              ref_lfdnr           => $ref_lfdnr },
+            { ref_firma           => quote($ref_firma),
+              ref_projekt         => quote($ref_projekt),
+              ref_ansprechpartner => quote($ref_ansprechpartner),
+              ref_kontakt         => quote($ref_kontakt) } );
+  }
+  else
+  {
+    $ref_lfdnr = $dbh->selectrow_array( <<"EOF" ) || 1;
+     select max(ref_lfdnr) + 1
+       from referenz
+      where ref_benuid = '$uid'
+EOF
+
+    insert( $dbh, 'referenz',
+            { ref_benuid          => quote($uid),
+              ref_lfdnr           => $ref_lfdnr,
+              ref_firma           => quote($ref_firma),
+              ref_projekt         => quote($ref_projekt),
+              ref_ansprechpartner => quote($ref_ansprechpartner),
+              ref_kontakt         => quote($ref_kontakt) } );
+  }
+
+  $ARGS{sel_ref_lfdnr} = undef;
+}
+
+# Löschen
+if ($loeschen)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+
+  $dbh->do( <<"EOF" );
+   delete from referenz
+    where ref_benuid = '$uid'
+      and ref_lfdnr = $auswahl
+EOF
+}
+elsif ($bearbeiten)
+{
+  fehler('<i18n>keine Auswahl</i18n>') unless $auswahl;
+  $ARGS{sel_ref_lfdnr} = $auswahl;
+}
+
+$dbh->commit;
+
+return \%ARGS;
+</%perl>

@@ -1,0 +1,11 @@
+<%args>
+@menu => undef
+</%args>
+
+<& '/masketitel', titel => '<i18n>Gewissenhaftigkeit</i18n>',
+                  menu => \@menu,
+                  maske => $ARGS{folgemaske} &>
+
+<p> <i18n> Der Auswertungsbereich "Gewissenhaftigkeit" bezieht sich auf den aktiven Prozess der Planung, Organisation, Gestaltung und Durchführung von Aufgaben. Der besondere Aspekt dieser Dimension liegt in der engen Verbindung zu beruflichen oder akademischen Leistungen. Menschen mit höheren Punktwerten in diesem Auswertungsbereich beschreiben sich meist als zielstrebig, systematisch, ausdauernd, fleißig, genau und willensstark. Personen, die hier niedrige Werte erzielen, haben ein eher niedriges Anspruchsniveau an ihre beruflichen Leistungen und sind daher in ihrer Arbeit häufig nachlässig und unbeständig. Extreme Punktwerte im Bereich "Gewissenhaftigkeit" können jedoch negative Erscheinungsbilder mit sich bringen, wie etwa Arbeitssucht, übertrieben hohes Anspruchsniveau oder zwanghafte Ordnungssucht.</i18n> </p>
+
+<& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

@@ -1,0 +1,12 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+</%args>
+
+<& '/masketitel', titel => 'Teilprojekt&uuml;bersicht' &>
+
+<& '/teilprojektdiagramm',
+   dbh         => $dbh,
+   projektid   => $projektid,
+   projektplan => $projektplan, &>

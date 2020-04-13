@@ -1,0 +1,34 @@
+<%args>
+$dbh
+$projektid => undef
+$speichern => undef
+$ben_uid => undef
+$waehrung => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  if ($speichern)
+  {
+    fehler 'kein Benutzer ausgewählt' unless $ben_uid;
+
+    $dbh->update('projekt',
+      { prj_id => $projektid },
+      { prj_waehrung => $dbh->quote($waehrung) } );
+
+    $dbh->replace('rolle',
+      { rol_uid => $dbh->quote($ben_uid),
+        rol_pid => $projektid },
+      { rol_rolid => 0,
+        rol_admin => '\'t\'' },
+      { rol_kunde => '\'f\'',
+        rol_mitarbeiter => '\'f\'' } );
+
+    $dbh->commit;
+
+    $ARGS{folgemaske} = 'projekte';
+    return \%ARGS;
+  }
+
+</%perl>

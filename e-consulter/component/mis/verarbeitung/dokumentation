@@ -1,0 +1,23 @@
+<%args>
+$projektid
+$uid
+$dbh
+$folder
+$create     => undef
+$upload     => undef
+$foldername => undef
+$filename   => undef
+$comment    => undef
+$del        => undef
+</%args>
+
+<& '/doku/verarbeitung/projekt', dbh        => $dbh,
+                                 uid        => $uid,
+                                 projektid  => $projektid,
+                                 folder     => $folder,
+                                 create     => $create,
+                                 upload     => $upload,
+                                 foldername => $foldername,
+                                 filename   => $filename,
+                                 comment    => $comment,
+                                 del        => $del &>

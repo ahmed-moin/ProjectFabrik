@@ -1,0 +1,245 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$zid => undef
+$sel_datum => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler formatnumber);
+  use Contavia::Date;
+
+  my $prz = $dbh->selectall_arrayref( "\
+    select prz_zid, prz_titel
+      from projektziel
+     where prz_pid = $projektid
+     order by prz_zid" );
+
+  if (!grep { $_->[0] == 0 } @$prz)
+  {
+    # Wir legen hier den Realisierungsgrad an, wenn er noch nicht existiert
+    $dbh->insert('projektziel',
+      { prz_pid                        => $projektid,
+        prz_zid                        => 0,
+        prz_titel                      => '\'Realisierungsgrad\'',
+        prz_einheit                    => '\'%\'',
+        prz_kostenvergleich            => '\'f\'',
+        prz_personentagevergleich      => '\'f\'',
+        prz_sachkostenvergleich        => '\'f\'',
+        prz_investitionsvergleich      => '\'f\'' } );
+
+    unshift( @$prz, [0, 'Realisierungsgrad'] );
+
+    $dbh->commit;
+  }
+
+  # lese Ziel
+  my ($prz_titel, $prz_einheit) = $dbh->selectrow_array( <<"EOF" ) if defined($zid);
+   select prz_titel, prz_einheit
+     from projektziel
+    where prz_pid = $projektid
+      and prz_zid = $zid
+EOF
+
+  # lese Teilprojekte
+  my $tpr = $dbh->selectall_arrayref( <<"EOF" ) if defined($zid);
+   select tpr_tid, tpr_titel
+     from teilprojekt, teilprojektplan
+    where tpr_pid = $projektid
+      and tpl_pid = tpr_pid
+      and tpl_tid = tpr_tid
+      and tpl_ppl = $projektplan
+    order by tpr_tid
+EOF
+
+  # lese Teilprojektziele
+  my %tpz = $dbh->select_hash(<<"EOF") if defined($zid);
+   select tpz_tid, tpz_ziel
+     from teilprojektziel
+    where tpz_pid = $projektid
+      and tpz_ppl = $projektplan
+      and tpz_zid = $zid
+EOF
+
+  # ermittele Anfangsdatum des Projektes
+  my $anf_datum = $dbh->selectrow_array(<<"EOF");
+   select min(apl_startdatum)
+     from aufgabenplan
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+EOF
+  $anf_datum = new Contavia::Date($anf_datum);
+  $anf_datum->tag(1);
+
+  $sel_datum = $sel_datum ? new Contavia::Date($sel_datum)
+                          : Contavia::Date::current;
+  $sel_datum->tag(1);
+
+  my $vormonat = $sel_datum->voriger_monat;
+
+  # lese Teilprojektrealisierung des Berichtsmonates
+  my $datum = $sel_datum->qpgdate;
+  my %tpe = $dbh->select_hash(<<"EOF") if defined($zid);
+   select tpe_tid, tpe_realisierung
+     from teilprojektrealisierung
+    where tpe_pid = $projektid
+      and tpe_zid = $zid
+      and tpe_datum = $datum
+EOF
+
+  # lese bisherige Teilprojektrealisierung
+  $datum = $vormonat->qpgdate;
+  my %tpe_vormonat = $dbh->select_hash(<<"EOF") if defined($zid);
+   select t.tpe_tid, t.tpe_realisierung
+     from teilprojektrealisierung t, teilprojektrealisierung v
+    where t.tpe_pid = $projektid
+      and t.tpe_zid = $zid
+      and t.tpe_datum <= $datum
+      and v.tpe_datum <= $datum
+      and v.tpe_pid = t.tpe_pid
+      and v.tpe_zid = t.tpe_zid
+      and v.tpe_tid = t.tpe_tid
+    group by t.tpe_tid, t.tpe_realisierung, t.tpe_datum
+   having t.tpe_datum = max(v.tpe_datum)
+EOF
+
+  my $end_datum = Contavia::Date::current;
+  $end_datum->tag(1);
+
+  # lese Tätigkeiten zu den Teilprojekten
+  $datum = $sel_datum->qpgdate;
+  my %tae = $dbh->select_hash(<<"EOF" );
+   select atr_tid, sum(tae_stunden / 8)
+     from auftrag, taetigkeit
+    where atr_pid      = $projektid
+      and tae_auftrag  = atr_nummer
+      and tae_datum   <= $datum
+    group by atr_tid
+EOF
+
+  # lese Tätigkeiten des ausgewählten Monats zu den Teilprojekten
+  $datum = $sel_datum->qpgdate;
+  my $letzter_tag = $sel_datum->naechster_monat->voriger_tag->qpgdate;
+  my %tae_mon = $dbh->select_hash(<<"EOF");
+   select atr_tid, sum(tae_stunden / 8)
+     from auftrag, taetigkeit
+    where atr_pid      = $projektid
+      and tae_auftrag  = atr_nummer
+      and tae_datum    between $datum and $letzter_tag
+    group by atr_tid
+EOF
+
+  # lese Personentagebudget
+  my %bud = $dbh->select_hash(<<"EOF");
+   select bud_tid, sum(bud_personentage)
+     from budget
+    where bud_pid = $projektid
+    group by bud_tid
+EOF
+
+</%perl>
+
+<table>
+ <tr>
+  <td>
+   <h1>Zielrealisierung</h1>
+  </td>
+  <td>
+   <& '/select', name => 'zid', values => $prz, selected => $zid &>
+  </td>
+ </tr>
+</table>
+
+% if (defined($zid)) {
+
+<table border='1' width='100%'>
+ <tr>
+  <th bgcolor='#ccccff' colspan='2'>
+   Teilprojekt
+  </th>
+  <th bgcolor='#ccccff'>
+   -<%$vormonat->monat%>/<%$vormonat->jahr%>
+  </th>
+  <th bgcolor='#ccccff'>
+   <select name='sel_datum' onChange='document.forms[0].submit()'>
+% for (my $dat = $anf_datum; $dat->cmp($end_datum) <= 0; $dat = $dat->naechster_monat) {
+    <option value='1.<%$dat->monat%>.<%$dat->jahr%>'
+       <%$dat->cmp($sel_datum) == 0 && ' selected'%>>
+       <%$dat->monat%>/<%$dat->jahr%>
+% }
+   </select>
+  </th>
+  <th bgcolor='#ccccff'>
+   Ziel
+  </th>
+  <th bgcolor='#ccccff'>
+   PT<br>kummuliert
+  </th>
+  <th bgcolor='#ccccff'>
+   PT<br>Monat
+  </th>
+  <th bgcolor='#ccccff'>
+   PT<br>Budget
+  </th>
+  <th bgcolor='#ccccff'>
+   berechneter<br>
+   Wert
+  </th bgcolor='#ccccff'>
+ </tr>
+
+ <%perl>
+  foreach (@$tpr)
+  {
+    my ($tpr_tid, $tpr_titel) = @$_;
+    my $ziel   = $tpz{$tpr_tid}      ? $tpz{$tpr_tid} :
+                 $prz_einheit eq '%' ? 100 : undef;
+    next unless $ziel;
+
+    my $pt     = $tae{$tpr_tid} || 0;
+    my $pt_mon = $tae_mon{$tpr_tid} || 0;
+    my $budget = $bud{$tpr_tid} || 0;
+    my $r      = $ziel * $pt / $budget if $budget;
+ </%perl>
+
+ <tr>
+  <td>
+   <input type='hidden' name='tpr_tid' value='<%$tpr_tid%>'>
+   <%$tpr_tid%>
+  </td>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td>
+   <%$tpe_vormonat{$tpr_tid}%>
+  </td>
+  <td>
+   <input type='text' name='tpe_realisierung' value='<%$tpe{$tpr_tid}%>'
+     size='10'>
+  </td>
+  <td align='right'>
+   <%formatnumber($ziel, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($pt, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($pt_mon, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($budget, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($r, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+
+% }  # foreach(@$tpr)
+</table>
+
+<p class='button'>
+ <input type='submit' name='speichern' value='Speichern'
+</p>
+
+% }  # if (defined($zid))
+

@@ -1,0 +1,44 @@
+<%args>
+$dbh
+$speichern => undef
+$loeschen => undef
+$lfdnr => undef
+$n => 0
+$de => undef
+$en => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    $n = 0 unless $n;
+    if ($lfdnr)
+    {
+      $dbh->update('translate',
+        { lfdnr => $lfdnr },
+        { n     => $n,
+          de    => $dbh->quote($de),
+          en    => $dbh->quote($en) } );
+    }
+    else
+    {
+      $lfdnr = $dbh->selectrow_array( "
+        select max(lfdnr) + 1
+          from translate" ) || 1;
+
+      $dbh->insert('translate',
+        { lfdnr => $lfdnr,
+          n     => $n,
+          de    => $dbh->quote($de),
+          en    => $dbh->quote($en) } );
+    }
+    $dbh->commit;
+  }
+  elsif ($loeschen)
+  {
+    fehler("keine Übersetzung ausgewählt") unless $lfdnr;
+    $dbh->do("delete from translate where lfdnr=$lfdnr");
+    $dbh->commit;
+  }
+
+</%perl>

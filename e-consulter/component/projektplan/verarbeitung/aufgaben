@@ -1,0 +1,162 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$tid => undef
+$aid => undef
+$sel_aid => undef
+$speichern => undef
+$bearbeiten => undef
+$loeschen => undef
+$loeschen_ok => undef
+$neu => undef
+$apl_aid => undef
+$auf_name => undef
+$apl_startdatum => undef
+$apl_endedatum => undef
+$apl_dauer => undef
+$apl_aufwand => undef
+$apl_abhaengig => undef
+$apl_beschreibung => undef
+$apl_milestone => undef
+$auf => undef
+$hinzufuegen => undef
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+  use Contavia::Date;
+  use Contavia::Db qw(update insert quote);
+
+  if ($speichern)
+  {
+    if ($aid)
+    {
+      fehler ("kein Aufgabenname angegeben") unless $auf_name;
+
+      $apl_startdatum = new Contavia::Date($apl_startdatum);
+      $apl_endedatum  = new Contavia::Date($apl_endedatum);
+      if (!$apl_startdatum->is_null && !$apl_endedatum->is_null
+        && $apl_startdatum->cmp($apl_endedatum) > 0)
+      {
+        fehler (sprintf("startdatum (%s) > endedatum (%s)", $apl_startdatum->format, $apl_endedatum->format ));
+      }
+
+      # bestehende Aufgabe wurde geändert
+      update($dbh, 'aufgabe',
+        { auf_pid => $projektid,
+          auf_tid => $tid,
+          auf_aid => $aid },
+        { auf_name => quote($auf_name) } );
+
+      update($dbh, 'aufgabenplan',
+        { apl_pid          => $projektid,
+          apl_tid          => $tid,
+          apl_aid          => $aid,
+          apl_ppl          => $projektplan },
+        { apl_startdatum   => new Contavia::Date($apl_startdatum)->qpgdate,
+          apl_endedatum    => new Contavia::Date($apl_endedatum)->qpgdate,
+          apl_dauer        => $apl_dauer ? $apl_dauer : undef,
+          apl_aufwand      => $apl_aufwand ? $apl_aufwand : undef,
+          apl_abhaengig    => $apl_abhaengig ? $apl_abhaengig : undef,
+          apl_beschreibung => quote($apl_beschreibung),
+          apl_milestone    => quote($apl_milestone ? 't' : 'f') } );
+    }
+    else
+    {
+      # ermittele bei einer neuen Aufgabe die nächst höhere Aufgabennummer
+      $aid = $dbh->selectrow_array( <<"EOF" ) + 1 || 1;
+       select max(auf_aid)
+         from aufgabe
+        where auf_pid = $projektid
+          and auf_tid = $tid
+EOF
+
+      insert($dbh, 'aufgabe',
+        { auf_pid => $projektid,
+          auf_tid => $tid,
+          auf_aid => $aid,
+          auf_name => quote($auf_name) } );
+
+      insert($dbh, 'aufgabenplan',
+        { apl_pid          => $projektid,
+          apl_tid          => $tid,
+          apl_aid          => $aid,
+          apl_ppl          => $projektplan,
+          apl_startdatum   => new Contavia::Date($apl_startdatum)->qpgdate,
+          apl_endedatum    => new Contavia::Date($apl_endedatum)->qpgdate,
+          apl_dauer        => $apl_dauer ? $apl_dauer : undef,
+          apl_aufwand      => $apl_aufwand ? $apl_aufwand : undef,
+          apl_abhaengig    => $apl_abhaengig ? $apl_abhaengig : undef,
+          apl_beschreibung => quote($apl_beschreibung) } );
+    }
+    $ARGS{aid} = undef;
+
+    $dbh->commit;
+  }
+  elsif ($bearbeiten)
+  {
+    fehler ("keine Aufgabe ausgew&auml;hlt") unless $sel_aid;
+    $ARGS{aid} = $sel_aid;
+  }
+  elsif ($loeschen)
+  {
+    $ARGS{aid} = $aid = $sel_aid unless $aid;
+    fehler ("keine Aufgabe ausgew&auml;hlt") unless $aid;
+  }
+  elsif ($loeschen_ok)
+  {
+    $aid = $sel_aid unless $aid;
+    fehler ("keine Aufgabe ausgew&auml;hlt") unless $aid;
+
+    $dbh->do( "
+     delete from budgetplan
+      where bpl_pid = $projektid
+        and bpl_ppl = $projektplan
+        and bpl_tid = $tid
+        and bpl_aid = $aid" );
+
+    $dbh->do( "
+     delete from aufgabenplan
+      where apl_pid = $projektid
+        and apl_ppl = $projektplan
+        and apl_tid = $tid
+        and apl_aid = $aid" );
+
+    my $count = $dbh->selectrow_array( "
+     select count(*)
+       from aufgabenplan
+      where apl_pid = $projektid
+        and apl_tid = $tid
+        and apl_aid = $aid" );
+
+    unless ($count)
+    {
+      $dbh->do( "
+        delete from aufgabe
+         where auf_pid = $projektid
+           and auf_tid = $tid
+           and auf_aid = $aid" );
+    }
+
+    $dbh->commit;
+  }
+  elsif ($neu)
+  {
+    $ARGS{aid} = undef;
+  }
+  elsif ($hinzufuegen)
+  {
+    fehler ("keine Aufgabe ausgewählt") unless $auf;
+    $dbh->insert( 'aufgabenplan',
+      { apl_pid => $projektid,
+        apl_ppl => $projektplan,
+        apl_tid => $tid,
+        apl_aid => $auf,
+        apl_beschreibung => $dbh->quote('') } );
+    $dbh->commit();
+  }
+
+  return \%ARGS;
+
+</%perl>

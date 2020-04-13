@@ -1,0 +1,83 @@
+<%args>
+$dbh
+$projektid
+$uid
+</%args>
+<%perl>
+
+  my $tae = $dbh->selectall_arrayref( <<"EOF" );
+    select tae_auftrag, tae_datum, tae_lfdnr,
+           tae_stunden, tae_beschreibung,
+           tpr_titel, auf_name
+      from taetigkeit, auftrag, teilprojekt, aufgabe
+     where tae_uid = '$uid'
+       and tae_auftrag = atr_nummer
+       and tae_freigabedatum is null
+       and atr_pid = $projektid
+       and tpr_pid = atr_pid
+       and tpr_tid = atr_tid
+       and auf_pid = atr_pid
+       and auf_tid = atr_tid
+       and auf_aid = atr_aid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'T&auml;tigkeit freigeben' &>
+
+<table>
+ <tr>
+  <td>
+  </td>
+  <th>
+	<i18n>
+   Tag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Auftrag
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Stunden
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Beschreibung
+	</i18n>
+  </th>
+ </tr>
+
+ <%perl>
+  foreach (@$tae) {
+    my ($tae_auftrag, $tae_datum, $tae_lfdnr,
+        $tae_stunden, $tae_beschreibung,
+        $tpr_titel, $auf_name) = @$_;
+    my $datum = new Contavia::Date($tae_datum);
+ </%perl>
+ <tr>
+  <td>
+   <input type='checkbox' name='tae_nummer'
+          value='<%"$tae_auftrag,$tae_datum,$tae_lfdnr"%>'>
+  </td>
+  <td>
+   <%$datum->tag + 0%>
+  </td>
+  <td>
+   <%"$tae_auftrag / $tpr_titel / $auf_name"%>
+  </td>
+  <td>
+   <%$tae_stunden%>
+  </td>
+  <td>
+   <%$tae_beschreibung%>
+  </td>
+ </tr>
+% }
+
+</table>
+
+<input type='submit' name='freigeben' value='<i18n>Freigeben</i18n>'>

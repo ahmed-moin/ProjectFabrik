@@ -1,0 +1,446 @@
+<%args>
+$dbh
+$projektid
+$projektplan
+$waehrung
+$tid => undef
+$aid => undef
+$tagessatz => undef
+</%args>
+<%once>
+  sub getbgcolor
+  {
+    my ($pt, $budget, $tagessatz, $default) = @_;
+    my $diff = $tagessatz ? abs($budget - $pt * $tagessatz) : 0;
+    return $diff > 20 ? ' bgcolor=\'#ffcccc\'' :
+           $diff > 0  ? ' bgcolor=\'#ffdddd\'' :
+           $default   ? " bgcolor='$default'"  : '';
+  }
+</%once>
+<%init>
+
+  use Contavia::Date;
+  use Contavia::Db qw(select_hash);
+  use Contavia qw(formatnumber);
+
+  my $tpl = $dbh->selectall_arrayref( <<"EOF" );
+   select tpl_tid, tpr_titel
+     from teilprojektplan, teilprojekt
+    where tpl_pid = $projektid
+      and tpl_ppl = $projektplan
+      and tpr_pid = tpl_pid
+      and tpr_tid = tpl_tid
+EOF
+
+  my ($bud_personentage, $bud_betrag)
+    = $dbh->selectrow_array( <<"EOF" ) if $tid;
+   select bud_personentage, bud_betrag
+     from budget
+    where bud_pid = $projektid
+      and bud_ppl = $projektplan
+      and bud_tid = $tid
+EOF
+  $tagessatz = int($bud_betrag / $bud_personentage) if ($bud_personentage && !$tagessatz);
+
+  my ($bpl_personentage, $bpl_betrag)
+    = $dbh->selectrow_array( <<"EOF" ) if $tid;
+   select sum(bpl_personentage), sum(bpl_betrag)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+EOF
+
+  my $apl = $dbh->selectall_arrayref( <<"EOF" ) if $tid;
+   select apl_aid, auf_name, apl_startdatum, apl_endedatum, apl_milestone
+     from aufgabenplan, aufgabe
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid = $tid
+      and auf_pid = apl_pid
+      and auf_tid = apl_tid
+      and auf_aid = apl_aid
+EOF
+
+  my %budgetplan = select_hash( $dbh, <<"EOF" ) if $tid;
+   select bpl_aid, sum(bpl_personentage), sum(bpl_betrag)
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+    group by bpl_aid
+EOF
+
+  my %budgetplan_datum = select_hash( $dbh, <<"EOF" ) if $aid && $tid;
+   select bpl_datum, bpl_personentage, bpl_betrag
+     from budgetplan
+    where bpl_pid = $projektid
+      and bpl_ppl = $projektplan
+      and bpl_tid = $tid
+      and bpl_aid = $aid
+    order by bpl_datum
+EOF
+  while (my ($datum, $value) = each (%budgetplan_datum))
+  {
+    $datum = new Contavia::Date($datum);
+    if ($datum->tag != 1)
+    {
+      $budgetplan_datum{$datum->pgdate} = undef;
+      $datum->tag(1);
+      if ($budgetplan_datum{$datum->pgdate})
+      {
+        $budgetplan_datum{$datum->pgdate}->[0] += $value->[0];
+        $budgetplan_datum{$datum->pgdate}->[1] += $value->[1];
+      }
+      else
+      {
+        $budgetplan_datum{$datum->pgdate} = $value;
+      }
+    }
+  }
+
+  my ($apl_startdatum, $apl_endedatum) = $dbh->selectrow_array( <<"EOF" ) if $aid && $tid;
+   select apl_startdatum, apl_endedatum
+     from aufgabenplan
+    where apl_pid = $projektid
+      and apl_ppl = $projektplan
+      and apl_tid = $tid
+      and apl_aid = $aid
+EOF
+
+  my %sum;
+
+</%init>
+
+<table width='100%'>
+ <tr>
+  <td>
+   <h1>Budgetplan - Aufgabe</h1>
+  </td>
+  <td align='right'>
+
+<p class='button'>
+% if ($aid) {
+ <input type='submit' name='abbrechen' value='Abbrechen'>
+% } else {
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+% }
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+
+  </td>
+ </tr>
+</table>
+
+<table>
+ <tr>
+  <th class='label'>
+   Teilprojekt
+  </th>
+  <td colspan='2'>
+   <& '/select', name => 'sel_tid',
+                 values =>
+                 [
+                   map
+                   {
+                     my ($tpl_tid, $tpr_titel) = @$_;
+                     [ $tpl_tid, "$tpl_tid $tpr_titel" ];
+                   } @$tpl
+                 ],
+                 selected => $tid &>
+  </td>
+ </tr>
+
+ <tr>
+  <td>
+  </td>
+  <th>
+   Gesamt
+  </th>
+  <th>
+   Rest
+  </th>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Personentage
+  </th>
+  <td align='right'>
+   <%$bud_personentage%>
+  </td>
+  <td align='right'>
+   <%$bud_personentage - $bpl_personentage%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Budget
+  </th>
+  <td align='right'>
+   <%formatnumber($bud_betrag, 0, $ARGS{lang})%>
+  </td>
+  <td align='right'>
+   <%formatnumber($bud_betrag - $bpl_betrag, 0, $ARGS{lang})%>
+  </td>
+ </tr>
+
+ <tr>
+  <th class='label'>
+   Tagessatz
+  </th>
+  <td colspan='2'>
+   <input type='text' name='tagessatz' size='6'
+          value='<%$tagessatz%>'>
+     <%$waehrung%>
+  </td>
+ </tr>
+</table>
+
+% return unless $tid;
+
+<table border='1' width='100%'>
+ <tr>
+  <td bgcolor='#ccccff'>
+  </td>
+  <th colspan='2' bgcolor='#ccccff'>
+   Aufgabe
+  </th>
+  <th bgcolor='#ccccff'>
+   Start
+  </th>
+  <th bgcolor='#ccccff'>
+   Ende
+  </th>
+  <th bgcolor='#ccccff'>
+  </th>
+  <th bgcolor='#ccccff'>
+   PT/Budget
+  </th>
+
+  <%perl>
+  if ($apl_startdatum && $apl_endedatum)
+  {
+    my $start = new Contavia::Date($apl_startdatum);
+    my $ende  = new Contavia::Date($apl_endedatum);
+    $start->tag(1);
+    $ende->tag(1);
+    for (my $datum = $start;
+         $datum->cmp($ende) <= 0;
+         $datum = $datum->naechster_monat)
+    {
+      </%perl>
+      <th bgcolor='#ccccff'>
+       <%$datum->monat%>/<%$datum->jahr%>
+      </th>
+      <%perl>
+    }
+  </%perl>
+
+% }
+ </tr>
+
+ <%perl>
+
+  foreach (@$apl)
+  {
+    my ($apl_aid, $auf_name, $apl_startdatum, $apl_endedatum, $apl_milestone) = @$_;
+    $sum{personentage} += $budgetplan{$apl_aid}->[0];
+    $sum{betrag}       += $budgetplan{$apl_aid}->[1];
+    if ($aid == $apl_aid)
+    {
+       # Aufgabe ist zum editieren geöffnet
+
+       </%perl>
+       <tr>
+        <td rowspan='2' bgcolor='#cccccc'>
+         <input type='hidden' name='apl_aid' value='<%$apl_aid%>'>
+        </td>
+        <td rowspan='2'>
+         <%$apl_aid%>
+        </td>
+        <td rowspan='2' bgcolor='#ffffcc'>
+         <input type='text' name='auf_name' value='<%$auf_name%>'
+           size='40' maxlength='80'> <br>
+         Milestone <input type='checkbox' name='apl_milestone'<%$apl_milestone && ' checked'%>>
+        </td>
+        <td align='right' rowspan='2' bgcolor='#ffffcc'>
+         <& '/inputdatum', name => 'apl_startdatum', value => $apl_startdatum &>
+        </td>
+        <td align='right' rowspan='2' bgcolor='#ffffcc'>
+         <& '/inputdatum', name => 'apl_endedatum', value => $apl_endedatum &>
+        </td>
+        <td bgcolor='#ffffcc'>PT</td>
+        <td align='right' bgcolor='#ffffcc'>
+         <%$budgetplan{$apl_aid}->[0]%>
+        </td>
+
+        <%perl>
+        my $start = new Contavia::Date($apl_startdatum);
+        my $ende  = new Contavia::Date($apl_endedatum);
+        $start->tag(1);
+        $ende->tag(1);
+
+        # gebe Personentage aus
+
+        if ($apl_startdatum && $apl_endedatum)
+        {
+          for (my $datum = $start;
+               $datum->cmp($ende) <= 0;
+               $datum = $datum->naechster_monat)
+          {
+            </%perl>
+            <td align='right' bgcolor='#ffffcc'>
+             <input type='text' name='bpl_personentage_<%$datum->cgiformat%>'
+                    value='<%$budgetplan_datum{$datum->pgdate}->[0]%>'
+                    size='4'>
+            </td>
+            <%perl>
+          }
+        }
+        </%perl>
+
+        </tr>
+
+        <tr>
+
+         <td bgcolor='#ffffcc'><%$waehrung%></td>
+         <td align='right'<%getbgcolor(@{$budgetplan{$apl_aid}}, $tagessatz, '#ffffcc')%>>
+          <%formatnumber($budgetplan{$apl_aid}->[1], 0, $ARGS{lang})%>
+         </td>
+
+        <%perl>
+
+        # gebe Budget aus
+
+        if ($apl_startdatum && $apl_endedatum)
+        {
+          for (my $datum = $start;
+               $datum->cmp($ende) <= 0;
+               $datum = $datum->naechster_monat)
+          {
+            </%perl>
+             <td align='right'>
+             <input type='text' name='bpl_betrag_<%$datum->cgiformat%>'
+                    value='<%$budgetplan_datum{$datum->pgdate}->[1] + 0%>'
+                    size='8'>
+            </td>
+            <%perl>
+          }
+        }
+        </%perl>
+       </tr>
+
+      <%perl>
+    }
+    else
+    {
+
+      # Aufgabe wird angezeigt
+
+      </%perl>
+
+       <tr>
+        <td rowspan='2' bgcolor='#cccccc'>
+         <input type='radio' name='sel_aid' value='<%$apl_aid%>'>
+        </td>
+        <td rowspan='2'>
+         <%$apl_aid%>
+        </td>
+        <td rowspan='2'>
+         <%$auf_name%>
+        </td>
+        <td align='right' rowspan='2'>
+         <%new Contavia::Date($apl_startdatum)->preformat%>
+        </td>
+        <td align='right' rowspan='2'<%$apl_milestone && ' bgcolor=\'#ffffcc\''%>>
+         <%new Contavia::Date($apl_endedatum)->preformat%>
+        </td>
+        <td>PT</td>
+        <td align='right'>
+         <pre><%$budgetplan{$apl_aid}->[0]%></pre>
+        </td>
+       </tr>
+
+       <tr>
+        <td><%$waehrung%></td>
+        <td align='right'<%getbgcolor(@{$budgetplan{$apl_aid}}, $tagessatz)%>>
+         <pre><%formatnumber($budgetplan{$apl_aid}->[1], 0, $ARGS{lang})%></pre>
+        </td>
+       </tr>
+
+      <%perl>
+
+    }  # if ($aid == $apl_aid) ... else
+
+  }  # foreach (@$apl)
+
+unless ($aid)
+{
+  # wenn wir keine Aufgabe zum editieren geöffnet haben, stellen wir eine
+  # Leerzeile für neue Aufgaben zur Verfügung
+</%perl>
+
+ <tr>
+  <td bgcolor='#cccccc'>
+  </td>
+  <td>
+  </td>
+  <td>
+   <input type='text' name='auf_name' size='30' maxlength='80'>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'apl_startdatum' &>
+  </td>
+  <td>
+   <& '/inputdatum', name => 'apl_endedatum' &>
+  </td>
+ </tr>
+
+<%perl>
+
+} # unless ($aid)
+
+</%perl>
+
+ <tr>
+  <td rowspan='2' bgcolor='#cccccc'>
+  </td>
+
+  <th class='label' colspan='4' rowspan='2' bgcolor='#cccccc'>
+   Summe
+  </th>
+  <td bgcolor='#cccccc'>PT</td>
+
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%$sum{personentage}%></pre>
+  </td>
+
+ </tr>
+
+ <tr>
+  <td bgcolor='#cccccc'><%$waehrung%></td>
+  <td align='right' bgcolor='#cccccc'>
+   <pre><%formatnumber($sum{betrag}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+</table>
+
+<p class='button'>
+% if ($aid) {
+ <input type='submit' name='abbrechen' value='Abbrechen'>
+% } else {
+ <input type='submit' name='bearbeiten' value='Bearbeiten'>
+% }
+ <input type='submit' name='speichern' value='Speichern'>
+</p>
+
+<script language="JavaScript" type="text/javascript">
+% if ($aid) {
+  document.forms[0].apl_startdatum.focus()
+% } else {
+  document.forms[0].auf_name.focus()
+% }
+</script>

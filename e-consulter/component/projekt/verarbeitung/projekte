@@ -1,0 +1,46 @@
+<%args>
+$dbh
+$neu => undef
+$oeffnen => undef
+$schliessen => undef
+$projekt => undef
+$loeschen => undef
+$uid
+</%args>
+<%perl>
+  my $prj_status = $dbh->selectrow_array( <<"EOF" ) if ($projekt);
+    select prj_status
+      from projekt
+     where prj_id = $projekt
+EOF
+
+  if ($oeffnen)
+  {
+    die '<fehler><i18n>kein Projekt ausgew&auml;hlt</i18n></fehler>' unless ( $projekt );
+
+    $ARGS{projektid}  = $ARGS{projekt};
+    $ARGS{modus} = undef;
+    $ARGS{folgemaske} = $prj_status == 1 ? 'titel' : 'zusammenfassung';
+  }
+  elsif ($neu)
+  {
+    $ARGS{folgemaske} = 'titel';
+    $ARGS{projektid} = -1;
+  }
+  elsif ($loeschen)
+  {
+    die '<fehler><i18n>kein Projekt ausgew&auml;hlt</i18n></fehler>' unless ( $projekt );
+
+    $dbh->do( <<"EOF" );
+      delete from rolle
+       where rol_uid = '$uid'
+         and rol_pid = $projekt
+EOF
+
+    $dbh->commit;
+    $ARGS{projektid} = undef;
+  }
+
+  return \%ARGS;
+
+</%perl>

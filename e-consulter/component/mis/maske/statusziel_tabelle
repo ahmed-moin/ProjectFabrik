@@ -1,0 +1,119 @@
+<%args>
+$projektid
+$dbh
+$zid => 1
+$stand
+$lang => ''
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia qw(formatnumber);
+
+  $stand = new Contavia::Date($stand)->qpgdate;
+
+  my $projektplan = $m->comp('/get_projektplan', %ARGS);
+
+  # ausgewähltes Ziel des Projektes lesen
+  my ($prz_titel, $prz_einheit) = $dbh->selectrow_array(<<"EOF");
+    select prz_titel, prz_einheit
+      from projektziel
+     where prz_pid = $projektid
+       and prz_zid = $zid
+EOF
+
+  # Teilprojekte lesen
+  my $tpl = $dbh->selectall_arrayref(<<"EOF");
+    select tpl_tid, tpr_titel
+      from teilprojekt, teilprojektplan
+     where tpl_pid = $projektid
+       and tpl_ppl = $projektplan
+       and tpr_pid = tpl_pid
+       and tpr_tid = tpl_tid
+     order by tpl_tid
+EOF
+
+  # Zielwerte zu den Teilprojekten lesen
+  my %tpz = $dbh->select_hash(<<"EOF");
+    select tpz_tid, tpz_ziel
+      from teilprojektziel
+     where tpz_pid = $projektid
+       and tpz_ppl = $projektplan
+       and tpz_zid = $zid
+EOF
+
+  # Zielrealisierung zu den Teilprojekten lesen
+  my %tpe = $dbh->select_hash(<<"EOF");
+    select tpe_tid, tpe_realisierung
+      from teilprojektrealisierung a
+     where tpe_pid = $projektid
+       and tpe_zid = $zid
+       and tpe_datum = (select max(tpe_datum)
+         from teilprojektrealisierung b
+        where a.tpe_pid = b.tpe_pid
+          and a.tpe_tid = b.tpe_tid
+          and a.tpe_zid = b.tpe_zid
+          and b.tpe_datum <= $stand)
+EOF
+
+  my %sum;
+
+</%perl>
+<h1><i18n>Status</i18n> - <%$prz_titel%> <%$prz_einheit%></h1>
+
+<table>
+ <tr>
+<& '../selstand', %ARGS &>
+ </tr>
+</table>
+
+<table border='1' width='100%'>
+ <tr>
+  <th>
+	<i18n>
+   Teilprojekt
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Ziel
+	</i18n>
+  </th>
+  <th>
+	<i18n>
+   Wert
+	</i18n>
+  </th>
+ </tr>
+
+% foreach (@$tpl) {
+%   my ($tpl_tid, $tpr_titel) = @$_;
+%   $sum{ziel} += $tpz{$tpl_tid};
+%   $sum{wert} += $tpe{$tpl_tid};
+ <tr>
+  <td>
+   <%$tpr_titel%>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($tpz{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($tpe{$tpl_tid}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+
+% }
+ <tr>
+  <th class='label'>
+	<i18n>
+   Summe
+	</i18n>
+  </th>
+  <td align='right'>
+   <pre><%formatnumber($sum{ziel}, 0, $ARGS{lang})%></pre>
+  </td>
+  <td align='right'>
+   <pre><%formatnumber($sum{wert}, 0, $ARGS{lang})%></pre>
+  </td>
+ </tr>
+</table>

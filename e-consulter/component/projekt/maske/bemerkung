@@ -1,0 +1,24 @@
+<%args>
+@menu
+$uid
+$dbh
+$projektid
+</%args>
+<%perl>
+
+  my ($prj_bemerkung) = $dbh->selectrow_array( <<"EOF" );
+    select prj_bemerkung
+      from projekt
+     where prj_id = $projektid
+EOF
+
+</%perl>
+
+<& '/masketitel', titel => 'Bemerkungen',
+                  maske => $ARGS{folgemaske},
+                  menu  => \@menu &>
+
+<p class="label"><i18n>sonstiges zum Projekt</i18n></p>
+<textarea rows="15" cols="60" name="prj_bemerkung"><%$prj_bemerkung%></textarea>
+
+ <& '/navibutton', maske => $ARGS{folgemaske}, menu => \@menu &>

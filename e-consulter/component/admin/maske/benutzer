@@ -1,0 +1,265 @@
+<%args>
+$dbh
+$sessid
+$ben_uid => undef
+$cond
+$loeschen => undef
+$passwort1 => undef
+$passwort2 => undef
+$zusammenfassung => undef
+$sort => 1
+</%args>
+<%perl>
+
+  use Contavia qw(fehler);
+
+  my $order_by = $sort == 2 ? 'ben_nachname, ben_vorname'
+                            : 'ben_uid';
+
+  my $ben = $dbh->selectall_arrayref( "
+    select ben_uid, ben_vorname, ben_nachname
+      from benutzer
+     where $cond
+     order by $order_by" );
+
+  my ($uid, $ben_vorname, $ben_nachname,
+      $ben_status, $ben_projektleiter, $ben_admin, $ben_kunde,
+      $ben_projekt, $ben_personal, $ben_password,
+	    $ben_strasse, $ben_land, $ben_ort, $ben_plz, $ben_telefon,
+	    $ben_telefax, $ben_handy, $ben_email, $ben_frmid_owned,
+      $ben_blacklisted, $ben_blackreason) =
+            $dbh->selectrow_array( "
+    select ben_uid, ben_vorname, ben_nachname,
+           ben_status,
+           ben_projektleiter, ben_admin, ben_kunde,
+           ben_projekt, ben_personal, ben_password,
+		   ben_strasse, ben_land, ben_ort, ben_plz, ben_telefon,
+		   ben_telefax, ben_handy, ben_email, ben_frmid_owned,
+       ben_blacklisted, ben_blackreason
+      from benutzer
+     where ben_uid = '$ben_uid'
+       and $cond" ) if $cond;
+
+  $ben_uid = $uid;  # wenn der Benutzer nicht gefunden wurde, nicht anzeigen
+
+  my $rol_admin = $dbh->selectrow_array( "
+    select count(*)
+      from rolle
+     where rol_uid = '$uid'
+       and rol_admin" ) if $uid;
+
+  my $rol_kunde = $dbh->selectrow_array( "
+    select count(*)
+      from rolle
+     where rol_uid = '$uid'
+       and rol_kunde" ) if $uid;
+
+  my $rol_mitarbeiter = $dbh->selectrow_array( "
+    select count(*)
+      from rolle
+     where rol_uid = '$uid'
+       and rol_mitarbeiter" ) if $uid;
+
+  my $rol_null = $dbh->selectrow_array( "
+    select count(*)
+      from rolle
+     where rol_uid = '$uid'
+       and not rol_admin
+       and not rol_kunde
+       and not rol_mitarbeiter" ) if $uid;
+
+  my $atr = $dbh->selectrow_array( "
+    select count(*)
+      from auftrag
+     where atr_uid = '$uid'" ) if $uid;
+
+  my $has_assessment = $dbh->selectrow_array("
+    select count(*)
+	  from assantwort
+	 where ant_uid = '$ben_uid'") if $ben_uid;
+	 
+  my $companies = $dbh->selectall_arrayref("
+    select frm_id, frm_firma
+      from firma
+     where frm_firma <> '' and frm_firma is not null
+     order by frm_firma");
+
+  my $firmenlogo = $dbh->selectrow_array( <<"EOF" );
+     select flg_mime
+       from firmenlogo
+      where flg_uid = '$ben_uid'
+EOF
+
+</%perl>
+  <table>
+   <tr>
+    <td>
+     <h2> Benutzer (<%scalar(@$ben)%>) </h2>
+    </td>
+    <td>
+     sortiere nach:
+     <input type="radio" name="sort" value="1" <% $sort == 1 && 'checked' %>
+            onClick="document.forms[0].submit()">
+       Benutzerkennung
+     <input type="radio" name="sort" value="2" <% $sort == 2 && 'checked' %>
+            onClick="document.forms[0].submit()">
+       Nachname, Vorname
+    </td>
+   </tr>
+  </table>
+
+  <& '/select', name => 'ben_uid',
+                values =>
+                [
+                  map
+                  {
+                    my ($ben_uid, $ben_vorname, $ben_nachname) = @$_;
+                    [ $ben_uid, "$ben_uid: $ben_vorname $ben_nachname" ]
+                  } @$ben
+                ],
+                selected => $ben_uid &>
+
+% if ($ben_uid) {
+%   if ($zusammenfassung) {
+    <& '/personal/zusammenfassung', dbh => $dbh, uid => $uid, rol_uid => $ben_uid, sessid => $sessid &>
+    <p class="button">
+      <input type="submit" name="bearbeiten" value="bearbeiten">
+    </p>
+%   } else {  # if ($zusammenfassung)
+  <h2>Status</h2>
+
+  <table width="100%">
+   <tr>
+    <td width="25%">
+     <input type="radio" name="ben_status"
+            value="0" <% $ben_status == 0 && 'checked' %>> kein Mitarbeiterstatus
+    </td>
+    <td width="25%">
+     <input type="radio" name="ben_status"
+            value="1" <% $ben_status == 1 && 'checked' %>> Mitarbeiter
+    </td>
+    <td width="25%">
+     <input type="radio" name="ben_status"
+         value="-1" <% $ben_status == -1 && 'checked' %>> zurückgestellt
+    </td>
+   </tr>
+  </table>
+
+  <br>
+
+  <input type="checkbox" name="ben_kunde" <% $ben_kunde ? 'checked' : '' %>> Kunde<br>
+  <input type="checkbox" name="ben_projektleiter" <% $ben_projektleiter ? 'checked' : '' %>> Projektleiter<br>
+  <input type="checkbox" name="ben_admin" <% $ben_admin ? 'checked' : '' %>> Administrator<br><br>
+  <input type="checkbox" name="ben_blacklisted" <% $ben_blacklisted ? 'checked' : '' %>
+    onclick="javascript:swap_ro()"> Blacklisted&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <input type="text" name="ben_blackreason" size="50"
+    <% $ben_blacklisted ? '' : 'disabled' %>
+    value="<% $ben_blackreason %>">
+
+  <br><br>
+  <h2>Passwort</h2>
+  <input type="password" name="passwort1" size="12">
+  <input type="password" name="passwort2" size="12">
+  <input type="submit" name="passwort_aendern" value="Passwort ändern">
+  &nbsp;&nbsp;<small>(aktuelles Passwort: <i><% $ben_password %></i>)</small>
+%#  was zum Teufel soll denn das Folgende sein!?
+%#  <% $passwort1 eq 'query' && $passwort2 eq 'pw' && $ben_password %>
+
+  <br><br>
+
+  <h2>Anmelderecht</h2>
+
+  <input type="checkbox" name="ben_personal"<%$ben_personal ? ' checked' : ''%>> Personaltool
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <input type="checkbox" name="ben_projekt"<%$ben_projekt ? ' checked' : ''%>> Projekttool
+
+  <br><br>
+
+  <h2>Profil geh&ouml;rt</h2>
+
+  <& '/select', name => 'ben_frmid_owned',
+                values => [ map { [@$_, @$_] } @$companies ],
+                selected => $ben_frmid_owned,
+                onChange => undef,
+                submit   => undef
+  &>
+
+  <br><br>
+
+  <h2>Logo f&uuml;r Profile</h2>
+% if ($firmenlogo) {
+  <img src="/cgi-bin/firmenlogo?uid=<% $ben_uid %>" alt="Firmenlogo"><br>
+% }
+  <input type="file" name="ben_firmenlogo">&nbsp;&nbsp;<input type="submit" name="fldel" value="löschen">
+
+  <br><br>
+
+  <h2>Projektbeteiligung</h2>
+
+  <table>
+   <tr>
+    <th align="left">
+     Administrator
+    </th>
+    <td align="right">
+     <%$rol_admin%>
+    </td>
+   </tr>
+
+   <tr>
+    <th align="left">
+     Kunde
+    </th>
+    <td align="right">
+     <%$rol_kunde%>
+    </td>
+   </tr>
+
+   <tr>
+    <th align="left">
+     Mitarbeiter
+    </th>
+    <td align="right">
+     <%$rol_mitarbeiter%>
+    </td>
+   </tr>
+
+   <tr>
+    <th align="left">
+     Auftr&auml;ge
+    </th>
+    <td align="right">
+     <%$atr%>
+    </td>
+   </tr>
+  </table>
+
+
+  <p class="button">
+   <input type="submit" name="speichern" value="speichern">
+%     if ($loeschen) {
+   <input type="submit" name="loeschen_ok" value="wirklich löschen?">
+%     } else {
+   <input type="submit" name="loeschen" value="löschen">
+%     }
+   <input type="submit" name="zusammenfassung" value="zusammenfassung">
+  </p>
+
+  <script type="text/javascript">
+    function swap_ro() {
+      if (document.forms[0].ben_blacklisted.checked)
+        document.forms[0].ben_blackreason.disabled = false;
+      else
+        document.forms[0].ben_blackreason.disabled = true;
+    }
+  </script>
+
+%   } # if ($zusammenfassung)
+
+% } # if ($ben_uid)
+
+% if ($zusammenfassung) {
+
+  <input type="hidden" name="zusammenfassung" value="1">
+
+% }

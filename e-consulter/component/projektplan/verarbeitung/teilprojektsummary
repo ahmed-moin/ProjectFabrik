@@ -1,0 +1,26 @@
+<%args>
+$dbh
+$projektid
+$tid => undef
+$sel_datum => undef
+$brt_text => undef
+$speichern => undef
+</%args>
+<%perl>
+
+  if ($speichern)
+  {
+    # ersetze alle Zeilenschaltungen in Zeilen, die nicht mit einem HTML-Tag
+    # enden, durch ein <br>-Tag
+    $brt_text =~ s/([^>])\n/$1<br>/g;
+
+    $dbh->replace( 'tbericht',
+      { brt_pid   => $projektid,
+        brt_tid   => $tid,
+        brt_datum => new Contavia::Date($sel_datum)->qpgdate },
+      { brt_text  => $dbh->quote($brt_text) } );
+
+    $dbh->commit;
+  }
+
+</%perl>

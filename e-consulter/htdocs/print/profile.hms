@@ -1,0 +1,49 @@
+<%flags>
+  inherit => undef
+</%flags>
+<%args>
+  $sid
+  $rol_uid
+</%args>
+<%perl>
+  use EConsulter;
+  
+  my $econsulter = new EConsulter;
+  my $dbh = $econsulter->connect;
+
+  my $sth = $dbh->prepare("
+    select ben_uid
+      from benutzer
+     where ben_sessid=?");
+
+  $sth->execute($sid);
+  my $uid = $sth->fetchrow_array();
+
+  return if (not $uid);
+
+  $sth = $dbh->prepare("
+    select flg_mime
+      from firmenlogo
+     where flg_uid=?");
+
+  $sth->execute($uid);
+
+  my $bild = $sth->fetchrow_arrayref();
+  my $logo = $bild ? "/cgi-bin/firmenlogo?uid=$uid" : '/images/logo/p_logo.gif';
+</%perl>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+  <title>Profil von <% $rol_uid %></title>
+  <link rel="stylesheet" type="text/css" href="/ptool.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="/ptool_print.css" media="print">
+ </head>
+ <body bgcolor="#FFFFFF" style="margin:0; padding:0;">
+   <div style="width:100%;text-align:right;"><img src="<% $logo %>" alt="logo"></div><br><br>
+   <h1><img src='/images/bluedot01.gif' alt=''>&nbsp;Profil <% $rol_uid %></h1>
+   <& '/personal/zusammenfassung', dbh => $dbh, uid => $uid, rol_uid => $rol_uid, anonymized => 1, sessid => $sid &>
+ </body>
+</html>

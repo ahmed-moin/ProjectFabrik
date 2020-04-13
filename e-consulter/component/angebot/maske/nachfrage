@@ -1,0 +1,30 @@
+<%args>
+$dbh
+@menu
+$projektid => undef
+</%args>
+<%perl>
+
+  my ($prj_titel, $prj_status) = $dbh->selectrow_array( <<"EOF" );
+   select prj_titel, prj_status
+     from projekt
+    where prj_id = $projektid
+EOF
+
+   my $kunde = $dbh->selectall_arrayref ( <<"EOF" );
+   select ben_anrede, ben_titel, ben_vorname, ben_nachname,
+          ben_email, ben_uid
+     from benutzer, rolle
+    where ben_uid = rol_uid
+      and rol_kunde
+      and rol_pid = $projektid
+EOF
+
+</%perl>
+
+ <& '/masketitel', titel => 'Projektnachfrage' &>
+
+% foreach (@$kunde) {
+%   my ($ben_anrede, $ben_titel, $ben_vorname, $ben_nachname, $ben_email, $ben_uid) = @$_;
+  Mail an <a href='mailto:<%$ben_email%>'> <%$ben_anrede%> <%$ben_titel%> <%$ben_vorname%> <%$ben_nachname%> (<%$ben_uid%>) </a> <br>
+% }

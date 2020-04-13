@@ -1,0 +1,60 @@
+<%args>
+$dbh
+$projektid
+$projektplan => undef
+$auftrag_ok => undef
+$ablehnen => undef
+$ablehnen_definition => undef
+$ablehnen_anfrage => undef
+$begruendung => undef
+@grund => ()
+$vorgehen => undef
+</%args>
+<%perl>
+
+  use Contavia::Date;
+  use Contavia::Db qw(update);
+
+  if ($auftrag_ok && $projektplan)
+  {
+    my $current = Contavia::Date::current;
+
+    update($dbh, 'projektplan',
+      { ppl_pid      => $projektid,
+        ppl_nummer   => $projektplan },
+      { ppl_auftrag  => $current->qpgdate } );
+
+    $dbh->do( "
+      update projekt
+         set prj_status = 4
+       where prj_id = $projektid
+         and prj_status in (3, 6)" );
+
+    $dbh->commit;
+    $ARGS{angebot_angenommen} = 1;
+  }
+  elsif ($ablehnen_definition || $ablehnen_anfrage)
+  {
+    $dbh->update( 'projekt',
+      { prj_id => $projektid },
+      { prj_status => $ablehnen_definition ? 1 : 2 } );
+
+    my $grund = 0;
+    $grund |= (1 << $_) foreach (@grund);
+
+    $dbh->update('projektplan',
+      { ppl_pid             => $projektid,
+        ppl_nummer          => $projektplan },
+      { ppl_ablehnung       => Contavia::Date::current->qpgdate,
+        ppl_ablehnungsgrund => $grund,
+        ppl_ablehnungstext  => $dbh->quote($begruendung),
+        ppl_vorgehen        => $vorgehen } );
+
+    $dbh->commit;
+    $ARGS{projektid} = undef;
+    $ARGS{folgemaske} = 'projekte';
+  }
+
+  return \%ARGS;
+
+</%perl>
