@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -13,7 +13,7 @@ SET search_path = public, pg_catalog;
 --
 
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (1, 'Anlagenbau');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (2, 'Architektur-/Ingenieurbüro');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (2, 'Architektur-/IngenieurbÃ¼ro');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (3, 'Aus-/Weiterbildung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (4, 'Banken/Finanzdienstleistungen');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (5, 'Bau');
@@ -24,15 +24,15 @@ INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (9, 'Datenverarbeitung (Sof
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (10, 'Druck/Papier/Verpackung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (11, 'Elektrotechnik/Elektronik');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (12, 'Energie-/Wasserversorgung');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (13, 'Erdöl-/Erdgasgewinnung');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (13, 'ErdÃ¶l-/Erdgasgewinnung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (14, 'Fahrzeugbau/Kfz-Zulieferer');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (15, 'Feinmechanik/Optik');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (16, 'Forst/Agrarwirtschaft');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (17, 'Gesundheitswesen');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (18, 'Handel');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (19, 'Holz/Möbel');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (19, 'Holz/MÃ¶bel');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (20, 'Immobilien');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (21, 'Konsumgüter/Kosmetik');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (21, 'KonsumgÃ¼ter/Kosmetik');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (22, 'Kunst/Kultur/Sport');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (23, 'Kunststoff, Gummi, Glas');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (24, 'Luft-/Raumfahrt');
@@ -41,21 +41,21 @@ INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (26, 'Medien (Film, Funk, T
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (27, 'Medizintechnik');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (28, 'Metallerzeugung/-verarbeitung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (29, 'Nahrungs-/Genussmittel');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (30, 'Öffentlicher Dienst');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (30, 'Ã–ffentlicher Dienst');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (31, 'Telekommunikation (Hardware)');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (32, 'Telekommunikations- und Online-Dienstl./Software');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (33, 'Textil/Leder/Bekleidung');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (34, 'Touristik/Hotel/Gaststätten');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (34, 'Touristik/Hotel/GaststÃ¤tten');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (35, 'Transport/Verkehr');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (36, 'Umwelttechnik/Entsorgung/Recycling');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (37, 'Universitäten/Hochschulen/Forschungsinst.');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (37, 'UniversitÃ¤ten/Hochschulen/Forschungsinst.');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (38, 'Personalberatung/Arbeitsvermittlung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (39, 'Unternehmensberatung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (40, 'Verband/Verein');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (41, 'Versicherungen');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (42, 'Verteidigung');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (43, 'Werbung/Marketing/PR');
-INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (44, 'Wirtschaftprüfung/Steuerberatung/Rechtsanw.');
+INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (44, 'WirtschaftprÃ¼fung/Steuerberatung/Rechtsanw.');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (45, 'Zeitarbeit');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (990, 'Sonstige Dienstleistungen');
 INSERT INTO branche (bra_id, bra_bezeichnung) VALUES (991, 'Sonstige verarbeitende Industrie');

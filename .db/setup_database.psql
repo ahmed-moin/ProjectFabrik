@@ -1,0 +1,34 @@
+
+
+create database econsulter;
+
+
+\set ON_ERROR_STOP off
+
+create role "e-consulter";
+
+create role "comvalue";
+
+create role "contavia";
+
+\set ON_ERROR_STOP on
+
+
+\c econsulter
+
+
+\i e-consulter_schema.dump
+
+\i e-consulter_assfrage.dump
+\i e-consulter_asskategorie.dump
+\i e-consulter_aufkat.dump
+\i e-consulter_auskat.dump
+\i e-consulter_branchen.dump
+\i e-consulter_necessities.sql
+\i e-consulter_pos.dump
+\i e-consulter_prjbereichstamm.dump
+\i e-consulter_prjteameigenschaftstamm.dump
+\i e-consulter_prjzielstamm.dump
+\i e-consulter_qualifikationen.dump
+\i e-consulter_translate.sql
+

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -16,7 +16,7 @@ INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Kosteneinsparung');
 INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Technologiesprung');
 INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Kundenbindung');
 INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Erweiterung Ihres Marktanteils');
-INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Qualit‰tsverbesserung');
+INSERT INTO prjzielstamm (pzs_bezeichnung) VALUES ('Qualit√§tsverbesserung');
 
 
 --

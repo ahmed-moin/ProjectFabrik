@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -17,7 +17,7 @@ INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (3, 'Realschule');
 INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (4, 'Gymnasium');
 INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (5, 'Lehre');
 INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (6, 'Fachhochschule');
-INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (7, 'Universit‰t');
+INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (7, 'Universit√§t');
 INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (999, 'sonstige');
 INSERT INTO auskat (akt_id, akt_bezeichnung) VALUES (8, 'Weiterbildung');
 

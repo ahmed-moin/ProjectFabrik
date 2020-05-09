@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -13,9 +13,9 @@ SET search_path = public, pg_catalog;
 --
 
 INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('eine neutrale Position im Projektteam einnehmen');
-INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('das Thema und das Team führen können');
+INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('das Thema und das Team fÃ¼hren kÃ¶nnen');
 INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('moderieren');
-INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('unterschiedliche Auffassungen zum zielorientierten Konsens führen');
+INSERT INTO prjteameigenschaftstamm (pes_bezeichnung) VALUES ('unterschiedliche Auffassungen zum zielorientierten Konsens fÃ¼hren');
 
 
 --

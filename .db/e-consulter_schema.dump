@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -17,7 +17,7 @@ SET search_path = public, pg_catalog;
 
 SET default_tablespace = '';
 
-SET default_with_oids = true;
+-- SET default_with_oids = true;
 
 --
 -- Name: account; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 

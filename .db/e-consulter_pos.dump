@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+-- SET client_encoding = 'SQL_ASCII';
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
@@ -15,7 +15,7 @@ SET search_path = public, pg_catalog;
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (1, 'Abteilungs-/Referatsleiter');
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (2, 'Angestellter ohne Leitungsfunktion');
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (3, 'Berufseinsteiger');
-INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (4, 'Geschäftsführer/Vorstand');
+INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (4, 'GeschÃ¤ftsfÃ¼hrer/Vorstand');
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (5, 'Gruppenleiter');
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (6, 'Hauptabteilungs-/Bereichsleiter');
 INSERT INTO pos (pos_id, pos_bezeichnung) VALUES (7, 'Referent/Assistent');
