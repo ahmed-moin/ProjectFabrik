@@ -5,7 +5,7 @@ create database econsulter;
 
 \set ON_ERROR_STOP off
 
-create role "e-consulter";
+create role "e-consulter" with login;
 
 create role "comvalue";
 
