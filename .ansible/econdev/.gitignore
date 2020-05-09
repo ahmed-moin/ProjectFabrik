@@ -1,0 +1,4 @@
+*.swp
+playbook.retry
+secret
+vault.txt

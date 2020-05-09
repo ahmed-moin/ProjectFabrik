@@ -1,0 +1,52 @@
+---
+
+- name: Install PostgreSQL Packages
+  apt:
+    state: present
+    name:
+      - postgresql
+
+
+- name: Enable PostgreSQL Service
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+
+- name: Set Authentication to scram-sha-256 and listening address
+  notify: reload postgres
+  lineinfile:
+    path: '{{ psql_conf }}'
+    state:       '{{ item.state  }}'
+    line:        '{{ item.line   }}'
+    regexp:      '{{ item.regexp }}'
+  with_items:
+#   - { state: present, line: "listen_addresses = '10.23.23.100'",   regexp: '^[#]*listen_addresses\s*=.*' }
+    - { state: present, line: 'password_encryption = scram-sha-256', regexp: '^[#]*password_encryption\s*=.*' }
+    - { state: present, line: "ssl = off",                           regexp: '^[#]*ssl\s*=.*' }
+
+
+- name: Copy pg_hba.conf
+  notify: reload postgres
+  template:
+    src: pg_hba.conf
+    dest: '{{ psql_conf_dir }}/'
+
+
+#- name: Set Memory Parameters
+#  notify: reload postgres
+#  lineinfile:
+#    path: '{{ psql_conf }}'
+#    state:       '{{ item.state  }}'
+#    line:        '{{ item.line   }}'
+#    regexp:      '{{ item.regexp }}'
+#  with_items:
+#    - { state: present, line: 'shared_buffers = 2048MB', regexp: '^[#]*shared_buffers\s*=.*' }
+#    - { state: present, line: 'work_mem       = 8MB',    regexp: '^[#]*work_mem\s*=.*' }
+#    - { state: present, line: 'temp_buffers   = 16MB',   regexp: '^[#]*temp_buffers\s*=.*' }
+#    - { state: present, line: 'effective_cache_size = 14GB', regexp: '^[#]*effective_cache_size = 14GB' }
+
+
+
+# vim:ts=2:sw=2

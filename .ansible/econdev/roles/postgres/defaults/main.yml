@@ -1,0 +1,5 @@
+---
+psql_conf:     "{{ psql_conf_dir }}/postgresql.conf"
+psql_hba_conf: "{{ psql_conf_dir }}/pg_hba.conf"
+
+# vim:ts=2:sw=2

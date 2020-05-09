@@ -1,0 +1,28 @@
+---
+- hosts: econdev
+  become: no
+  gather_facts: no
+  
+  tasks:
+  - name: Set Hostname
+    tags: network,networking
+    hostname:
+      name: econdev
+
+  vars:
+    # setting setup_database to 'true' will create an empty
+    # database with only the necessary data loaded
+    setup_database: true
+    psql_conf_dir:  "/etc/postgresql/12/main"
+
+
+  roles:
+  - role: postgres
+    tags: postgres,postgresql,psql
+
+  - role: econsulter
+    tags: econsulter,e-consulter,econ,e-con
+
+
+
+## vim:ts=2:sw=2

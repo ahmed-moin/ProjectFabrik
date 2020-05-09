@@ -1,0 +1,8 @@
+---
+- name: restart apache2
+  service:
+    name: apache2
+    state: restarted
+  listen: restart apache2
+
+# vim:ts=2:sw=2

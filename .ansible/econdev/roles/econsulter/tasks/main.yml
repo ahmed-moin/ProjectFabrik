@@ -1,0 +1,134 @@
+---
+- name: Install Mason & Co
+  apt:
+    state: present
+    name:
+      - git
+      - apache2
+      - libhtml-mason-perl
+      - libclass-dbi-pg-perl
+      - libapache-dbi-perl
+      - libapache-session-perl
+      - fontconfig
+      - libgd3
+
+
+- name: Clone e-consulter repo
+  git:
+    dest: /var/www/e-consulter.com/www
+    repo: git@gitlab.projektfabrik.com:fd/e-consulter.git
+    accept_hostkey: yes
+
+
+- name: Change ownership of www directory
+  file:
+    path: /var/www/e-consulter.com/www
+    owner: www-data
+
+
+- name: Change ownership of daten directory
+  file:
+    path: /var/www/e-consulter.com/www/daten
+    owner: www-data
+    recurse: yes
+
+
+- name: Change ownership of .mason_data directory
+  file:
+    path: /var/www/e-consulter.com/www/.mason_data
+    owner: www-data
+    recurse: yes
+
+
+- name: Copy fonts
+  copy:
+    remote_src: yes
+    src: "/var/www/e-consulter.com/www/fonts/{{ item }}"
+    dest: /usr/share/fonts/truetype
+  with_items:
+    - arialbd.ttf
+    - arialbi.ttf
+    - ariali.ttf
+    - arial.ttf
+    - geo415ki.ttf
+    - geo415k.ttf
+    - geo415li.ttf
+    - geo415l.ttf
+    - geo415mi.ttf
+    - geo415m.ttf
+
+
+- name: Run fc-cache
+  command: fc-cache
+
+
+- name: Copy apache2-mod_perl-startup.pl
+  notify: restart apache2
+  copy:
+    src:  apache2/mods-available/apache2-mod_perl-startup.pl
+    dest: /etc/apache2/mods-available/
+
+
+- name: Copy 01.00_www.e-consulter.com.conf
+  notify: restart apache2
+  copy:
+    src:  apache2/sites-available/01.00_www.e-consulter.com.conf
+    dest: /etc/apache2/sites-available/
+
+
+- name: Enable 01.00_www.e-consulter.com.conf
+  notify: restart apache2
+  file:
+    state: link
+    src:   /etc/apache2/sites-available/01.00_www.e-consulter.com.conf
+    dest:  /etc/apache2/sites-enabled/01.00_www.e-consulter.com.conf
+
+
+- name: Disable default page
+  file:
+    state: absent
+    path:  /etc/apache2/sites-enabled/000-default.conf
+
+
+- name: Enable mod cgi
+  notify: restart apache2
+  file:
+    state: link
+    src:   /etc/apache2/mods-available/cgi.load
+    dest:  /etc/apache2/mods-enabled/cgi.load
+
+
+- name: Edit security.conf
+  notify: restart apache2
+  lineinfile:
+    path: /etc/apache2/conf-enabled/security.conf
+    state:  '{{ item.state }}'
+    line:   '{{ item.line }}'
+    regexp: '{{ item.regexp }}'
+  with_items:
+    - { state: present, line: 'ServerTokens Prod',   regexp: '^\s*ServerTokens.*' }
+    - { state: present, line: 'ServerSignature Off', regexp: '^\s*ServerSignature.*' }
+
+
+- name: Disable unnecessary modules
+  notify: restart apache2
+  file:
+    state: absent
+    path:  '/etc/apache2/mods-enabled/{{ item }}'
+  with_items:
+    - php7.3.conf
+    - php7.3.load
+
+
+- name: Setup database
+  when: setup_database
+  become: yes
+  become_user: postgres
+  command:
+    chdir: /var/www/e-consulter.com/www/.db
+    cmd:   psql -f setup_database.psql
+
+
+
+
+# vim:ts=2:sw=2:expandtab

@@ -1,0 +1,9 @@
+---
+- name: reload postgres
+  service:
+    name: postgresql
+    state: reloaded
+  listen: reload postgres
+
+
+# vim:ts=2:sw=2
