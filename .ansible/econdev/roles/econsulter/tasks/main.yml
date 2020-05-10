@@ -13,11 +13,11 @@
       - libgd3
 
 
-- name: Clone e-consulter repo
-  git:
-    dest: /var/www/e-consulter.com/www
-    repo: git@gitlab.projektfabrik.com:fd/e-consulter.git
-    accept_hostkey: yes
+#- name: Clone e-consulter repo
+#  git:
+#    dest: /var/www/e-consulter.com/www
+#    repo: git@gitlab.projektfabrik.com:fd/e-consulter.git
+#    accept_hostkey: yes
 
 
 - name: Change ownership of www directory
